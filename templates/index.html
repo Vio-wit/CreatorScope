@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7f4">
+  <title>CreatorScope · 课程数据工作台</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script defer src="{{ url_for('static', filename='vendor/echarts.min.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="CreatorScope 首页">
+        <span class="brand-mark">C</span>
+        <span><strong>CreatorScope</strong><small>课程数据工作台</small></span>
+      </a>
+      <div class="nav-label">工作区</div>
+      <a class="nav-item active" href="#overview"><span class="nav-icon">▦</span>数据看板</a>
+      <a class="nav-item" href="#collection"><span class="nav-icon">↧</span>采集任务</a>
+      <a class="nav-item" href="#records"><span class="nav-icon">▤</span>样本记录</a>
+      <div class="sidebar-bottom">
+        <span class="local-dot"></span>
+        <div><strong>本地运行</strong><small>数据保存在本机 SQLite</small></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="breadcrumb">CreatorScope <span>/</span> 课程数据工作台</div>
+        <div class="topbar-right"><span class="local-badge"><i></i>仅本机</span><span class="date-label" id="todayLabel">—</span></div>
+      </header>
+
+      <section class="page-heading" id="overview">
+        <div>
+          <p class="eyebrow">CREATOR DATA · LOCAL LAB</p>
+          <h1>数据看板</h1>
+          <p class="subheading">把采集、清洗、存储与分析连成一个可复现的课程实验。</p>
+        </div>
+        <div class="heading-actions">
+          <label class="select-wrap" aria-label="选择批次"><span>批次</span><select id="batchSelect"><option value="">暂无批次</option></select></label>
+          <label class="select-wrap" aria-label="筛选记录类型"><span>数据类型</span><select id="typeSelect"><option value="">全部数据</option></select></label>
+        </div>
+      </section>
+
+      <section class="collection-panel" id="collection">
+        <div class="panel-copy">
+          <div class="panel-icon">↗</div>
+          <div>
+            <h2>采集工作台</h2>
+            <p>先导入已匿名的真实样本，或打开独立浏览器并手动登录后采集当前可见页面。</p>
+          </div>
+        </div>
+        <div class="collection-controls">
+          <button class="button button-primary" id="importButton"><span>＋</span>导入基线样本</button>
+          <button class="button button-secondary" id="openBrowserButton">打开蒲公英浏览器</button>
+          <button class="button button-secondary" id="captureButton" disabled>采集当前页面</button>
+          <button class="button button-quiet" id="closeBrowserButton" disabled>关闭窗口</button>
+        </div>
+        <div class="browser-hint" id="browserHint"><span class="status-dot muted"></span><span>新建隔离浏览器配置；请在窗口内正常登录并手动打开要验证的页面。应用只读取蒲公英域名下当前可见页面的少量字段。</span></div>
+      </section>
+
+      <section class="kpi-grid" aria-label="数据概览">
+        <article class="kpi-card"><div class="kpi-label">当前批次记录<span class="kpi-symbol">▤</span></div><div class="kpi-value" id="recordCount">—</div><div class="kpi-foot" id="batchCount">历史批次 0</div></article>
+        <article class="kpi-card"><div class="kpi-label">字段覆盖率<span class="kpi-symbol green">◉</span></div><div class="kpi-value" id="coverageRate">—</div><div class="kpi-foot" id="fieldCount">—</div></article>
+        <article class="kpi-card"><div class="kpi-label">粉丝规模<span class="kpi-symbol blue">◎</span></div><div class="kpi-value compact" id="followersValue">—</div><div class="kpi-foot">当前可用博主样本</div></article>
+        <article class="kpi-card"><div class="kpi-label">阅读中位数<span class="kpi-symbol amber">⌁</span></div><div class="kpi-value compact" id="readingValue">—</div><div class="kpi-foot">按页面显示值保留单位</div></article>
+      </section>
+
+      <section class="charts-grid">
+        <article class="chart-card chart-card-wide">
+          <div class="card-heading"><div><h2>样本结构</h2><p>按当前批次的数据类型统计</p></div><span class="card-menu">···</span></div>
+          <div class="chart" id="typeChart"></div>
+        </article>
+        <article class="chart-card">
+          <div class="card-heading"><div><h2>笔记互动指标</h2><p>采集值转换为数值后展示</p></div><span class="card-menu">···</span></div>
+          <div class="chart" id="noteChart"></div>
+        </article>
+        <article class="chart-card">
+          <div class="card-heading"><div><h2>粉丝画像比例</h2><p>使用页面当前显示的统计周期</p></div><span class="card-menu">···</span></div>
+          <div class="chart" id="fanChart"></div>
+        </article>
+        <article class="chart-card">
+          <div class="card-heading"><div><h2>内容类目</h2><p>来自当前可见创作者资料</p></div><span class="card-menu">···</span></div>
+          <div class="chart" id="categoryChart"></div>
+        </article>
+        <article class="chart-card">
+          <div class="card-heading"><div><h2>笔记词频</h2><p id="wordStatus">等待可用标题或正文</p></div><span class="card-menu">···</span></div>
+          <div class="chart" id="wordChart"></div>
+        </article>
+      </section>
+
+      <section class="data-grid" id="records">
+        <article class="table-card">
+          <div class="card-heading table-heading"><div><h2>当前样本字段</h2><p>原始显示值与字段覆盖情况</p></div><span class="table-count" id="tableCount">0 条记录</span></div>
+          <div class="table-scroll"><table><thead><tr><th>数据类型</th><th>字段数</th><th>有效字段</th><th>覆盖率</th><th>采集时间</th></tr></thead><tbody id="coverageBody"><tr><td colspan="5" class="empty-cell">导入基线样本后显示字段覆盖</td></tr></tbody></table></div>
+        </article>
+        <article class="task-card">
+          <div class="card-heading table-heading"><div><h2>任务记录</h2><p>最近的本地采集与导入任务</p></div><span class="task-live"><i></i>实时状态</span></div>
+          <div class="task-list" id="taskList"><div class="empty-cell">暂无任务</div></div>
+        </article>
+      </section>
+
+      <section class="record-detail-card">
+        <div class="card-heading table-heading"><div><h2>样本字段值</h2><p>保留来源页面显示值，数值清洗结果单独存储</p></div></div>
+        <div class="record-detail-grid" id="recordDetails"><div class="empty-cell">当前批次暂无样本字段</div></div>
+      </section>
+
+      <footer class="footer"><span>CreatorScope · 课程实训原型</span><span>Playwright · Flask · SQLite · pandas · jieba · ECharts</span></footer>
+    </main>
+  </div>
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+</body>
+</html>
