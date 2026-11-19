@@ -1,0 +1,78 @@
+{
+  "source": "小红书蒲公英已登录可见页面",
+  "captured_at_local": "2026-11-19",
+  "capture_method": "headed Playwright CLI visible-page interaction and DOM snapshot; no API or network interception",
+  "sample_scope": {
+    "visible_blogger_list_rows": 1,
+    "creator_profiles": 1,
+    "note_details": 1
+  },
+  "privacy": {
+    "creator_name_or_id_saved": false,
+    "note_title_or_body_saved": false,
+    "account_credentials_saved": false
+  },
+  "records": [
+    {
+      "type": "blogger_list_sample",
+      "fields": {
+        "粉丝数": "44.1w",
+        "阅读中位数（日常）": "25,056",
+        "互动中位数（日常）": "1,781",
+        "全部报价": "¥50,000 起"
+      }
+    },
+    {
+      "type": "creator_profile_sample",
+      "fields": {
+        "粉丝数": "44.1w",
+        "获赞与收藏": "1076.5w",
+        "图文笔记一口价": "¥50,000",
+        "视频笔记一口价": "¥50,000",
+        "发布笔记数": 10,
+        "内容类目": "护肤、个人护理"
+      }
+    },
+    {
+      "type": "creator_content_performance",
+      "period_displayed": "近30日",
+      "fields": {
+        "曝光中位数": 93223,
+        "阅读中位数": 25056,
+        "互动中位数": 1781,
+        "中位点赞量": 1101,
+        "中位收藏量": 477,
+        "中位评论量": 113,
+        "中位分享量": 50,
+        "中位关注量": 40,
+        "互动率": "7.1%",
+        "视频完播率": "10.4%",
+        "图文3秒阅读率": "-"
+      }
+    },
+    {
+      "type": "fan_analysis",
+      "period_selector_displayed": "近30日",
+      "fields": {
+        "粉丝量变化幅度": "0.6%",
+        "活跃粉丝占比": "64.9%",
+        "阅读粉丝占比": "9.7%",
+        "互动粉丝占比": "1.9%",
+        "下单粉丝占比": "27.7%"
+      }
+    },
+    {
+      "type": "note_detail",
+      "fields": {
+        "发布时间": "2026-11-12 19:42",
+        "曝光量": 108423,
+        "阅读量": 9407,
+        "点赞量": 1252,
+        "收藏量": null,
+        "评论量": null,
+        "分享量": null
+      },
+      "unavailable_value_note": "收藏、评论、分享标签可见，但本次 DOM 快照未读到对应值；未据此推断为零。"
+    }
+  ]
+}
