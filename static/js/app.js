@@ -132,7 +132,7 @@
   function renderAnalytics(data) {
     const chartsData = data.charts || {};
     $('#analysisScope').textContent = `${data.scope || ''} · ${data.availability?.history || ''}`;
-    $('#analysisCount').textContent = `${data.counts?.creators || 0} 位匿名博主 · ${data.counts?.notes || 0} 条笔记`;
+    $('#analysisCount').textContent = `${data.counts?.creators || 0} 位创作者 · ${data.counts?.notes || 0} 条笔记`;
     setBarChart('followerDistChart', chartsData.follower_distribution);
     setBarChart('quoteDistChart', chartsData.quote_distribution, true);
     setScatterChart('followerPriceChart', chartsData.follower_price_scatter, '粉丝数', '报价（元）');
@@ -295,7 +295,7 @@
       container.innerHTML = '<div class="empty-cell">暂无任务</div>';
       return;
     }
-    const labels = { baseline_import: '导入匿名基线', file_import: '导入 JSON / CSV', browser_open: '打开蒲公英浏览器', pgy_visible_capture: '采集当前可见页面', browser_close: '关闭蒲公英浏览器', visible_collection: '蒲公英 → 小红书可见采集' };
+    const labels = { baseline_import: '导入历史基线', file_import: '导入 JSON / CSV', browser_open: '打开蒲公英浏览器', pgy_visible_capture: '采集当前可见页面', browser_close: '关闭蒲公英浏览器', visible_collection: '蒲公英 → 小红书可见采集' };
     container.innerHTML = tasks.slice(0, 8).map((task) => {
       const status = task.status || 'queued';
       const statusLabel = { queued: '排队中', running: `处理中 ${task.progress || 0}%`, paused: '已暂停', stopping: '正在停止', stopped: '已停止', completed: '已完成', failed: '失败' }[status] || status;
@@ -339,7 +339,7 @@
   async function refreshCreatorOptions() {
     const data = await requestJson('/api/creators');
     const current = elements.creatorSelect.value;
-    elements.creatorSelect.innerHTML = '<option value="">新建匿名博主</option>' + (data.creators || []).map((creator) => `<option value="${escapeHtml(creator.creator_id)}">${escapeHtml(creator.pseudonym)}</option>`).join('');
+    elements.creatorSelect.innerHTML = '<option value="">新建创作者</option>' + (data.creators || []).map((creator) => `<option value="${escapeHtml(creator.creator_id)}">${escapeHtml(creator.pseudonym)}</option>`).join('');
     if ((data.creators || []).some((creator) => creator.creator_id === current)) elements.creatorSelect.value = current;
   }
 
@@ -374,7 +374,7 @@
       return;
     }
     const typeLabels = { blogger_list_sample: '列表', creator_profile_sample: '详情', creator_content_performance: '表现', fan_analysis: '画像', note_detail: '笔记' };
-    body.innerHTML = data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${formatMetric(creator.quote, ' 元')}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml((creator.record_types || []).map((type) => typeLabels[type] || type).join(' / '))}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('');
+    body.innerHTML = data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.platform_creator_id || '—')}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${formatMetric(creator.quote, ' 元')}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml((creator.record_types || []).map((type) => typeLabels[type] || type).join(' / '))}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('');
     $('#creatorCompareSelect').innerHTML = data.creators.map((creator) => `<option value="${escapeHtml(creator.creator_id)}">${escapeHtml(creator.pseudonym)}</option>`).join('');
     Array.from($('#creatorCompareSelect').options).forEach((option) => { option.selected = compareSelection.includes(option.value); });
   }
@@ -483,7 +483,7 @@
   }
 
   function bindEvents() {
-    elements.importButton.addEventListener('click', () => submitTask('/api/tasks/import-baseline', '已提交匿名基线导入任务'));
+    elements.importButton.addEventListener('click', () => submitTask('/api/tasks/import-baseline', '已提交历史基线导入任务'));
     elements.uploadButton.addEventListener('click', () => elements.uploadInput.click());
     elements.uploadInput.addEventListener('change', async () => {
       const file = elements.uploadInput.files?.[0];
@@ -550,7 +550,7 @@
       try {
         const data = await requestJson(`/api/creators/compare?${params.toString()}`);
         $('#creatorCompareStatus').textContent = `${data.count} 位创作者 · 同一批次指标，单位按列保留`;
-        $('#creatorCompareBody').innerHTML = data.creators.length ? data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${formatMetric(creator.quote, ' 元')}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('') : '<tr><td colspan="8" class="empty-cell">所选创作者在当前批次没有可比记录</td></tr>';
+        $('#creatorCompareBody').innerHTML = data.creators.length ? data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.platform_creator_id || '—')}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${formatMetric(creator.quote, ' 元')}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('') : '<tr><td colspan="9" class="empty-cell">所选创作者在当前批次没有可比记录</td></tr>';
       } catch (error) { $('#creatorCompareStatus').textContent = error.message; }
     });
     $('#filterNotes').addEventListener('click', () => refreshNotes().catch((error) => toast(error.message, true)));

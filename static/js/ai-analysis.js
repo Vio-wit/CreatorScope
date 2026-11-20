@@ -100,7 +100,7 @@
       const data = await requestJson('/api/ai/preview', { method: 'POST', body: JSON.stringify(previewBody) });
       $('#previewScope').textContent = data.scope_summary;
       $('#previewSize').textContent = data.preview_chars + ' 字符';
-      $('#redactionNote').textContent = data.redaction;
+      $('#dataNotice').textContent = data.data_notice;
       $('#previewData').textContent = JSON.stringify(data.data, null, 2);
       $('#previewCard').hidden = false;
       $('#scopeStatus').textContent = '预览在本机生成；尚未调用模型服务。';

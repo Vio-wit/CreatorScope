@@ -45,8 +45,6 @@ def comments_analysis():
     db_path, fetch_fn, _, _, summarize_fn = _service()
     rows = fetch_fn(db_path, _filters())
     result = summarize_fn(rows)
-    for row in result["comments"]:
-        row.pop("raw_payload", None)
     return jsonify(result)
 
 
@@ -100,13 +98,14 @@ def comments_export_csv():
     rows = fetch_fn(db_path, _filters())
     fields = [
         "batch_id", "creator_name", "note_id", "note_title", "comment_text", "cleaned_text",
-        "displayed_time", "like_count_raw", "like_count_normalized", "reply_count_raw",
+        "displayed_time", "like_count_raw", "like_count_normalized", "reply_count_raw", "raw_payload",
         "is_pinned", "comment_level", "parent_comment_id", "local_comment_id", "captured_at",
     ]
     stream = io.StringIO(newline="")
     writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
     writer.writeheader()
     for row in rows:
+        row["raw_payload"] = json.dumps(row.get("raw_payload") or {}, ensure_ascii=False, sort_keys=True)
         writer.writerow(row)
     response = make_response("\ufeff" + stream.getvalue())
     response.headers["Content-Type"] = "text/csv; charset=utf-8"

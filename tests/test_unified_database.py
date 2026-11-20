@@ -119,7 +119,7 @@ class UnifiedDatabaseTests(unittest.TestCase):
         self.assertEqual(verification["counts"]["batches"], 2)
         with connection(db_path) as conn:
             self.assertEqual(
-                conn.execute("SELECT COUNT(*) FROM creators WHERE creator_name = pseudonym").fetchone()[0],
+                conn.execute("SELECT COUNT(*) FROM creators WHERE creator_name IN ('Creator A','Creator B')").fetchone()[0],
                 2,
             )
             self.assertEqual(

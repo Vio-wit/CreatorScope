@@ -179,7 +179,7 @@ class VisibleCollectionTests(unittest.TestCase):
                 note = conn.execute(
                     "SELECT platform_note_id, platform_note_id_hash, title, body, topics_json FROM notes"
                 ).fetchone()
-                self.assertIsNone(note["platform_note_id"])
+                self.assertEqual(note["platform_note_id"], "synthetic-note-id")
                 self.assertIsNotNone(note["platform_note_id_hash"])
                 self.assertEqual(note["title"], "Synthetic title")
                 self.assertEqual(note["body"], "Synthetic body")

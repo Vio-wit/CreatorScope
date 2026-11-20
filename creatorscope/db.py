@@ -263,7 +263,6 @@ def _backfill_batch_metadata(conn: sqlite3.Connection) -> None:
     conn.execute("UPDATE batches SET completed_at = captured_at WHERE completed_at IS NULL")
     conn.execute("UPDATE batches SET status = 'completed' WHERE status IS NULL OR status = ''")
     conn.execute("UPDATE tasks SET error_message = error WHERE error_message IS NULL AND error IS NOT NULL")
-    conn.execute("UPDATE creators SET creator_name = pseudonym WHERE creator_name = ''")
 
 
 def _source_key_hash(source_key: str) -> str:
@@ -288,7 +287,7 @@ def _ensure_creator(conn: sqlite3.Connection, source_key: str, captured_at: str)
         """INSERT INTO creators
            (creator_id, pseudonym, creator_name, source_key_hash, first_seen_at, last_seen_at)
            VALUES (?, ?, ?, ?, ?, ?)""",
-        (creator_id, pseudonym, pseudonym, key_hash, captured_at, captured_at),
+        (creator_id, pseudonym, "", key_hash, captured_at, captured_at),
     )
     return creator_id
 
@@ -301,20 +300,34 @@ def ensure_creator_ref(
     conn: sqlite3.Connection,
     creator_ref: str,
     captured_at: str,
+    *,
+    creator_name: str = "",
+    platform_creator_id: str | None = None,
+    platform: str | None = None,
 ) -> str:
-    """Resolve an exported internal reference or hash an import-only source key."""
+    """Resolve a creator reference and retain any collected public identity fields."""
     ref = str(creator_ref).strip()
+    creator_id: str
     if ref:
         row = conn.execute(
             "SELECT creator_id FROM creators WHERE creator_id = ?", (ref,)
         ).fetchone()
         if row:
-            conn.execute(
-                "UPDATE creators SET last_seen_at = ? WHERE creator_id = ?",
-                (captured_at, ref),
-            )
-            return ref
-    return _ensure_creator(conn, ref or uuid4().hex, captured_at)
+            creator_id = ref
+        else:
+            creator_id = _ensure_creator(conn, ref, captured_at)
+    else:
+        creator_id = _ensure_creator(conn, uuid4().hex, captured_at)
+    conn.execute(
+        """UPDATE creators SET
+             creator_name = CASE WHEN ? <> '' THEN ? ELSE creator_name END,
+             platform_creator_id = COALESCE(NULLIF(?, ''), platform_creator_id),
+             platform = COALESCE(NULLIF(?, ''), platform),
+             last_seen_at = ?
+           WHERE creator_id = ?""",
+        (creator_name, creator_name, platform_creator_id, platform, captured_at, creator_id),
+    )
+    return creator_id
 
 
 def ensure_note(

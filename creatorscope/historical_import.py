@@ -24,15 +24,17 @@ SOURCE_FILES = (
     "research/pgy_note_detail_investigation_20261120/actual_samples.json",
 )
 R42_SOURCE = "research/r4_2_comment_validation/raw_comments.jsonl"
-IDENTITY_KEYS = {
-    "creatorid", "platformcreatorid", "noteid", "platformnoteid", "localcommentid",
-    "parentcommentid", "authorid", "creatorname", "authorname", "authornickname",
-    "creatornickname", "commenternickname", "nickname", "username", "userid",
-    "profileurl", "noteurl", "sourceurl", "commenteraccountidsaved",
-    "commenternamesaved", "commenterprofilesaved", "creator", "author", "commenter",
-    "shareurlbase", "shareurl", "token", "cookie", "session", "password", "passwd",
-    "phone", "phonenumber", "email",
+AUTH_SECRET_NAMES = {
+    "password", "passwd", "pwd", "cookie", "cookies", "session", "sessionid",
+    "sessiontoken", "token", "authtoken", "accesstoken", "refreshtoken", "bearertoken",
+    "authorization", "auth", "authdata", "credentials", "credential", "secret",
+    "apikey", "clientsecret", "apisecret", "privatekey",
 }
+AUTH_SECRET_SUFFIXES = (
+    "password", "passwd", "pwd", "cookie", "cookies", "session", "sessionid", "sessiontoken",
+    "token", "authtoken", "accesstoken", "refreshtoken", "bearertoken", "authorization",
+    "credential", "secret", "apikey", "clientsecret", "apisecret", "privatekey",
+)
 
 
 def _sha256(value: str | bytes) -> str:
@@ -48,18 +50,11 @@ def _normal_key(value: Any) -> str:
     return re.sub(r"[^a-z0-9]", "", str(value).lower())
 
 
-def _is_identity_key(key: Any) -> bool:
+def _is_auth_secret_key(key: Any) -> bool:
     normalized = _normal_key(key)
-    return (
-        normalized in IDENTITY_KEYS
-        or any(token in normalized for token in ("password", "cookie", "token", "session", "phonenumber", "email"))
-        or normalized.endswith("url")
-        or normalized.endswith("profileurl")
-        or normalized.endswith("noteurl")
-        or normalized.endswith("creatorurl")
-        or normalized.endswith("userid")
-        or normalized.endswith("commenterid")
-    )
+    session_data = normalized.startswith("session")
+    auth_data = normalized.startswith("auth") and not normalized.startswith("author")
+    return normalized in AUTH_SECRET_NAMES or normalized.endswith(AUTH_SECRET_SUFFIXES) or session_data or auth_data
 
 
 def _safe_value(value: Any) -> Any:
@@ -67,7 +62,7 @@ def _safe_value(value: Any) -> Any:
         return {
             str(key): _safe_value(item)
             for key, item in value.items()
-            if not _is_identity_key(key)
+            if not _is_auth_secret_key(key)
         }
     if isinstance(value, list):
         return [_safe_value(item) for item in value]
@@ -80,7 +75,7 @@ def _safe_fields(row: dict[str, Any]) -> dict[str, Any]:
     return {
         str(key): _safe_value(value)
         for key, value in row.items()
-        if not _is_identity_key(key)
+        if not _is_auth_secret_key(key)
     }
 
 
@@ -224,16 +219,61 @@ def _creator_for(
     follower_count = _parse_numeric(_first(row, "followers_count", "follower_count"))
     if follower_count is None and isinstance(row.get("followers"), dict):
         follower_count = _parse_numeric(row["followers"].get("approximate_value"))
-    platform_hash = _sha256(str(external_id)) if external_id not in (None, "") else None
+    creator_name = _first(row, "creator_name", "nickname", "username", "blogger_name", "达人名称", "达人昵称", "博主名称", "博主名", "昵称")
+    creator_id_value = external_id or _first(row, "platform_creator_id", "creator_id", "blogger_id", "达人ID", "博主ID", "用户ID", "UID")
+    platform_hash = _sha256(str(creator_id_value)) if creator_id_value not in (None, "") else None
     conn.execute(
         """UPDATE creators SET platform = COALESCE(platform, ?),
+           creator_name = CASE WHEN ? <> '' THEN ? ELSE creator_name END,
+           platform_creator_id = COALESCE(NULLIF(?, ''), platform_creator_id),
            platform_creator_id_hash = COALESCE(platform_creator_id_hash, ?),
            category = COALESCE(category, ?), location = COALESCE(location, ?),
            follower_count = COALESCE(follower_count, ?)
            WHERE creator_id = ?""",
-        (platform, platform_hash, category, location, follower_count, creator_id),
+        (platform, creator_name, creator_name, creator_id_value, platform_hash, category, location, follower_count, creator_id),
     )
     return creator_id
+
+
+def _backfill_creator_identity(
+    conn: sqlite3.Connection,
+    creator_id: str,
+    fields: dict[str, Any],
+) -> None:
+    creator_name = _first(
+        fields,
+        "creator_name", "nickname", "username", "blogger_name",
+        "达人名称", "达人昵称", "博主名称", "博主名", "昵称",
+    )
+    platform_creator_id = _first(
+        fields,
+        "platform_creator_id", "creator_id", "blogger_id",
+        "达人ID", "博主ID", "用户ID", "UID",
+    )
+    if creator_name in (None, "") and platform_creator_id in (None, ""):
+        return
+
+    row = conn.execute(
+        "SELECT creator_name, pseudonym, platform_creator_id FROM creators WHERE creator_id = ?",
+        (creator_id,),
+    ).fetchone()
+    if not row:
+        return
+    source_name = str(creator_name) if creator_name is not None else ""
+    source_id = str(platform_creator_id) if platform_creator_id is not None else ""
+    if source_name == row["pseudonym"]:
+        source_name = ""
+    platform_hash = _sha256(source_id) if source_id else None
+    conn.execute(
+        """UPDATE creators SET
+             creator_name = CASE
+                 WHEN (creator_name IS NULL OR creator_name = '' OR creator_name = pseudonym) AND ? <> ''
+                 THEN ? ELSE creator_name END,
+             platform_creator_id = COALESCE(NULLIF(platform_creator_id, ''), NULLIF(?, '')),
+             platform_creator_id_hash = COALESCE(platform_creator_id_hash, ?)
+           WHERE creator_id = ?""",
+        (source_name, source_name, source_id, platform_hash, creator_id),
+    )
 
 
 def _note_for(
@@ -266,10 +306,15 @@ def _note_for(
     body = _first(fields, "content_text_raw", "body_text", "body", "content")
     topics = _first(fields, "hashtags", "topics")
     note_type = _first(fields, "note_type", "content_type")
+    source_url = _first(fields, "note_url", "source_url", "share_url", "share_url_base", "笔记链接")
     row = conn.execute("SELECT creator_id FROM notes WHERE note_id = ?", (note_id,)).fetchone()
     new_creator = creator_id if explicit_creator_link else (row[0] if row else creator_id)
+    _backfill_creator_identity(conn, str(new_creator), fields)
     conn.execute(
-        """UPDATE notes SET creator_id = ?, platform_note_id_hash = COALESCE(platform_note_id_hash, ?),
+        """UPDATE notes SET creator_id = ?,
+           platform_note_id = COALESCE(NULLIF(platform_note_id, ''), ?),
+           platform_note_id_hash = COALESCE(platform_note_id_hash, ?),
+           source_url = COALESCE(NULLIF(source_url, ''), NULLIF(?, '')),
            title = COALESCE(title, ?), body = COALESCE(body, ?),
            topics_json = COALESCE(topics_json, ?), published_at = COALESCE(published_at, ?),
            note_type = COALESCE(note_type, ?), source = COALESCE(source, ?),
@@ -277,7 +322,9 @@ def _note_for(
            WHERE note_id = ?""",
         (
             new_creator,
+            str(external_id) if external_id not in (None, "") else None,
             external_hash,
+            str(source_url) if source_url is not None else None,
             str(title) if title is not None else None,
             str(body) if body is not None else None,
             json.dumps(topics, ensure_ascii=False) if topics is not None else None,
@@ -336,6 +383,19 @@ def _insert_record(
     if matching_source_rows:
         inserted = False
         record_id = max(matching_source_rows)[1]
+        existing_row = conn.execute(
+            "SELECT fields_json FROM records WHERE record_id = ?", (record_id,)
+        ).fetchone()
+        if existing_row:
+            existing_fields = json.loads(existing_row[0])
+            merged_fields = dict(existing_fields)
+            for key, value in safe.items():
+                merged_fields.setdefault(key, value)
+            if merged_fields != existing_fields:
+                conn.execute(
+                    "UPDATE records SET fields_json = ? WHERE record_id = ?",
+                    (json.dumps(merged_fields, ensure_ascii=False, sort_keys=True), record_id),
+                )
         if record_type == "comment_excerpt_sample":
             conn.execute(
                 "UPDATE records SET creator_id = ?, note_id = ? WHERE record_id = ?",
@@ -382,7 +442,7 @@ def _insert_record(
                     (period, record_id, key),
                 )
                 metric_periods_backfilled += int(bool(updated.rowcount))
-    return inserted, metric_count, metric_periods_backfilled, record_id, _sha256(f"{source_file}:{source_row}:{record_type}")[:16]
+    return inserted, metric_count, metric_periods_backfilled, record_id
 
 
 def _make_batch(conn: sqlite3.Connection, root: Path, relative: str, file_bytes: bytes) -> str:
@@ -448,7 +508,7 @@ def _record_and_count(
     metric_payload: Any = None,
     link_kind: str = "none",
 ) -> None:
-    inserted, metrics, periods_backfilled, record_id, token = _insert_record(
+    inserted, metrics, periods_backfilled, record_id = _insert_record(
         conn,
         batch_id=batch_id,
         record_type=record_type,
@@ -466,7 +526,6 @@ def _record_and_count(
     report["metric_periods_backfilled"] += periods_backfilled
     stored_metrics = int(conn.execute("SELECT COUNT(*) FROM metric_values WHERE record_id = ?", (record_id,)).fetchone()[0]) if record_id else 0
     report["audit_candidates"].append({
-        "token": token,
         "source_file": relative,
         "source_row": row_no,
         "record_type": record_type,
@@ -475,6 +534,7 @@ def _record_and_count(
         "outcome": "present_and_verified" if record_id else "missing_after_import",
         "metrics": stored_metrics,
         "has_text": any(isinstance(v, str) and v.strip() for k, v in fields.items() if k.lower() in {"title", "body", "body_text", "comment_text", "comment_text_excerpt", "content_text_raw"}),
+        "raw_fields": _safe_fields(fields),
     })
 
 
@@ -531,11 +591,11 @@ def _import_note_rows(
         report["note_rows_with_platform_creator_id"] += int(source_creator_id not in (None, ""))
         if source_creator_id:
             creator_key = f"platform:pgy:creator:{source_creator_id}"
-            creator_id = _creator_for(conn, creator_key, captured_base, str(row.get("source") or "pgy"), source_creator_id)
+            creator_id = _creator_for(conn, creator_key, captured_base, str(row.get("source") or "pgy"), source_creator_id, row)
             explicit_creator = True
         else:
             creator_key = f"isolated:{relative}:row:{row_no}"
-            creator_id = _creator_for(conn, creator_key, captured_base, str(row.get("source") or "xiaohongshu"))
+            creator_id = _creator_for(conn, creator_key, captured_base, str(row.get("source") or "xiaohongshu"), row=row)
             explicit_creator = False
         fields = _safe_fields(row)
         note_key = str(row.get("note_key") or f"{relative}:row:{row_no}")
@@ -579,6 +639,8 @@ def _insert_comment_snapshot(
     likes: Any = None,
     replies_raw: Any = None,
     pinned: Any = None,
+    comment_level: Any = None,
+    raw_fields: dict[str, Any] | None = None,
     source: str,
     scope: str,
 ) -> None:
@@ -586,24 +648,28 @@ def _insert_comment_snapshot(
     numeric_likes = _parse_numeric(likes if likes is not None else likes_raw)
     like_count = int(numeric_likes) if numeric_likes is not None and numeric_likes.is_integer() else None
     pinned_value = int(pinned) if isinstance(pinned, bool) else None
-    raw_payload = json.dumps(
-        {
-            "source_file": relative,
-            "source_row": row_no,
-            "content_scope": scope,
-            "displayed_time": displayed_time,
-            "like_count_raw": likes_raw,
-            "reply_count_raw": replies_raw,
-        },
-        ensure_ascii=False,
-        sort_keys=True,
-    )
+    raw_values = _safe_fields(raw_fields or {})
+    source_level = comment_level if comment_level is not None else (raw_fields or {}).get("comment_level", 1)
+    normalized_level = 2 if str(source_level).strip().lower() in {"2", "reply", "回复"} else 1
+    for key, value in {
+        "source_file": relative,
+        "source_row": row_no,
+        "content_scope": scope,
+        "displayed_time": displayed_time,
+        "like_count_raw": likes_raw,
+        "reply_count_raw": replies_raw,
+        "comment_level": source_level,
+        "comment_level_normalized": normalized_level,
+        "is_pinned": pinned_value,
+    }.items():
+        raw_values.setdefault(key, value)
+    raw_payload = json.dumps(raw_values, ensure_ascii=False, sort_keys=True)
     cur = conn.execute(
         """INSERT OR IGNORE INTO comment_snapshots
            (batch_id, note_id, local_comment_id_hash, parent_comment_id_hash,
             comment_text, cleaned_text, displayed_time, like_count_raw, like_count,
             reply_count_raw, comment_level, is_pinned, source, captured_at, raw_payload_json)
-           VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)""",
+           VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             batch_id,
             note_id,
@@ -614,6 +680,7 @@ def _insert_comment_snapshot(
             str(likes_raw) if likes_raw is not None else None,
             like_count,
             str(replies_raw) if replies_raw is not None else None,
+            normalized_level,
             pinned_value,
             source,
             captured_at,
@@ -623,16 +690,24 @@ def _insert_comment_snapshot(
     inserted = bool(cur.rowcount)
     if not inserted:
         found = conn.execute(
-            """SELECT 1 FROM comment_snapshots
+            """SELECT raw_payload_json FROM comment_snapshots
                WHERE batch_id = ? AND note_id = ? AND local_comment_id_hash = ?""",
             (batch_id, note_id, local_hash),
         ).fetchone()
         if not found:
             raise ValueError("Comment snapshot was neither inserted nor found after idempotent import")
+        previous = json.loads(found[0])
+        merged = dict(previous)
+        merged.update(raw_values)
+        if merged != previous:
+            conn.execute(
+                """UPDATE comment_snapshots SET raw_payload_json = ?
+                   WHERE batch_id = ? AND note_id = ? AND local_comment_id_hash = ?""",
+                (json.dumps(merged, ensure_ascii=False, sort_keys=True), batch_id, note_id, local_hash),
+            )
     report["inserted_comment_snapshots"] += int(inserted)
     report["duplicate_comments_skipped"] += int(not inserted)
     report["audit_candidates"].append({
-        "token": _sha256(f"{relative}:{row_no}:comment")[:16],
         "source_file": relative,
         "source_row": row_no,
         "record_type": "comment_snapshot" if scope == "full_visible_comment" else "comment_sample",
@@ -641,6 +716,7 @@ def _insert_comment_snapshot(
         "outcome": "present_and_verified",
         "metrics": int(like_count is not None),
         "has_text": bool(text.strip()),
+        "raw_fields": raw_values,
     })
 
 
@@ -671,12 +747,12 @@ def _import_comment_excerpt_rows(
             creator_id = str(owner[0]) if owner else None
         text = str(row.get("comment_text_excerpt") or "")
         fields = {
+            **_safe_fields(row),
             "comment_text_excerpt": text,
             "display_time_raw": row.get("display_time_raw"),
             "likes_count": row.get("likes_count"),
             "likes_raw": row.get("likes_raw"),
             "content_scope": "excerpt_only",
-            "identity_fields_omitted": True,
         }
         captured = _capture_time(row.get("captured_at"), _dataset_capture_time(root, relative))
         _record_and_count(conn, report, batch_id, "comment_excerpt_sample", captured, creator_id, note_id, relative, row_no, fields, {"likes": {"raw_value": row.get("likes_raw"), "normalized_value": row.get("likes_count"), "unit": "count"}}, link_kind)
@@ -722,6 +798,8 @@ def _import_xhs_comments(
             likes=row.get("likes_normalized"),
             replies_raw=row.get("replies_raw"),
             pinned=row.get("is_pinned"),
+            comment_level=row.get("comment_level", row.get("level", 1)),
+            raw_fields=row,
             source="xiaohongshu_public_page",
             scope="full_visible_comment",
         )
@@ -787,6 +865,8 @@ def _import_actual_sample(
                 likes_raw=comment.get("likes_displayed"),
                 replies_raw=comment.get("replies_displayed"),
                 pinned=comment.get("pinned"),
+                comment_level=comment.get("comment_level", comment.get("level", 1)),
+                raw_fields=comment,
                 source="pgy_detail_comment_sample",
                 scope="sample_excerpt",
             )
@@ -887,9 +967,9 @@ def _report_markdown(report: dict[str, Any]) -> str:
         "",
         f"- 精确平台笔记 ID：{report['exact_note_id_rows']} 行；无平台 ID、按文件和行隔离的笔记：{report['isolated_notes']} 行。",
         f"- 评论行：{report['comment_rows_seen']}；关联到笔记：{report['comment_rows_linked']}（{report['comment_link_rate']:.1%}）。",
-        "- 创作者关联只使用源记录中的平台 creator_id；缺失时生成来源隔离的匿名 creator，不按昵称或标题合并。平台 ID 只存 SHA-256。",
+        "- 创作者关联使用源记录中的原始平台 ID；缺少 ID 时按来源行隔离，不按昵称或标题合并。原始名称、ID、链接和正文写入本地记录与实体字段。",
         f"- 档案精确 ID 覆盖：{report['creator_profile_rows_with_platform_id']}/{report['creator_profile_rows_seen']}；笔记直接关联 creator_id：{report['note_rows_with_platform_creator_id']}/{report['note_rows_seen']}（{report['note_creator_link_rate']:.1%}）；评论关联笔记：{report['comment_rows_linked']}/{report['comment_rows_seen']}（{report['comment_link_rate']:.1%}）。",
-        "- 每个来源字段覆盖率详见 `report.json`；字段名和计数已脱敏，不含采集值。",
+        "- 每个来源字段覆盖率详见 `report.json`；随机抽查的完整来源字段也保留在 `random_audit` 中。",
         "",
         "## 文件级审计",
         "",
@@ -907,21 +987,22 @@ def _report_markdown(report: dict[str, Any]) -> str:
         "",
         "## 随机抽查",
         "",
-        "固定随机种子抽取 10 个导入实体；为保护原始内容，报告仅列来源行、类型、关联状态、指标数和匿名审计令牌。",
+        "固定随机种子抽取最多 10 条导入记录；报告保留来源行、关联状态和完整原始字段。",
         "",
-        "| 来源 | 行 | 类型 | Creator 关联 | Note 关联 | 结果 | 指标数 | 审计令牌 |",
+        "| 来源 | 行 | 类型 | Creator 关联 | Note 关联 | 结果 | 指标数 | 原始采集字段 JSON |",
         "|---|---:|---|---|---|---|---:|---|",
     ])
     for item in report["random_audit"]:
-        lines.append(f"| `{item['source_file']}` | {item['source_row']} | {item['record_type']} | {item['creator_link']} | {item['note_link']} | {item['outcome']} | {item['metrics']} | `{item['token']}` |")
+        raw_fields = json.dumps(item.get("raw_fields", {}), ensure_ascii=False, sort_keys=True).replace("|", "\\|")
+        lines.append(f"| `{item['source_file']}` | {item['source_row']} | {item['record_type']} | {item['creator_link']} | {item['note_link']} | {item['outcome']} | {item['metrics']} | `{raw_fields}` |")
     lines.extend([
         "",
         "## 数据范围说明",
         "",
         "- 连续采集目录的 45 条评论只有文本摘录；作为 `comment_excerpt_sample` 保存，不计入完整评论快照。",
-        "- 小红书公开页评论和蒲公英详情中的样例评论使用合成行键；不保存评论者账号、昵称或主页链接。",
+        "- 评论样本保留源文件中的全部公开可见字段；来源文件没有采集到的评论者字段不会补造。",
         "- 统计周期及原始展示值保留在 records/metric_values；未将不同来源或不同时间的指标覆盖合并。",
-        "- 本报告不含具体创作者名称、正文内容、评论文本、平台 ID、Cookie、令牌或凭据。",
+        "- Cookie、Session、Token、密码等认证凭据不会导入；邮箱、电话、平台 ID、名称、链接、正文等来源字段按原值保存。",
         "",
     ])
     return "\n".join(lines)

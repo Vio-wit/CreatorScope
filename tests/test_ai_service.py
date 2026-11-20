@@ -29,12 +29,12 @@ class AIServiceTests(unittest.TestCase):
                     (batch_id, task_id, "pgy_visible", captured, captured, captured, "completed"),
                 )
             conn.execute(
-                "INSERT INTO creators(creator_id,pseudonym,creator_name,platform,source_key_hash,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?)",
-                ("creator-a", "匿名创作者 A", "", "xiaohongshu", "ai-hash-creator", "2026-11-01", "2026-11-02"),
+                "INSERT INTO creators(creator_id,pseudonym,creator_name,platform,platform_creator_id,source_key_hash,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?)",
+                ("creator-a", "博主 0001", "课程创作者甲", "xiaohongshu", "platform-user-001", "ai-hash-creator", "2026-11-01", "2026-11-02"),
             )
             conn.execute(
-                "INSERT INTO notes(note_id,creator_id,note_key_hash,title,body,topics_json,published_at,note_type,source,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                ("note-a", "creator-a", "ai-hash-note", "护肤分享", "", json.dumps(["#护肤"], ensure_ascii=False), "2026-11-01", "视频", "pgy_visible", "2026-11-01", "2026-11-02"),
+                "INSERT INTO notes(note_id,creator_id,note_key_hash,platform_note_id,title,body,topics_json,published_at,note_type,source_url,source,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                ("note-a", "creator-a", "ai-hash-note", "platform-note-001", "护肤分享", "", json.dumps(["#护肤"], ensure_ascii=False), "2026-11-01", "视频", "https://example.test/note-001", "pgy_visible", "2026-11-01", "2026-11-02"),
             )
             for batch_id, captured, followers, reading in (
                 ("batch-a", "2026-11-01T10:00:00", "100", "1000"),
@@ -58,7 +58,7 @@ class AIServiceTests(unittest.TestCase):
                 )
             conn.execute(
                 "INSERT INTO comment_snapshots(batch_id,note_id,local_comment_id_hash,comment_text,cleaned_text,comment_level,source,captured_at,raw_payload_json) VALUES(?,?,?,?,?,?,?,?,?)",
-                ("batch-a", "note-a", "ai-comment-hash", "好用 温和 保湿", "好用 温和 保湿", 1, "visible_public", "2026-11-01T12:00:00", "{}"),
+                ("batch-a", "note-a", "ai-comment-hash", "好用 温和 保湿", "好用 温和 保湿", 1, "visible_public", "2026-11-01T12:00:00", json.dumps({"commenter_name": "评论用户乙", "commenter_id": "comment-user-002", "profile_url": "https://example.test/profile/2"}, ensure_ascii=False)),
             )
 
     def tearDown(self) -> None:
@@ -74,26 +74,29 @@ class AIServiceTests(unittest.TestCase):
             preview = build_preview(self.db_path, analysis_type="creator_summary", creator_ids=["creator-a"], batch_id="batch-a")
             self.assertFalse(status["key_available"])
             self.assertNotIn("openai-test-key", json.dumps(status))
-            self.assertEqual(preview["data"]["creators"][0]["anonymous_name"], "匿名创作者 A")
+            self.assertEqual(preview["data"]["creators"][0]["creator_name"], "课程创作者甲")
+            self.assertEqual(preview["data"]["creators"][0]["platform_creator_id"], "platform-user-001")
             with self.assertRaisesRegex(AIServiceError, "未配置密钥"):
                 test_connection(provider="openai_compatible", model="local-model", base_url="https://api.openai.com/v1")
 
-    def test_note_preview_redacts_direct_contact_and_url(self) -> None:
+    def test_note_preview_preserves_direct_contact_url_and_full_body(self) -> None:
+        body = "联系 me@example.com 或 13800138000，链接 https://example.test/private " + ("正文" * 1800)
         with connection(self.db_path) as conn:
             conn.execute(
                 "UPDATE notes SET body=? WHERE note_id=?",
-                ("联系 me@example.com 或 13800138000，链接 https://example.test/private", "note-a"),
+                (body, "note-a"),
             )
         preview = build_preview(self.db_path, analysis_type="note_summary", note_ids=["note-a"], batch_id="batch-a")
         serialized = json.dumps(preview["data"], ensure_ascii=False)
-        self.assertIn("[邮箱]", serialized)
-        self.assertIn("[手机号]", serialized)
-        self.assertIn("[链接]", serialized)
-        self.assertNotIn("me@example.com", serialized)
-        self.assertNotIn("13800138000", serialized)
-        self.assertNotIn("https://example.test", serialized)
+        note = preview["data"]["notes"][0]
+        self.assertIn("me@example.com", serialized)
+        self.assertIn("13800138000", serialized)
+        self.assertIn("https://example.test/private", serialized)
+        self.assertEqual(note["body"], body)
+        self.assertEqual(note["platform_note_id"], "platform-note-001")
+        self.assertEqual(note["source_url"], "https://example.test/note-001")
 
-    def test_comment_preview_sends_aggregate_without_comment_text(self) -> None:
+    def test_comment_preview_preserves_comment_text_and_source_fields(self) -> None:
         preview = build_preview(
             self.db_path,
             analysis_type="comment_topics",
@@ -102,9 +105,12 @@ class AIServiceTests(unittest.TestCase):
         )
         serialized = json.dumps(preview["data"], ensure_ascii=False)
         self.assertIn("comment_count_total", serialized)
-        self.assertNotIn("好用 温和 保湿", serialized)
-        self.assertNotIn("comment_text", serialized)
-        self.assertNotIn("local_comment_id", serialized)
+        self.assertIn("好用 温和 保湿", serialized)
+        self.assertIn("comment_text", serialized)
+        self.assertIn("评论用户乙", serialized)
+        self.assertIn("comment-user-002", serialized)
+        self.assertIn("https://example.test/profile/2", serialized)
+        self.assertIn("local_comment_id", serialized)
 
     def test_provider_adapters_use_provider_auth_headers_without_leaking_key_to_url(self) -> None:
         keys = {

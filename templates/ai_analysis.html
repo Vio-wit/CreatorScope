@@ -24,7 +24,7 @@
     <main class="main-content">
       <header class="topbar"><div class="breadcrumb">CreatorScope <span>/</span> AI 分析</div><div class="topbar-right"><span class="local-badge"><i></i>仅本机</span></div></header>
       <section class="page-heading">
-        <div><p class="eyebrow">OPTIONAL MODEL ANALYSIS</p><h1>AI 分析</h1><p class="subheading">传统统计始终可用；模型调用只在你查看脱敏预览并确认后执行。</p></div>
+        <div><p class="eyebrow">OPTIONAL MODEL ANALYSIS</p><h1>AI 分析</h1><p class="subheading">传统统计始终可用；模型调用只在你检查本机原始数据预览并确认后执行。</p></div>
         <div class="heading-actions"><a class="button button-secondary" href="/">返回工作台</a></div>
       </section>
       <section class="ai-settings-card">
@@ -38,18 +38,18 @@
         <p class="ai-help" id="providerHelp">密钥不会回传、显示或写入数据库。</p>
       </section>
       <section class="ai-scope-card">
-        <div class="card-heading"><div><h2>选择分析范围</h2><p>评论只发送筛选后的聚合统计，不发送评论原文或评论者身份。</p></div></div>
+          <div class="card-heading"><div><h2>选择分析范围</h2><p>评论分析预览包含所选评论原文与已采集字段；需确认后才发送给模型服务商。</p></div></div>
         <div class="ai-scope-grid">
           <label>分析任务<select id="analysisType"></select></label>
           <label>评论批次<select id="batchSelect"><option value="">选择批次</option></select></label>
           <label class="scope-multi">创作者<select id="creatorSelect" multiple size="5"></select><small>按住 Ctrl 可多选；对比最多 4 位。</small></label>
           <label class="scope-multi">笔记<select id="noteSelect" multiple size="5"></select><small>按住 Ctrl 可多选；每次最多 3 篇（评论统计最多 5 篇）。</small></label>
         </div>
-        <div class="ai-action-row"><button class="button button-secondary" id="previewButton">生成脱敏预览</button><span id="scopeStatus">仅生成本地预览，不会调用模型。</span></div>
+        <div class="ai-action-row"><button class="button button-secondary" id="previewButton">生成原始数据预览</button><span id="scopeStatus">仅生成本地预览，不会调用模型。</span></div>
       </section>
       <section class="ai-preview-card" id="previewCard" hidden>
-        <div class="card-heading"><div><h2>脱敏预览</h2><p id="previewScope"></p></div><span class="analysis-count" id="previewSize"></span></div>
-        <p class="ai-redaction-note" id="redactionNote"></p>
+        <div class="card-heading"><div><h2>本机原始数据预览</h2><p id="previewScope"></p></div><span class="analysis-count" id="previewSize"></span></div>
+        <p class="ai-redaction-note" id="dataNotice"></p>
         <pre id="previewData"></pre>
         <label class="ai-consent"><input type="checkbox" id="uploadConsent"><span>我已检查上方预览，并确认将这些数据发送给所选模型服务商处理。</span></label>
         <div class="ai-action-row"><button class="button button-primary" id="runAnalysis" disabled>确认并运行 AI 分析</button><span id="runStatus">无 API Key 时仍可继续使用传统分析。</span></div>

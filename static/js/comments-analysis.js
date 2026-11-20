@@ -107,7 +107,7 @@
   function renderRows(rows) {
     const body = $('#commentRows');
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="9" class="empty-cell">当前筛选下没有评论记录</td></tr>';
+      body.innerHTML = '<tr><td colspan="10" class="empty-cell">当前筛选下没有评论记录</td></tr>';
       return;
     }
     body.innerHTML = rows.map((row) => `<tr>
@@ -120,6 +120,7 @@
       <td>${row.comment_level === 1 ? '一级' : '回复'}</td>
       <td>${row.is_pinned === true ? '是' : row.is_pinned === false ? '否' : '未提供'}</td>
       <td class="batch-cell">${escapeHtml(row.batch_id)}</td>
+      <td class="raw-payload-cell"><details><summary>查看字段</summary><pre>${escapeHtml(JSON.stringify(row.raw_payload || {}, null, 2))}</pre></details></td>
     </tr>`).join('');
   }
 
@@ -205,7 +206,7 @@
       await loadAnalysis();
     } catch (error) {
       $('#analysisStatus').textContent = `评论分析服务暂不可用：${error.message}`;
-      $('#commentRows').innerHTML = '<tr><td colspan="9" class="empty-cell">读取失败，请检查验证数据库是否已导入</td></tr>';
+      $('#commentRows').innerHTML = '<tr><td colspan="10" class="empty-cell">读取失败，请检查验证数据库是否已导入</td></tr>';
     }
   }
 

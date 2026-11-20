@@ -31,6 +31,8 @@
 .comment-table-card td.comment-content-cell { min-width: 300px; max-width: 620px; white-space: pre-wrap; overflow-wrap: anywhere; color: #27352c; line-height: 1.65; font-size: 12px; }
 .comment-table-card td.note-title-cell { min-width: 180px; max-width: 280px; white-space: normal; }
 .comment-table-card td.batch-cell { min-width: 180px; font-size: 11px; color: #69746b; }
+.comment-table-card td.raw-payload-cell { min-width: 180px; max-width: 360px; }
+.raw-payload-cell pre { max-width: 360px; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 .comment-footnote { margin: 12px 2px 28px; color: #78837a; font-size: 12px; }
 .comment-empty { color: #7c877e; text-align: center; padding: 32px; }
 @media (max-width: 1250px) { .comment-filter-panel { grid-template-columns: repeat(3, minmax(140px, 1fr)); } .comment-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

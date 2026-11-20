@@ -308,11 +308,28 @@ def _metric_value(fields: dict[str, Any], key: str) -> float | None:
     return float(value) if status == "parsed" and value is not None else None
 
 
+def creator_display_name(raw_name: Any, platform_creator_id: Any, internal_label: Any) -> str:
+    name = str(raw_name or "").strip()
+    if name and name != str(internal_label or "").strip():
+        return name
+    platform_id = str(platform_creator_id or "").strip()
+    return platform_id or "历史样本未保存原始名称"
+
+
+def _source_field(fields: dict[str, Any], names: tuple[str, ...]) -> Any:
+    for name in names:
+        value = fields.get(name)
+        if value is not None and str(value).strip():
+            return value
+    return None
+
+
 def _creator_snapshots(db_path: Path, batch_id: str | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     with connection(db_path) as conn:
         sql = """
             SELECT r.record_id, r.batch_id, r.record_type, r.captured_at,
                    r.fields_json, r.creator_id, c.pseudonym,
+                   c.creator_name, c.platform_creator_id,
                    c.location, b.captured_at AS batch_captured_at,
                    COALESCE(NULLIF(r.source, ''), b.source) AS batch_source
             FROM records r
@@ -325,6 +342,24 @@ def _creator_snapshots(db_path: Path, batch_id: str | None = None) -> tuple[list
             params.append(batch_id)
         sql += " ORDER BY b.captured_at DESC, r.record_id DESC"
         rows = [dict(row) for row in conn.execute(sql, params).fetchall()]
+        for row in rows:
+            fields = json.loads(row.pop("fields_json"))
+            if not isinstance(fields, dict):
+                fields = {}
+            if not row.get("creator_name") or row["creator_name"] == row.get("pseudonym"):
+                row["creator_name"] = _source_field(
+                    fields,
+                    ("creator_name", "nickname", "blogger_name", "达人名称", "达人昵称", "博主名称", "博主名", "创作者名称", "昵称", "账号名称", "作者昵称"),
+                ) or row.get("creator_name")
+            if not row.get("platform_creator_id"):
+                row["platform_creator_id"] = _source_field(
+                    fields,
+                    ("platform_creator_id", "creator_id", "blogger_id", "达人ID", "博主ID", "创作者ID", "用户ID", "UID", "小红书号"),
+                )
+            row["pseudonym"] = creator_display_name(
+                row.get("creator_name"), row.get("platform_creator_id"), row.get("pseudonym")
+            )
+            row["fields"] = fields
         batches = [
             dict(row)
             for row in conn.execute(
@@ -332,8 +367,6 @@ def _creator_snapshots(db_path: Path, batch_id: str | None = None) -> tuple[list
             ).fetchall()
         ]
 
-    for row in rows:
-        row["fields"] = json.loads(row.pop("fields_json"))
     return rows, batches
 
 
@@ -349,6 +382,8 @@ def _merge_creator_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             {
                 "creator_id": creator_id,
                 "pseudonym": row["pseudonym"],
+                "creator_name": row["creator_name"],
+                "platform_creator_id": row["platform_creator_id"],
                 "location": row.get("location") or "",
                 "fields": {},
                 "record_types": set(),
@@ -419,7 +454,7 @@ def creator_library(
     location_filter = location.casefold().strip()
     selected = []
     for creator in creators:
-        if q and q not in creator["pseudonym"].casefold():
+        if q and q not in creator["pseudonym"].casefold() and q not in str(creator.get("platform_creator_id") or "").casefold():
             continue
         if category and category not in creator["categories"]:
             continue
@@ -439,6 +474,8 @@ def creator_library(
             {
                 "creator_id": creator["creator_id"],
                 "pseudonym": creator["pseudonym"],
+                "creator_name": creator["pseudonym"],
+                "platform_creator_id": creator["platform_creator_id"],
                 "location": creator.get("location") or "",
                 "followers": creator["followers"],
                 "quote": creator["quote"],
@@ -544,8 +581,12 @@ def notes_data(
 ) -> dict[str, Any]:
     with connection(db_path) as conn:
         creators = [dict(row) for row in conn.execute(
-            "SELECT DISTINCT c.creator_id, c.pseudonym FROM creators c JOIN notes n ON n.creator_id=c.creator_id ORDER BY c.pseudonym"
+            "SELECT DISTINCT c.creator_id, c.creator_name, c.platform_creator_id, c.pseudonym FROM creators c JOIN notes n ON n.creator_id=c.creator_id ORDER BY c.creator_name, c.platform_creator_id"
         ).fetchall()]
+        for creator in creators:
+            creator["pseudonym"] = creator_display_name(
+                creator.get("creator_name"), creator.get("platform_creator_id"), creator.get("pseudonym")
+            )
         batches = [dict(row) for row in conn.execute(
             "SELECT DISTINCT b.batch_id, b.source, b.captured_at FROM batches b JOIN records r ON r.batch_id=b.batch_id WHERE r.note_id IS NOT NULL ORDER BY b.captured_at DESC, b.rowid DESC"
         ).fetchall()]
@@ -555,7 +596,9 @@ def notes_data(
         available_topics = sorted({item for row in base_rows for item in _topics(row["topics_json"])})
         note_types = sorted({str(row["note_type"]) for row in base_rows if row["note_type"]})
 
-        sql = """SELECT n.note_id, n.creator_id, c.pseudonym, n.title, n.topics_json,
+        sql = """SELECT n.note_id, n.platform_note_id, n.source_url,
+                        n.creator_id, c.creator_name, c.platform_creator_id, c.pseudonym,
+                        n.title, n.topics_json,
                         n.published_at, n.note_type, n.source AS note_source,
                         n.first_seen_at, n.last_seen_at,
                         r.record_id AS metric_record_id, r.batch_id AS metric_batch_id,
@@ -592,6 +635,10 @@ def notes_data(
             sql += " WHERE " + " AND ".join(clauses)
         sql += " ORDER BY COALESCE(r.captured_at,n.last_seen_at) DESC, n.note_id"
         rows = [dict(row) for row in conn.execute(sql, params).fetchall()]
+        for row in rows:
+            row["pseudonym"] = creator_display_name(
+                row.get("creator_name"), row.get("platform_creator_id"), row.get("pseudonym")
+            )
 
         record_ids = [int(row["metric_record_id"]) for row in rows if row["metric_record_id"] is not None]
         metric_values: dict[int, dict[str, Any]] = {}
@@ -642,7 +689,10 @@ def notes_data(
         metrics = metric_values.get(int(row["metric_record_id"]), {}) if row["metric_record_id"] is not None else {}
         get_metric = lambda *keys: next((metrics[key]["value"] for key in keys if key in metrics), None)
         item = {
-            "note_id": row["note_id"], "creator_id": row["creator_id"], "creator_name": row["pseudonym"],
+            "note_id": row["note_id"], "local_note_id": row["note_id"],
+            "platform_note_id": row["platform_note_id"], "source_url": row["source_url"],
+            "creator_id": row["creator_id"], "creator_name": row["pseudonym"],
+            "platform_creator_id": row["platform_creator_id"],
             "title": row["title"] or "（无标题）", "topics": topics, "published_at": row["published_at"],
             "note_type": row["note_type"] or "", "source": row["metric_source"] or row["note_source"] or "未知来源",
             "batch_id": row["metric_batch_id"] or "", "metric_captured_at": row["metric_captured_at"] or "",
