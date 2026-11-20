@@ -11,6 +11,7 @@ from typing import Any
 from flask import Flask, jsonify, make_response, render_template, request
 
 from .analytics import analytics_data, creator_library, dashboard_data, notes_data, overview_data, wordcloud_png
+from .ai import AIServiceError, build_preview, generated_at, provider_status, run_analysis, test_connection
 from .browser import PgyVisibleBrowser
 from .db import connection, initialize_database
 from .domain import field_dictionary
@@ -58,6 +59,122 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @app.get("/")
     def home():
         return render_template("index.html")
+
+    @app.get("/ai")
+    def ai_page():
+        return render_template("ai_analysis.html")
+
+    @app.get("/api/ai/config")
+    def api_ai_config():
+        provider = request.args.get("provider", "openai_compatible")
+        try:
+            return jsonify(provider_status(
+                provider,
+                base_url=request.args.get("base_url") or None,
+                model=request.args.get("model") or None,
+            ))
+        except AIServiceError as exc:
+            return jsonify({"error": str(exc)}), 400
+
+    @app.get("/api/ai/options")
+    def api_ai_options():
+        creators = creator_library(app.config["DATABASE_PATH"])
+        notes = notes_data(app.config["DATABASE_PATH"])
+        with connection(app.config["DATABASE_PATH"]) as conn:
+            batches = [dict(row) for row in conn.execute(
+                "SELECT batch_id, source, captured_at FROM batches ORDER BY captured_at DESC, rowid DESC"
+            ).fetchall()]
+        return jsonify({
+            "creators": [
+                {"value": item["creator_id"], "label": item["pseudonym"]}
+                for item in creators["creators"]
+            ],
+            "notes": [
+                {"value": item["note_id"], "label": f"{item['creator_name']} · {item['title']}"}
+                for item in notes["notes"]
+            ],
+            "batches": batches,
+        })
+
+    @app.post("/api/ai/preview")
+    def api_ai_preview():
+        payload = request.get_json(silent=True) or {}
+        try:
+            result = build_preview(
+                app.config["DATABASE_PATH"],
+                analysis_type=str(payload.get("analysis_type") or ""),
+                creator_ids=payload.get("creator_ids") if isinstance(payload.get("creator_ids"), list) else [],
+                note_ids=payload.get("note_ids") if isinstance(payload.get("note_ids"), list) else [],
+                batch_id=str(payload.get("batch_id") or ""),
+            )
+        except AIServiceError as exc:
+            return jsonify({"error": str(exc)}), 400
+        return jsonify(result)
+
+    @app.post("/api/ai/test")
+    def api_ai_test():
+        payload = request.get_json(silent=True) or {}
+        provider = str(payload.get("provider") or "openai_compatible")
+        try:
+            model = str(payload.get("model") or "")
+            base_url = str(payload.get("base_url") or "")
+            status = provider_status(provider, base_url=base_url, model=model)
+        except AIServiceError as exc:
+            return jsonify({"error": str(exc)}), 400
+        if not status["key_available"]:
+            return jsonify({
+                "status": "not_configured",
+                "message": f"未配置密钥；请在本机环境变量中设置 {status['key_env']}",
+            })
+        if not status["model_configured"]:
+            return jsonify({"status": "incomplete", "message": "请填写服务商支持的模型 ID"})
+        try:
+            test_connection(provider=provider, model=model, base_url=base_url)
+        except AIServiceError as exc:
+            return jsonify({"error": str(exc)}), 503
+        return jsonify({"status": "connected", "provider": provider, "provider_label": status["label"], "model": status["model"]})
+
+    @app.post("/api/ai/analyze")
+    def api_ai_analyze():
+        payload = request.get_json(silent=True) or {}
+        if payload.get("confirm_upload") is not True:
+            return jsonify({"error": "请先查看脱敏预览并明确确认数据外发"}), 400
+        provider = str(payload.get("provider") or "openai_compatible")
+        model = str(payload.get("model") or "")
+        base_url = str(payload.get("base_url") or "")
+        try:
+            status = provider_status(provider, base_url=base_url, model=model)
+        except AIServiceError as exc:
+            return jsonify({"error": str(exc)}), 400
+        if not status["key_available"]:
+            return jsonify({
+                "status": "not_configured",
+                "message": f"未配置密钥；请在本机环境变量中设置 {status['key_env']}",
+            })
+        if not status["model_configured"]:
+            return jsonify({"status": "incomplete", "message": "请填写服务商支持的模型 ID"})
+        try:
+            preview = build_preview(
+                app.config["DATABASE_PATH"],
+                analysis_type=str(payload.get("analysis_type") or ""),
+                creator_ids=payload.get("creator_ids") if isinstance(payload.get("creator_ids"), list) else [],
+                note_ids=payload.get("note_ids") if isinstance(payload.get("note_ids"), list) else [],
+                batch_id=str(payload.get("batch_id") or ""),
+            )
+            output = run_analysis(provider=provider, model=model, base_url=base_url, preview=preview)
+        except AIServiceError as exc:
+            return jsonify({"error": str(exc)}), 503
+        return jsonify({
+            "status": "completed",
+            "provider": provider,
+            "provider_label": status["label"],
+            "model": status["model"],
+            "generated_at": generated_at(),
+            "facts": preview["data"],
+            "model_output": output,
+            "scope_summary": preview["scope_summary"],
+            "output_kind": "模型推断；请结合事实数据复核",
+        })
 
     @app.get("/favicon.ico")
     def favicon():
