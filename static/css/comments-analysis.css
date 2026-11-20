@@ -1,0 +1,29 @@
+.comment-main { max-width: 1560px; }
+.comment-heading { align-items: flex-end; gap: 24px; }
+.comment-heading .heading-actions { flex-wrap: wrap; justify-content: flex-end; }
+.comment-sample-notice { display: flex; flex-direction: column; gap: 5px; margin: 0 0 20px; padding: 14px 18px; border: 1px solid #d7e4d9; border-radius: 12px; background: #f0f7f1; color: #344e3c; }
+.comment-sample-notice strong { font-size: 14px; }
+.comment-sample-notice span { color: #64766a; font-size: 12px; }
+.comment-filter-panel { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)) minmax(220px, 1.5fr) auto auto; gap: 12px; align-items: end; margin-bottom: 20px; padding: 16px; border: 1px solid #e7ebe7; border-radius: 14px; background: #fff; }
+.comment-filter-panel label { display: flex; flex-direction: column; gap: 6px; color: #69746b; font-size: 12px; }
+.comment-filter-panel select, .comment-filter-panel input { width: 100%; min-width: 0; height: 38px; padding: 0 10px; border: 1px solid #dfe5df; border-radius: 8px; background: #fff; color: #29372e; font: inherit; }
+.comment-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.comment-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 22px 0 32px; }
+.comment-chart-grid .chart-card { min-width: 0; }
+.comment-chart-grid .chart-card-wide { grid-column: 1 / -1; }
+.comment-chart { width: 100%; height: 300px; }
+.comment-chart-tall { height: 390px; }
+.wordcloud-wrap { display: grid; place-items: center; min-height: 300px; overflow: hidden; }
+.wordcloud-wrap img { display: block; width: 100%; max-height: 390px; object-fit: contain; }
+.comment-table-heading { margin-top: 14px; }
+.comment-table-card th { position: sticky; top: 0; z-index: 1; background: #f7f9f7; white-space: nowrap; }
+.comment-table-card th, .comment-table-card td { padding: 12px 14px; font-size: 11px; }
+.comment-table-card td { vertical-align: top; }
+.comment-table-card td.comment-content-cell { min-width: 300px; max-width: 620px; white-space: pre-wrap; overflow-wrap: anywhere; color: #27352c; line-height: 1.65; font-size: 12px; }
+.comment-table-card td.note-title-cell { min-width: 180px; max-width: 280px; white-space: normal; }
+.comment-table-card td.batch-cell { min-width: 180px; font-size: 11px; color: #69746b; }
+.comment-footnote { margin: 12px 2px 28px; color: #78837a; font-size: 12px; }
+.comment-empty { color: #7c877e; text-align: center; padding: 32px; }
+@media (max-width: 1250px) { .comment-filter-panel { grid-template-columns: repeat(3, minmax(140px, 1fr)); } .comment-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 800px) { .comment-chart-grid { grid-template-columns: 1fr; } .comment-chart-grid .chart-card-wide { grid-column: auto; } .comment-filter-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); } .comment-heading { align-items: flex-start; flex-direction: column; } .comment-heading .heading-actions { justify-content: flex-start; } }
+@media (max-width: 520px) { .comment-filter-panel, .comment-kpis { grid-template-columns: 1fr; } .comment-chart { height: 260px; } }

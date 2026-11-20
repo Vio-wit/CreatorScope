@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from .browser import CaptureError, PgyVisibleBrowser
 from .db import connection, local_timestamp
-from .ingest import ingest_payload, load_baseline
+from .ingest import ingest_payload, load_baseline, payload_from_upload
 
 
 class TaskManager:
@@ -37,11 +37,22 @@ class TaskManager:
             lambda _task_id: self.browser.open(),
         )
 
-    def submit_current_page_capture(self) -> str:
+    def submit_current_page_capture(self, creator_id: str | None = None) -> str:
         return self._submit(
             "pgy_visible_capture",
             "蒲公英当前可见页面",
-            self._run_current_page_capture,
+            lambda task_id: self._run_current_page_capture(task_id, creator_id),
+        )
+
+    def submit_file_import(self, filename: str, content: bytes) -> str:
+        suffix = Path(filename or "").suffix.lower()
+        if suffix not in {".json", ".csv"}:
+            raise ValueError("仅支持 .json 或 .csv 文件")
+        safe_source = "JSON 文件导入" if suffix == ".json" else "CSV 文件导入"
+        return self._submit(
+            "file_import",
+            safe_source,
+            lambda task_id: self._run_file_import(task_id, filename, content, safe_source),
         )
 
     def submit_browser_close(self) -> str:
@@ -116,6 +127,22 @@ class TaskManager:
 
     def _run_baseline_import(self, task_id: str) -> dict[str, Any]:
         payload = load_baseline(self.baseline_path)
+        payload["creator_ref"] = "baseline:pgy-anonymized-2026-11-19"
+        profile = next(
+            (item for item in payload["records"] if item.get("type") == "creator_profile_sample"),
+            None,
+        )
+        if profile and isinstance(profile.get("fields"), dict):
+            profile_json = json.dumps(
+                profile["fields"], ensure_ascii=False, sort_keys=True
+            )
+            with connection(self.db_path) as conn:
+                existing = conn.execute(
+                    "SELECT creator_id FROM records WHERE record_type = 'creator_profile_sample' AND fields_json = ? ORDER BY record_id DESC LIMIT 1",
+                    (profile_json,),
+                ).fetchone()
+            if existing:
+                payload["creator_ref"] = str(existing[0])
         result = ingest_payload(
             self.db_path,
             task_id,
@@ -128,16 +155,42 @@ class TaskManager:
         )
         return result
 
-    def _run_current_page_capture(self, task_id: str) -> dict[str, Any]:
+    def _run_current_page_capture(
+        self,
+        task_id: str,
+        creator_id: str | None = None,
+    ) -> dict[str, Any]:
         payload = self.browser.capture_current_page()
         result = ingest_payload(
             self.db_path,
             task_id,
             payload,
             source_override="蒲公英当前可见页面",
+            creator_id_override=creator_id,
         )
         result["message"] = (
             f"当前页采集完成：{result['record_count']} 条记录，"
+            f"{result['parsed_metric_count']} 个数值字段成功转换"
+        )
+        return result
+
+    def _run_file_import(
+        self,
+        task_id: str,
+        filename: str,
+        content: bytes,
+        source: str,
+    ) -> dict[str, Any]:
+        payload = payload_from_upload(filename, content)
+        result = ingest_payload(
+            self.db_path,
+            task_id,
+            payload,
+            source_override=source,
+        )
+        result["message"] = (
+            f"{source}完成：{result['record_count']} 条记录，"
+            f"去重 {result['duplicate_count']} 条，"
             f"{result['parsed_metric_count']} 个数值字段成功转换"
         )
         return result

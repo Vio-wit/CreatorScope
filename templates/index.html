@@ -19,7 +19,10 @@
       <div class="nav-label">工作区</div>
       <a class="nav-item active" href="#overview"><span class="nav-icon">▦</span>数据看板</a>
       <a class="nav-item" href="#collection"><span class="nav-icon">↧</span>采集任务</a>
+      <a class="nav-item" href="#analytics"><span class="nav-icon">◷</span>统计分析</a>
+      <a class="nav-item" href="#creators"><span class="nav-icon">◎</span>博主库</a>
       <a class="nav-item" href="#records"><span class="nav-icon">▤</span>样本记录</a>
+      <a class="nav-item" href="/comments"><span class="nav-icon">▧</span>评论分析</a>
       <div class="sidebar-bottom">
         <span class="local-dot"></span>
         <div><strong>本地运行</strong><small>数据保存在本机 SQLite</small></div>
@@ -54,6 +57,11 @@
         </div>
         <div class="collection-controls">
           <button class="button button-primary" id="importButton"><span>＋</span>导入基线样本</button>
+          <button class="button button-secondary" id="uploadButton">导入 JSON / CSV</button>
+          <input id="uploadInput" type="file" accept=".json,.csv,application/json,text/csv" hidden>
+          <a class="button button-secondary download-link" id="exportJson" href="/api/export/json">导出 JSON</a>
+          <a class="button button-secondary download-link" id="exportCsv" href="/api/export/csv">导出 CSV</a>
+          <label class="select-wrap creator-select-wrap" aria-label="选择当前博主"><span>当前博主</span><select id="creatorSelect"><option value="">新建匿名博主</option></select></label>
           <button class="button button-secondary" id="openBrowserButton">打开蒲公英浏览器</button>
           <button class="button button-secondary" id="captureButton" disabled>采集当前页面</button>
           <button class="button button-quiet" id="closeBrowserButton" disabled>关闭窗口</button>
@@ -87,8 +95,39 @@
         </article>
         <article class="chart-card">
           <div class="card-heading"><div><h2>笔记词频</h2><p id="wordStatus">等待可用标题或正文</p></div><span class="card-menu">···</span></div>
-          <div class="chart" id="wordChart"></div>
+          <div class="chart" id="wordChart"></div><img class="wordcloud-image" id="wordCloudImage" alt="笔记内容词云" hidden>
         </article>
+      </section>
+
+      <section class="section-heading" id="analytics">
+        <div><p class="eyebrow">DATA ANALYSIS</p><h2>实际数据分析</h2><p class="subheading" id="analysisScope">基于已保存的创作者快照；字段不足时明确提示。</p></div>
+        <span class="analysis-count" id="analysisCount">—</span>
+      </section>
+      <section class="charts-grid analytics-grid">
+        <article class="chart-card"><div class="card-heading"><div><h2>粉丝数量分布</h2><p>每位创作者取最新可用粉丝值</p></div></div><div class="chart" id="followerDistChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>商业报价分布</h2><p>全部报价优先，缺失时取图文/视频均值</p></div></div><div class="chart" id="quoteDistChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>粉丝与报价</h2><p id="followerPriceStatus">等待样本</p></div></div><div class="chart" id="followerPriceChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>阅读与互动</h2><p id="readingStatus">等待样本</p></div></div><div class="chart" id="readingEngagementChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>粉丝画像均值</h2><p>按可用创作者取均值，标注有效样本数</p></div></div><div class="chart" id="fanAggregateChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>指标相关性</h2><p id="correlationStatus">等待样本</p></div></div><div class="chart" id="correlationChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>多批次粉丝趋势</h2><p id="trendStatus">等待快照</p></div></div><div class="chart" id="trendChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>笔记案例指标</h2><p>当前记录中的可用笔记值</p></div></div><div class="chart" id="noteMetricsChart"></div></article>
+      </section>
+
+      <section class="section-heading" id="creators">
+        <div><p class="eyebrow">CREATOR LIBRARY</p><h2>博主库</h2><p class="subheading">只显示系统匿名编号；身份列在导入时仅用于哈希去重，不入库。</p></div>
+      </section>
+      <section class="creator-filter-panel">
+        <label>领域<select id="categoryFilter"><option value="">全部领域</option></select></label>
+        <label>粉丝下限<input id="followersMin" inputmode="numeric" placeholder="人"></label>
+        <label>粉丝上限<input id="followersMax" inputmode="numeric" placeholder="人"></label>
+        <label>报价下限<input id="quoteMin" inputmode="numeric" placeholder="元"></label>
+        <label>报价上限<input id="quoteMax" inputmode="numeric" placeholder="元"></label>
+        <button class="button button-primary" id="filterCreators">筛选</button>
+        <span id="creatorCount">0 位博主</span>
+      </section>
+      <section class="table-card creator-table-card">
+        <div class="table-scroll"><table><thead><tr><th>匿名编号</th><th>领域</th><th>粉丝数</th><th>报价估值</th><th>阅读中位数</th><th>互动中位数</th><th>数据类型</th><th>最新批次</th></tr></thead><tbody id="creatorBody"><tr><td colspan="8" class="empty-cell">暂无创作者记录</td></tr></tbody></table></div>
       </section>
 
       <section class="data-grid" id="records">
@@ -107,7 +146,12 @@
         <div class="record-detail-grid" id="recordDetails"><div class="empty-cell">当前批次暂无样本字段</div></div>
       </section>
 
-      <footer class="footer"><span>CreatorScope · 课程实训原型</span><span>Playwright · Flask · SQLite · pandas · jieba · ECharts</span></footer>
+      <section class="table-card field-dictionary-card">
+        <div class="card-heading table-heading"><div><h2>蒲公英字段字典</h2><p>按现有匿名实测样本记录单位与页面周期；未见字段标记为待采</p></div><span class="table-count" id="dictionaryCount">—</span></div>
+        <div class="table-scroll"><table><thead><tr><th>分组</th><th>字段名称</th><th>页面/存储单位</th><th>统计周期</th><th>样本状态</th></tr></thead><tbody id="dictionaryBody"><tr><td colspan="5" class="empty-cell">加载字段字典…</td></tr></tbody></table></div>
+      </section>
+
+      <footer class="footer"><span>CreatorScope · 课程实训原型</span><span>Playwright · Flask · SQLite · pandas · NumPy · jieba · WordCloud · ECharts</span></footer>
     </main>
   </div>
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
