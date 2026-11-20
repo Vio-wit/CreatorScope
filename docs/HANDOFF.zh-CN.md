@@ -9,6 +9,7 @@
 
 ## 既有阶段提交
 
+- `9eac11d` — `fix: preserve original collected identity fields`
 - `71e8118` — `chore: audit V1.1 collection baseline`
 - `daa07bb` — `feat: preserve collection provenance and pause on blockers`
 - `45fc691` — `feat: add source-aware analytics and metric exports`
