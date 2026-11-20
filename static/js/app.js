@@ -5,6 +5,7 @@
     importButton: $('#importButton'), openBrowserButton: $('#openBrowserButton'),
     captureButton: $('#captureButton'), closeBrowserButton: $('#closeBrowserButton'),
     uploadButton: $('#uploadButton'), uploadInput: $('#uploadInput'),
+    startCollectionButton: $('#startCollectionButton'),
     creatorSelect: $('#creatorSelect'), browserHint: $('#browserHint'), toastRegion: $('#toastRegion'),
   };
   const charts = {};
@@ -225,11 +226,19 @@
       container.innerHTML = '<div class="empty-cell">暂无任务</div>';
       return;
     }
-    const labels = { baseline_import: '导入匿名基线', file_import: '导入 JSON / CSV', browser_open: '打开蒲公英浏览器', pgy_visible_capture: '采集当前可见页面', browser_close: '关闭蒲公英浏览器' };
+    const labels = { baseline_import: '导入匿名基线', file_import: '导入 JSON / CSV', browser_open: '打开蒲公英浏览器', pgy_visible_capture: '采集当前可见页面', browser_close: '关闭蒲公英浏览器', visible_collection: '蒲公英 → 小红书可见采集' };
     container.innerHTML = tasks.slice(0, 8).map((task) => {
       const status = task.status || 'queued';
-      const statusLabel = { queued: '排队中', running: `处理中 ${task.progress || 0}%`, completed: '已完成', failed: '失败' }[status] || status;
-      return `<div class="task-row"><div class="task-name">${escapeHtml(labels[task.task_type] || task.task_type)}</div><div class="task-message">${escapeHtml(task.message || '')} · ${escapeHtml(task.created_at || '')}</div><span class="task-state ${escapeHtml(status)}">${escapeHtml(statusLabel)}</span></div>`;
+      const statusLabel = { queued: '排队中', running: `处理中 ${task.progress || 0}%`, paused: '已暂停', stopping: '正在停止', stopped: '已停止', completed: '已完成', failed: '失败' }[status] || status;
+      const isCollection = task.task_type === 'visible_collection';
+      let actions = '';
+      if (isCollection && ['queued', 'running'].includes(status)) actions = `<button class="button button-secondary" data-task-action="pause" data-task-id="${escapeHtml(task.task_id)}">暂停</button><button class="button button-quiet" data-task-action="stop" data-task-id="${escapeHtml(task.task_id)}">停止</button>`;
+      else if (isCollection && status === 'paused') actions = `<button class="button button-secondary" data-task-action="resume" data-task-id="${escapeHtml(task.task_id)}">恢复</button><button class="button button-quiet" data-task-action="stop" data-task-id="${escapeHtml(task.task_id)}">停止</button>`;
+      else if (isCollection && ['stopped', 'failed'].includes(status)) actions = `<button class="button button-secondary" data-task-action="resume" data-task-id="${escapeHtml(task.task_id)}">从断点恢复</button>`;
+      const countText = isCollection ? `<div class="task-counts">创作者 ${task.creators_visited || 0} · 笔记 ${task.notes_visited || 0} · 评论 ${task.comment_count || 0} · DOM 新增 ${task.dom_rows_added || 0}</div>` : '';
+      const failures = (task.failures || []).length ? `<details class="task-failures"><summary>失败记录 ${task.failures.length} 项</summary><ul>${task.failures.map((failure) => `<li>创作者 ${failure.creator_index}${failure.note_index ? ` / 笔记 ${failure.note_index}` : ''}：${escapeHtml(failure.reason)}</li>`).join('')}</ul></details>` : '';
+      const progress = isCollection ? `<div class="task-progress-track"><div class="task-progress-bar" style="width:${Math.max(0, Math.min(100, Number(task.progress) || 0))}%"></div></div>` : '';
+      return `<div class="task-row"><div class="task-name">${escapeHtml(labels[task.task_type] || task.task_type)}</div><div class="task-message">${escapeHtml(task.message || '')} · ${escapeHtml(task.created_at || '')}</div><span class="task-state ${escapeHtml(status)}">${escapeHtml(statusLabel)}</span>${progress}${countText}${actions ? `<div class="task-controls">${actions}</div>` : ''}${failures}</div>`;
     }).join('');
   }
 
@@ -333,12 +342,13 @@
   async function refreshTasks() {
     const tasks = await requestJson('/api/tasks');
     renderTasks(tasks);
-    pendingTask = tasks.some((task) => ['queued', 'running'].includes(task.status));
+    pendingTask = tasks.some((task) => ['queued', 'running', 'paused', 'stopping'].includes(task.status));
     elements.importButton.disabled = pendingTask;
     elements.uploadButton.disabled = pendingTask;
     elements.openBrowserButton.disabled = pendingTask;
     elements.captureButton.disabled = pendingTask || !browserIsOpen;
     elements.closeBrowserButton.disabled = pendingTask || !browserIsOpen;
+    elements.startCollectionButton.disabled = pendingTask;
     if (lastDashboard) lastDashboard.tasks = tasks;
     if (activeTaskId) {
       const finished = tasks.find((task) => task.task_id === activeTaskId && ['completed', 'failed'].includes(task.status));
@@ -413,6 +423,30 @@
     elements.openBrowserButton.addEventListener('click', () => submitTask('/api/browser/open', '正在打开独立可见浏览器'));
     elements.captureButton.addEventListener('click', () => submitTask('/api/browser/capture', '已提交当前可见页面采集任务', { creator_id: elements.creatorSelect.value }));
     elements.closeBrowserButton.addEventListener('click', () => submitTask('/api/browser/close', '正在关闭蒲公英浏览器'));
+    elements.startCollectionButton.addEventListener('click', () => {
+      const settings = {
+        source: $('#collectSource').value,
+        collect_creator: $('#collectCreator').checked,
+        collect_notes: $('#collectNotes').checked,
+        collect_comments: $('#collectComments').checked,
+        creator_count: Number($('#creatorLimit').value),
+        notes_per_creator: Number($('#noteLimit').value),
+        comments_per_note: Number($('#commentLimit').value),
+      };
+      submitTask('/api/tasks/collect-visible', '已提交可见采集任务', settings);
+    });
+    $('#taskList').addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-task-action]');
+      if (!button) return;
+      button.disabled = true;
+      try {
+        await requestJson(`/api/tasks/${encodeURIComponent(button.dataset.taskId)}/${button.dataset.taskAction}`, { method: 'POST' });
+        await refreshTasks();
+      } catch (error) {
+        toast(error.message, true);
+        button.disabled = false;
+      }
+    });
     elements.batchSelect.addEventListener('change', () => { refreshDashboard(); refreshAnalytics(); });
     elements.typeSelect.addEventListener('change', refreshDashboard);
     $('#filterCreators').addEventListener('click', () => refreshCreatorLibrary().catch((error) => toast(error.message, true)));

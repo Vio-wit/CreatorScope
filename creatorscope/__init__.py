@@ -165,11 +165,33 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             rows = conn.execute(
                 """
                 SELECT task_id, task_type, source, status, progress, message,
-                       created_at, started_at, finished_at, batch_id
+                       created_at, started_at, finished_at, batch_id,
+                       COALESCE(error_message, error) AS error_message, result_json
                 FROM tasks ORDER BY created_at DESC, rowid DESC LIMIT 20
                 """
             ).fetchall()
-        return jsonify([dict(row) for row in rows])
+        result = []
+        for row in rows:
+            item = dict(row)
+            try:
+                task_result = json.loads(item.pop("result_json") or "{}")
+            except (json.JSONDecodeError, TypeError):
+                task_result = {}
+                item.pop("result_json", None)
+            if item["task_type"] == "visible_collection":
+                item.update(
+                    {
+                        "failures": task_result.get("failures", [])[:100],
+                        "comment_count": int(task_result.get("comment_count", 0) or 0),
+                        "dom_rows_added": int(task_result.get("dom_rows_added", 0) or 0),
+                        "creators_visited": int(task_result.get("creators_visited", 0) or 0),
+                        "notes_visited": int(task_result.get("notes_visited", 0) or 0),
+                    }
+                )
+            else:
+                item.pop("result_json", None)
+            result.append(item)
+        return jsonify(result)
 
     @app.get("/api/browser")
     def api_browser_status():
@@ -196,6 +218,31 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
         return jsonify({"task_id": task_id}), 202
+
+    @app.post("/api/tasks/collect-visible")
+    def api_collect_visible():
+        settings = request.get_json(silent=True)
+        if not isinstance(settings, dict):
+            return jsonify({"error": "请以 JSON 对象提交采集设置"}), 400
+        try:
+            task_id = tasks.submit_visible_collection(settings)
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        return jsonify({"task_id": task_id}), 202
+
+    @app.post("/api/tasks/<task_id>/<action>")
+    def api_collection_task_action(task_id: str, action: str):
+        handlers = {
+            "pause": tasks.pause_task,
+            "resume": tasks.resume_task,
+            "stop": tasks.stop_task,
+        }
+        handler = handlers.get(action)
+        if not handler:
+            return jsonify({"error": "不支持的任务操作"}), 404
+        if not handler(task_id):
+            return jsonify({"error": "任务当前状态不支持此操作"}), 409
+        return jsonify({"task_id": task_id, "action": action}), 202
 
     @app.get("/api/export/json")
     def api_export_json():
