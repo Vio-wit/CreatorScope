@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+import csv
+import io
 import json
 import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
 
+from flask import Flask
+
 from creatorscope.db import initialize_database
 from creatorscope.ingest import ingest_comment_snapshots, ingest_payload
+from research.r4_3_comment_analysis.comment_analysis import fetch_comments
+from research.r4_3_comment_analysis.comments_web import comment_analysis_bp
 
 
 class RawDataPreservationTests(unittest.TestCase):
@@ -85,7 +91,7 @@ class RawDataPreservationTests(unittest.TestCase):
             "email": "commenter@example.test",
             "phone": "13700137000",
             "cookie": "excluded-comment-cookie",
-            "comment_text": "评论原文包含 contact@example.test 和 https://example.test/context",
+            "comment_text": "  评论原文包含 contact@example.test 和 https://example.test/context\n",
             "like_count_raw": "2+",
         }]
         ingest_comment_snapshots(
@@ -129,10 +135,12 @@ class RawDataPreservationTests(unittest.TestCase):
             self.assertNotIn("excluded-session-value", serialized_fields)
 
             comment = conn.execute(
-                "SELECT comment_text, raw_payload_json FROM comment_snapshots"
+                "SELECT comment_text, cleaned_text, local_comment_id_hash, raw_payload_json FROM comment_snapshots"
             ).fetchone()
             self.assertIn("contact@example.test", comment[0])
-            raw_comment = json.loads(comment[1])
+            self.assertEqual(comment[0], comments[0]["comment_text"])
+            self.assertEqual(comment[1], comments[0]["comment_text"].strip())
+            raw_comment = json.loads(comment[3])
             self.assertEqual(raw_comment["comment_id"], "visible-comment-id-77")
             self.assertEqual(raw_comment["commenter_name"], "评论用户甲")
             self.assertEqual(raw_comment["commenter_id"], "public-commenter-id-77")
@@ -140,8 +148,62 @@ class RawDataPreservationTests(unittest.TestCase):
             self.assertEqual(raw_comment["email"], "commenter@example.test")
             self.assertEqual(raw_comment["phone"], "13700137000")
             self.assertNotIn("cookie", raw_comment)
+            self.assertNotEqual(comment[2], raw_comment["local_comment_id"])
         finally:
             conn.close()
+
+        analysis_row = fetch_comments(self.db_path)[0]
+        self.assertEqual(analysis_row["comment_text"], comments[0]["comment_text"])
+        self.assertEqual(analysis_row["comment_id"], "visible-comment-id-77")
+        self.assertEqual(analysis_row["local_comment_id"], "batch-fingerprint-1")
+        self.assertNotEqual(analysis_row["local_comment_id_hash"], analysis_row["local_comment_id"])
+        self.assertEqual(analysis_row["local_comment_id_origin"], "provided_source_field")
+        self.assertEqual(analysis_row["raw_payload"]["commenter_name"], "评论用户甲")
+
+        ingest_comment_snapshots(
+            self.db_path,
+            task_id="task-raw",
+            batch_id=result["batch_id"],
+            creator_ref="pgy-visible-creator-ref",
+            note_ref=note_url,
+            comments=[{
+                "local_comment_key": "generated-fingerprint-2",
+                "local_comment_key_origin": "generated_fingerprint",
+                "comment_text": "  页面可见的第二条评论  ",
+                "comment_level": 1,
+            }],
+            captured_at="2026-11-21T10:03:00",
+        )
+        generated_row = next(
+            row for row in fetch_comments(self.db_path)
+            if row["comment_text"] == "  页面可见的第二条评论  "
+        )
+        self.assertIsNone(generated_row["local_comment_id"])
+        self.assertEqual(generated_row["local_comment_key"], "generated-fingerprint-2")
+        self.assertEqual(generated_row["local_comment_id_origin"], "generated_fingerprint")
+        self.assertNotEqual(generated_row["local_comment_id_hash"], generated_row["local_comment_key"])
+
+        app = Flask(__name__)
+        app.config["COMMENT_ANALYSIS_DATABASE_PATH"] = self.db_path
+        app.register_blueprint(comment_analysis_bp)
+        client = app.test_client()
+        jsonl_rows = [
+            json.loads(line)
+            for line in client.get("/api/comments/export.jsonl").get_data(as_text=True).splitlines()
+        ]
+        exported_source_row = next(row for row in jsonl_rows if row["comment_id"] == "visible-comment-id-77")
+        self.assertEqual(exported_source_row["comment_text"], comments[0]["comment_text"])
+        self.assertEqual(exported_source_row["raw_payload"]["commenter_id"], "public-commenter-id-77")
+        exported_generated_row = next(row for row in jsonl_rows if row["local_comment_key"] == "generated-fingerprint-2")
+        self.assertIsNone(exported_generated_row["local_comment_id"])
+        csv_rows = list(
+            csv.DictReader(
+                io.StringIO(client.get("/api/comments/export.csv").get_data(as_text=True).lstrip("\ufeff"))
+            )
+        )
+        csv_source_row = next(row for row in csv_rows if row["comment_id"] == "visible-comment-id-77")
+        self.assertEqual(csv_source_row["comment_text"], comments[0]["comment_text"])
+        self.assertEqual(json.loads(csv_source_row["raw_payload"])["commenter_name"], "评论用户甲")
 
 
 if __name__ == "__main__":

@@ -283,6 +283,41 @@ class VisibleCollectionTests(unittest.TestCase):
         self.assertIsNone(normalize_value("点赞量", "10+")[0])
         self.assertEqual(normalize_value("点赞量", "10+")[2], "not_numeric")
         self.assertEqual(normalize_value("视频时长", "01:49"), (109, "seconds", "parsed"))
+        self.assertEqual(normalize_value("全部报价", "¥50,000 起"), (None, "CNY", "starting_price"))
+        self.assertEqual(normalize_value("全部报价", "¥50,000-¥80,000"), (None, "CNY", "range_unresolved"))
+
+    def test_visible_comment_capture_keeps_rendered_raw_text_and_marks_generated_key(self) -> None:
+        class FakeLocator:
+            def count(self):
+                return 0
+
+        class FakePage:
+            def evaluate(self, script, _argument=None):
+                if "const visible" in script:
+                    return [{
+                        "text": "  visible comment\n",
+                        "time": "  2 days ago ",
+                        "likes": "10+",
+                        "replies": None,
+                        "pinned": False,
+                        "level": 1,
+                        "parent_text": None,
+                        "parent_time": None,
+                    }]
+                return 1
+
+            def locator(self, _selector):
+                return FakeLocator()
+
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        rows, dom_rows_added = browser._capture_visible_comments(
+            FakePage(), "note-ref", 1, lambda: None, "batch-scope", lambda _delta: None
+        )
+        self.assertEqual(dom_rows_added, 0)
+        self.assertEqual(rows[0]["comment_text"], "  visible comment\n")
+        self.assertEqual(rows[0]["displayed_time"], "  2 days ago ")
+        self.assertEqual(rows[0]["local_comment_key_origin"], "generated_fingerprint")
+        self.assertNotIn("local_comment_id", rows[0])
 
     def test_browser_status_is_nonblocking_during_long_collection(self) -> None:
         browser = PgyVisibleBrowser(self.root / "browser-profile")

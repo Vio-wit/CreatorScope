@@ -100,8 +100,11 @@ def normalize_value(key: str, raw_value: Any) -> tuple[float | None, str, str]:
     if key not in COUNT_KEYS | RATE_KEYS | PRICE_KEYS:
         return None, _unit_for(key), "text_or_date"
 
+    if key in PRICE_KEYS and re.search(r"(?:起价|起)\s*$", raw):
+        return None, _unit_for(key), "starting_price"
+
     cleaned = raw.replace(",", "").replace("，", "").replace("¥", "").replace("￥", "")
-    cleaned = cleaned.replace("元", "").replace("起", "").strip()
+    cleaned = cleaned.replace("元", "").strip()
     if key in RATE_KEYS:
         cleaned = cleaned.replace("%", "").strip()
     factor = 1.0
@@ -600,12 +603,27 @@ def ingest_comment_snapshots(
             ),
         )
         local_ids: dict[str, str] = {}
-        prepared: list[tuple[dict[str, Any], str, str | None]] = []
+        prepared: list[tuple[dict[str, Any], str, str | None, str, str]] = []
         for item in comments:
-            text = str(item.get("comment_text") or "").strip()
-            if not text:
+            raw_text = item.get("comment_text")
+            text = "" if raw_text is None else str(raw_text)
+            if not text.strip():
                 continue
-            local_id = str(item.get("local_comment_id") or "")
+            source_local_id = item.get("local_comment_id")
+            if source_local_id is None or str(source_local_id) == "":
+                source_local_id = item.get("comment_id")
+            generated_key = item.get("local_comment_key")
+            has_source_local_id = source_local_id is not None and str(source_local_id) != ""
+            local_id_value = source_local_id if has_source_local_id else generated_key
+            local_id = "" if local_id_value is None else str(local_id_value)
+            local_id_origin = str(
+                item.get("local_comment_id_origin")
+                or (
+                    "provided_source_field"
+                    if has_source_local_id
+                    else item.get("local_comment_key_origin") or "generated_key"
+                )
+            )
             if not local_id:
                 local_id = _record_hash(
                     "comment",
@@ -616,20 +634,51 @@ def ingest_comment_snapshots(
                         "parent": item.get("parent_local_comment_id"),
                     },
                 )
+                local_id_origin = "generated_fallback_key"
             local_hash = hashlib.sha256(
                 f"{note_id}\x1f{local_id}".encode("utf-8")
             ).hexdigest()
             local_ids[local_id] = local_hash
-            parent_local_id = item.get("parent_local_comment_id")
-            parent_hash = local_ids.get(str(parent_local_id)) if parent_local_id else None
-            prepared.append((item, local_hash, parent_hash))
+            parent_local_id = next(
+                (
+                    value
+                    for value in (
+                        item.get("parent_local_comment_id"),
+                        item.get("parent_comment_id"),
+                        item.get("parent_local_comment_key"),
+                    )
+                    if value is not None and str(value) != ""
+                ),
+                None,
+            )
+            has_parent_local_id = parent_local_id is not None and str(parent_local_id) != ""
+            parent_hash = local_ids.get(str(parent_local_id)) if has_parent_local_id else None
+            parent_id_origin = str(
+                item.get("parent_comment_id_origin")
+                or (
+                    "provided_source_field"
+                    if any(
+                        value is not None and str(value) != ""
+                        for value in (item.get("parent_comment_id"), item.get("parent_local_comment_id"))
+                    )
+                    else "generated_key"
+                    if item.get("parent_local_comment_key") is not None
+                    else "missing"
+                )
+            )
+            prepared.append((item, local_hash, parent_hash, local_id_origin, parent_id_origin))
 
-        for item, local_hash, parent_hash in prepared:
-            text = str(item.get("comment_text") or "").strip()
+        for item, local_hash, parent_hash, local_id_origin, parent_id_origin in prepared:
+            raw_text = item.get("comment_text")
+            text = "" if raw_text is None else str(raw_text)
             level = 2 if int(item.get("comment_level") or 1) == 2 else 1
             clean_text = re.sub(r"\s+", " ", text).strip()
             safe_payload = _clean_fields(item)
             safe_payload["comment_level"] = level
+            safe_payload.setdefault("local_comment_id_origin", local_id_origin)
+            safe_payload.setdefault("parent_comment_id_origin", parent_id_origin)
+            if local_id_origin.startswith("generated_"):
+                safe_payload.setdefault("local_comment_key", str(item.get("local_comment_key") or local_id))
             like_raw = item.get("like_count_raw")
             like_value = normalize_value("点赞量", like_raw)[0] if like_raw else None
             cursor = conn.execute(

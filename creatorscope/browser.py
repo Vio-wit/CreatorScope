@@ -1083,7 +1083,7 @@ class PgyVisibleBrowser:
                   const visible = (el) => { const r=el.getBoundingClientRect(), s=getComputedStyle(el);
                     return r.width>0 && r.height>0 && s.display!=='none' && s.visibility!=='hidden'; };
                   const value = (root, selector) => { const el=root.querySelector(selector);
-                    if(!el || !visible(el)) return null; const v=(el.innerText||el.textContent||'').trim(); return v||null; };
+                    if(!el || !visible(el)) return null; const v=(el.innerText||el.textContent||''); return v.length?v:null; };
                   const rows=[];
                   for (const el of document.querySelectorAll(rootsSelector)) if(visible(el)) rows.push({
                     text:value(el,'.content .note-text'), time:value(el,'.date > span:not(.location)'),
@@ -1096,7 +1096,7 @@ class PgyVisibleBrowser:
                       pinned:null, level:2, parent_text:parent?value(parent,'.content .note-text'):null,
                       parent_time:parent?value(parent,'.date > span:not(.location)'):null});
                   }
-                  return rows.filter(row=>row.text);
+                  return rows.filter(row=>row.text && row.text.trim());
                 }""",
                 {"rootsSelector": roots_selector, "repliesSelector": replies_selector},
             )
@@ -1110,7 +1110,8 @@ class PgyVisibleBrowser:
                     comments.setdefault(
                         local_id,
                         {
-                            "local_comment_id": local_id,
+                            "local_comment_key": local_id,
+                            "local_comment_key_origin": "generated_fingerprint",
                             "comment_text": row["text"],
                             "displayed_time": row.get("time"),
                             "like_count_raw": row.get("likes"),
@@ -1129,13 +1130,15 @@ class PgyVisibleBrowser:
                     comments.setdefault(
                         local_id,
                         {
-                            "local_comment_id": local_id,
+                            "local_comment_key": local_id,
+                            "local_comment_key_origin": "generated_fingerprint",
                             "comment_text": row["text"],
                             "displayed_time": row.get("time"),
                             "like_count_raw": row.get("likes"),
                             "reply_count_raw": row.get("replies"),
                             "comment_level": 2,
-                            "parent_local_comment_id": parent_id,
+                            "parent_local_comment_key": parent_id,
+                            "parent_comment_id_origin": "generated_fingerprint",
                             "is_pinned": None,
                         },
                     )
