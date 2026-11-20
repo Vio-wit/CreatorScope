@@ -106,9 +106,12 @@ def fetch_comments(db_path: Path = DEFAULT_DB, filters: dict[str, Any] | None = 
         rows = conn.execute(
             """SELECT s.batch_id, s.note_id, n.title AS note_title,
                       n.creator_id,
+                      c.platform_creator_id AS creator_platform_id,
+                      n.platform_note_id,
+                      n.source_url AS note_source_url,
                       CASE WHEN NULLIF(c.creator_name,'') IS NOT NULL AND c.creator_name<>c.pseudonym THEN c.creator_name WHEN NULLIF(c.platform_creator_id,'') IS NOT NULL THEN c.platform_creator_id ELSE '历史样本未保存原始名称' END AS creator_name,
-                      s.local_comment_id_hash AS local_comment_id,
-                      s.parent_comment_id_hash AS parent_comment_id,
+                      s.local_comment_id_hash,
+                      s.parent_comment_id_hash,
                       s.comment_text, s.cleaned_text, s.displayed_time,
                       s.like_count_raw, s.like_count AS like_count_normalized,
                       s.reply_count_raw, s.is_pinned, s.comment_level, s.source,
@@ -124,6 +127,15 @@ def fetch_comments(db_path: Path = DEFAULT_DB, filters: dict[str, Any] | None = 
         for row in result:
             row["is_pinned"] = None if row["is_pinned"] is None else bool(row["is_pinned"])
             row["raw_payload"] = json.loads(row["raw_payload"])
+            payload = row["raw_payload"]
+            row["comment_id"] = payload.get("comment_id")
+            row["local_comment_id"] = payload.get("local_comment_id")
+            row["parent_comment_id"] = payload.get("parent_comment_id")
+            row["parent_local_comment_id"] = payload.get("parent_local_comment_id")
+            row["local_comment_key"] = payload.get("local_comment_key")
+            row["parent_local_comment_key"] = payload.get("parent_local_comment_key")
+            row["local_comment_id_origin"] = payload.get("local_comment_id_origin", "legacy_unclassified")
+            row["parent_comment_id_origin"] = payload.get("parent_comment_id_origin", "legacy_unclassified")
         return result
     finally:
         conn.close()

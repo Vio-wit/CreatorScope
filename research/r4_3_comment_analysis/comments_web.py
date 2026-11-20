@@ -97,9 +97,12 @@ def comments_export_csv():
     db_path, fetch_fn, _, _, _ = _service()
     rows = fetch_fn(db_path, _filters())
     fields = [
-        "batch_id", "creator_name", "note_id", "note_title", "comment_text", "cleaned_text",
-        "displayed_time", "like_count_raw", "like_count_normalized", "reply_count_raw", "raw_payload",
-        "is_pinned", "comment_level", "parent_comment_id", "local_comment_id", "captured_at",
+        "batch_id", "creator_name", "creator_platform_id", "note_id", "platform_note_id",
+        "note_source_url", "note_title", "comment_text", "cleaned_text", "displayed_time",
+        "like_count_raw", "like_count_normalized", "reply_count_raw", "raw_payload", "is_pinned",
+        "comment_level", "comment_id", "local_comment_id", "parent_comment_id", "parent_local_comment_id",
+        "local_comment_key", "parent_local_comment_key", "local_comment_id_hash", "parent_comment_id_hash",
+        "local_comment_id_origin", "parent_comment_id_origin", "captured_at",
     ]
     stream = io.StringIO(newline="")
     writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
