@@ -9,7 +9,7 @@ from typing import Iterator
 from uuid import uuid4
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS records (
     record_id INTEGER PRIMARY KEY AUTOINCREMENT,
     batch_id TEXT NOT NULL,
     record_type TEXT NOT NULL,
+    source TEXT,
     captured_at TEXT NOT NULL,
     fields_json TEXT NOT NULL,
     fields_hash TEXT NOT NULL,
@@ -162,7 +163,8 @@ FROM tasks;
 CREATE VIEW IF NOT EXISTS metric_snapshots AS
 SELECT m.metric_id AS id, b.batch_id, r.creator_id, r.note_id,
        m.metric_key AS metric_name, m.numeric_value AS metric_value,
-       m.raw_value, m.unit, b.source, m.period, r.captured_at
+       m.raw_value, m.unit, COALESCE(r.source, b.source) AS source,
+       m.period, r.captured_at
 FROM metric_values AS m
 JOIN records AS r ON r.record_id = m.record_id
 JOIN batches AS b ON b.batch_id = r.batch_id;
@@ -193,6 +195,11 @@ def initialize_database(db_path: Path) -> None:
         _ensure_columns(conn)
         _backfill_creator_links(conn)
         _backfill_batch_metadata(conn)
+        existing_view = conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type='view' AND name='metric_snapshots'"
+        ).fetchone()
+        if existing_view and "r.source" not in str(existing_view[0]):
+            conn.execute("DROP VIEW metric_snapshots")
         conn.executescript(VIEWS)
         conn.execute(
             "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (?, ?)",
@@ -232,6 +239,9 @@ def _ensure_columns(conn: sqlite3.Connection) -> None:
             "published_at": "TEXT",
             "note_type": "TEXT",
             "source_url": "TEXT",
+            "source": "TEXT",
+        },
+        "records": {
             "source": "TEXT",
         },
     }

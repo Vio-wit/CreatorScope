@@ -4,10 +4,13 @@ import hashlib
 import subprocess
 import re
 import time
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlparse
+
+from .db import local_timestamp
 
 
 PGY_HOST = "pgy.xiaohongshu.com"
@@ -37,73 +40,136 @@ class PgyVisibleBrowser:
         self._playwright = None
         self._context = None
         self._page = None
+        self._operation_busy = threading.Event()
+        self._last_status: dict[str, Any] = {
+            "open": False,
+            "domain": "",
+            "page_kind": "",
+            "tab_count": 0,
+            "tabs": [],
+        }
 
     def _call(self, callback, timeout: float | None = 75):
-        return self._executor.submit(callback).result(timeout=timeout)
+        self._operation_busy.set()
+        try:
+            return self._executor.submit(callback).result(timeout=timeout)
+        finally:
+            self._operation_busy.clear()
 
     def open(self) -> dict[str, Any]:
         return self._call(self._open)
 
     def _open(self) -> dict[str, Any]:
-        if self._context is not None and self._page is not None:
+        if self._context is not None:
+            state = self._safe_state()
+            if state.get("open"):
+                self._last_status = state
+                return state
             try:
-                if not self._page.is_closed():
-                    return self._safe_state()
+                self._context.close()
             except Exception:
                 pass
+            self._context = None
+            self._page = None
+            if self._playwright is not None:
+                try:
+                    self._playwright.stop()
+                except Exception:
+                    pass
+                self._playwright = None
 
         from playwright.sync_api import sync_playwright
 
         self.profile_dir.mkdir(parents=True, exist_ok=True)
-        self._playwright = sync_playwright().start()
-        self._context = self._playwright.chromium.launch_persistent_context(
-            user_data_dir=str(self.profile_dir),
-            headless=False,
-            no_viewport=True,
-            args=["--start-maximized"],
-        )
-        pages = self._context.pages
-        self._page = pages[0] if pages else self._context.new_page()
+        playwright = sync_playwright().start()
         try:
-            self._page.goto(
-                PGY_START_URL,
-                wait_until="domcontentloaded",
-                timeout=45000,
+            context = playwright.chromium.launch_persistent_context(
+                user_data_dir=str(self.profile_dir),
+                headless=False,
+                no_viewport=True,
+                args=["--start-maximized"],
             )
+        except Exception:
+            playwright.stop()
+            raise CaptureError(
+                "无法启动独立可见浏览器；请确认该配置目录没有被其他浏览器进程占用"
+            ) from None
+        self._playwright = playwright
+        self._context = context
+        context.on("page", self._on_page_created)
+        pages = list(context.pages)
+        for item in pages:
+            self._watch_page(item)
+        pgy_pages = [item for item in pages if urlparse(item.url).hostname == PGY_HOST]
+        self._page = pgy_pages[-1] if pgy_pages else (pages[0] if pages else context.new_page())
+        try:
+            if urlparse(self._page.url).hostname != PGY_HOST:
+                self._page.goto(PGY_START_URL, wait_until="domcontentloaded", timeout=45000)
         except Exception:
             # The headed window may remain useful for a normal manual sign-in.
             pass
+        self._remember_status()
         return {
-            "open": True,
-            "domain": PGY_HOST,
-            "page_kind": self._route_kind(),
+            **self._last_status,
             "message": "请在新窗口中正常登录并手动打开待采集页面",
         }
 
     def status(self) -> dict[str, Any]:
-        return self._call(self._safe_state)
+        if self._operation_busy.is_set():
+            return {**self._last_status, "busy": True}
+        state = self._call(self._safe_state)
+        self._last_status = state
+        return state
+
+    def _on_page_created(self, page) -> None:
+        self._page = page
+        self._watch_page(page)
+        self._remember_status()
+
+    def _watch_page(self, page) -> None:
+        page.on("close", lambda: self._remember_status())
+        page.on("framenavigated", lambda _frame: self._remember_status())
+
+    def _remember_status(self) -> None:
+        try:
+            self._last_status = self._safe_state()
+        except Exception:
+            pass
 
     def _safe_state(self) -> dict[str, Any]:
-        if self._page is None:
-            return {"open": False, "domain": "", "page_kind": ""}
         try:
-            if self._page.is_closed():
-                return {"open": False, "domain": "", "page_kind": ""}
+            pages = [page for page in (self._context.pages if self._context else []) if not page.is_closed()]
+            if self._page is None or self._page.is_closed():
+                pgy_pages = [page for page in pages if urlparse(page.url).hostname == PGY_HOST]
+                self._page = pgy_pages[-1] if pgy_pages else (pages[-1] if pages else None)
+            if self._page is None:
+                return {"open": False, "domain": "", "page_kind": "", "tab_count": 0, "tabs": []}
             parsed = urlparse(self._page.url)
-            if parsed.hostname != PGY_HOST:
-                return {
-                    "open": True,
-                    "domain": parsed.hostname or "",
-                    "page_kind": "other",
-                }
-            return {"open": True, "domain": PGY_HOST, "page_kind": self._route_kind()}
+            tabs = []
+            for page in pages:
+                tab_url = urlparse(page.url)
+                tabs.append({
+                    "domain": tab_url.hostname or "",
+                    "page_kind": self._route_kind(page),
+                })
+            return {
+                "open": True,
+                "domain": parsed.hostname or "",
+                "page_kind": self._route_kind(self._page),
+                "tab_count": len(pages),
+                "tabs": tabs,
+            }
         except Exception:
-            return {"open": False, "domain": "", "page_kind": ""}
+            return {"open": False, "domain": "", "page_kind": "", "tab_count": 0, "tabs": []}
 
-    def _route_kind(self) -> str:
-        if self._page is None:
+    def _route_kind(self, page=None) -> str:
+        page = page or self._page
+        if page is None:
             return ""
-        path = urlparse(self._page.url).path
+        parsed = urlparse(page.url)
+        if parsed.hostname != PGY_HOST:
+            return "other"
+        path = parsed.path
         if path.endswith("/solar/pre-trade/note/kol"):
             return "博主广场"
         if "/solar/pre-trade/blogger-detail/" in path:
@@ -208,6 +274,10 @@ class PgyVisibleBrowser:
             "收藏量",
             "评论量",
             "分享量",
+            "关注量",
+            "新增关注",
+            "视频时长",
+            "时长",
         }
         for index in range(start, len(lines)):
             line = lines[index]
@@ -299,7 +369,19 @@ class PgyVisibleBrowser:
             start = lines.index("笔记详情")
         except ValueError:
             return None
-        labels = ("发布时间", "曝光量", "阅读量", "点赞量", "收藏量", "评论量", "分享量")
+        labels = (
+            "发布时间",
+            "曝光量",
+            "阅读量",
+            "点赞量",
+            "收藏量",
+            "评论量",
+            "分享量",
+            "关注量",
+            "新增关注",
+            "视频时长",
+            "时长",
+        )
         fields: dict[str, Any] = {}
         for label in labels:
             fields[label] = self._value_after(lines, label, start=start)
@@ -319,6 +401,7 @@ class PgyVisibleBrowser:
         report_progress: Callable[[int, str, int], None],
         report_failure: Callable[[int, int, str], None],
         existing_comment_count: int,
+        comment_scope: str = "",
     ) -> dict[str, Any]:
         """Collect a small, resumable sample only through visible page controls."""
         return self._call(
@@ -332,6 +415,7 @@ class PgyVisibleBrowser:
                 report_progress=report_progress,
                 report_failure=report_failure,
                 existing_comment_count=existing_comment_count,
+                comment_scope=comment_scope,
             ),
             timeout=None,
         )
@@ -348,9 +432,21 @@ class PgyVisibleBrowser:
         report_progress: Callable[[int, str, int], None],
         report_failure: Callable[[int, int, str], None],
         existing_comment_count: int,
+        comment_scope: str = "",
     ) -> dict[str, Any]:
         if self._context is None or self._page is None or self._page.is_closed():
             self._open()
+        pgy_pages = [
+            item
+            for item in (self._context.pages if self._context else [])
+            if not item.is_closed() and urlparse(item.url).hostname == PGY_HOST
+        ]
+        if pgy_pages and (
+            self._page is None
+            or self._page.is_closed()
+            or urlparse(self._page.url).hostname != PGY_HOST
+        ):
+            self._page = pgy_pages[-1]
         page = self._page
         if page is None:
             raise CaptureError("无法打开蒲公英可见浏览器")
@@ -441,7 +537,12 @@ class PgyVisibleBrowser:
                             note_stage = "打开小红书公开笔记页"
                             note_page = self._open_copied_note(note_ref["copied_url"])
                             note_stage = "读取小红书公开笔记正文和话题"
-                            public_record = self._capture_public_note(note_page, creator_ref, note_ref["canonical"])
+                            public_record = self._capture_public_note(
+                                note_page,
+                                creator_ref,
+                                note_ref["canonical"],
+                                expected_title=note_ref.get("expected_title"),
+                            )
                             if public_record:
                                 save_records(
                                     {"source": "小红书公开笔记页", "records": [public_record]}
@@ -456,6 +557,7 @@ class PgyVisibleBrowser:
                                     note_ref["canonical"],
                                     cap,
                                     check_control,
+                                    comment_scope,
                                     lambda delta: report_progress(
                                         min(95, 30 + notes_visited * 4),
                                         f"采集评论：创作者 {creator_index + 1} / 笔记 {note_index + 1}",
@@ -546,41 +648,80 @@ class PgyVisibleBrowser:
     def _open_creator_row(self, page, row_index: int):
         before_pages = set(self._context.pages)
         row = page.get_by_role("row").nth(row_index)
-        links = row.get_by_role("link")
+        links = row.locator("a:visible, [role='link']:visible")
         images = row.locator("img:visible")
+        avatars = row.locator("[class*='avatar']:visible")
+        buttons = row.locator("button:visible, [role='button']:visible")
         cells = row.get_by_role("cell")
         candidates = []
         if images.count():
             candidates.append((images.first, "头像"))
+        if avatars.count():
+            candidates.append((avatars.first, "头像容器"))
         if links.count():
             candidates.append((links.first, "可见链接"))
+        if buttons.count():
+            candidates.append((buttons.first, "可见按钮"))
         if cells.count() and cells.first.is_visible():
             candidates.append((cells.first, "首个可见单元格"))
         if row.is_visible():
             candidates.append((row, "创作者行"))
         if not candidates:
             raise CaptureError("当前创作者行没有可唯一确认的可见点击元素")
-        clicked_kinds = []
+        click_errors: list[str] = []
+
+        def opened_detail_page():
+            return next(
+                (
+                    item
+                    for item in self._context.pages
+                    if item not in before_pages
+                    and not item.is_closed()
+                    and urlparse(item.url).hostname == PGY_HOST
+                    and "/solar/pre-trade/blogger-detail/" in urlparse(item.url).path
+                ),
+                None,
+            )
+
+        def return_opened_detail(detail):
+            try:
+                detail.wait_for_load_state("domcontentloaded", timeout=20000)
+            except Exception:
+                pass
+            return detail, True
+
         for target, target_kind in candidates:
             try:
-                target.click(timeout=3000, no_wait_after=True)
-                clicked_kinds.append(target_kind)
-            except Exception:
+                target.scroll_into_view_if_needed(timeout=5000)
+            except Exception as exc:
+                click_errors.append(
+                    f"{target_kind}:{type(exc).__name__}[target_summary_unavailable]"
+                )
                 continue
-            deadline = time.monotonic() + 3
+            target_summary = self._safe_click_target_summary(target)
+            if self._is_modal_overlay_interception(target_summary):
+                raise PauseForUser(
+                    "蒲公英列表被页面弹层遮挡；请在可见浏览器中确认并关闭后恢复任务"
+                )
+            try:
+                target.click(timeout=8000, no_wait_after=True)
+            except Exception as exc:
+                detail = opened_detail_page()
+                if detail:
+                    return return_opened_detail(detail)
+                if (
+                    not page.is_closed()
+                    and "/solar/pre-trade/blogger-detail/" in urlparse(page.url).path
+                ):
+                    return page, False
+                click_errors.append(
+                    f"{target_kind}:{type(exc).__name__}[{target_summary['summary']}]"
+                )
+                continue
+            deadline = time.monotonic() + 8
             detail = None
             while time.monotonic() < deadline:
-                detail = next(
-                    (
-                        item
-                        for item in self._context.pages
-                        if item not in before_pages
-                        and not item.is_closed()
-                        and urlparse(item.url).hostname == PGY_HOST
-                        and "/solar/pre-trade/blogger-detail/" in urlparse(item.url).path
-                    ),
-                    None,
-                )
+                detail = opened_detail_page()
                 if detail or (
                     not page.is_closed()
                     and "/solar/pre-trade/blogger-detail/" in urlparse(page.url).path
@@ -588,36 +729,89 @@ class PgyVisibleBrowser:
                     break
                 page.wait_for_timeout(250)
             if detail:
-                try:
-                    detail.wait_for_load_state("domcontentloaded", timeout=20000)
-                except Exception:
-                    pass
-                return detail, True
+                return return_opened_detail(detail)
             if not page.is_closed() and "/solar/pre-trade/blogger-detail/" in urlparse(page.url).path:
                 return page, False
         opened = [item for item in self._context.pages if item not in before_pages]
         for item in opened:
             if not item.is_closed():
                 self._close_owned_page(item)
-        if clicked_kinds:
-            raise CaptureError("已点击创作者可见列表项，但没有打开蒲公英详情页")
+        if click_errors:
+            details = "、".join(click_errors[:5])
+            raise CaptureError(f"创作者行可见点击未成功（{details[:240]}）")
         raise CaptureError("点击创作者头像、链接或列表项失败")
 
-    def _capture_creator_records(self, page, creator_ref: str) -> list[dict[str, Any]]:
+    @staticmethod
+    def _safe_click_target_summary(target) -> dict[str, Any]:
         try:
-            body = page.locator("body").inner_text(timeout=12000)
+            info = target.evaluate(
+                """el => {
+                  const r=el.getBoundingClientRect();
+                  const x=Math.round(r.left+r.width/2), y=Math.round(r.top+r.height/2);
+                  const hit=document.elementFromPoint(x,y);
+                  const compact=n=>n?`${n.tagName.toLowerCase()}.${String(n.className||'').trim().split(/\\s+/).slice(0,2).join('.')}`:'none';
+                  const style=getComputedStyle(el);
+                  return {tag:compact(el), width:Math.round(r.width), height:Math.round(r.height),
+                    pointer:style.pointerEvents, visibility:style.visibility,
+                    hit:compact(hit), containsHit:!!(hit&&el.contains(hit))};
+                }"""
+            )
+            info["summary"] = (
+                f"{info['tag']}:{info['width']}x{info['height']}:"
+                f"{info['pointer']}/{info['visibility']}:hit={info['hit']}:"
+                f"inside={int(info['containsHit'])}"
+            )[:150]
+            return info
         except Exception:
-            raise CaptureError("读取创作者可见资料失败") from None
-        lines = [line.strip() for line in body.splitlines() if line.strip()]
-        records = []
-        for record in (
-            self._profile_record(lines),
-            self._performance_record(lines),
-            self._fans_record(lines),
-        ):
+            return {"hit": "none", "containsHit": False, "summary": "target_summary_unavailable"}
+
+    @staticmethod
+    def _is_modal_overlay_interception(target_summary: dict[str, Any]) -> bool:
+        hit = str(target_summary.get("hit") or "")
+        return (
+            not bool(target_summary.get("containsHit"))
+            and bool(re.search(r"modal|overlay|mask", hit, flags=re.IGNORECASE))
+        )
+
+    def _capture_creator_records(self, page, creator_ref: str) -> list[dict[str, Any]]:
+        records: list[dict[str, Any]] = []
+
+        def capture_visible() -> list[str]:
+            try:
+                body = page.locator("body").inner_text(timeout=12000)
+            except Exception:
+                raise CaptureError("读取创作者可见资料失败") from None
+            return [line.strip() for line in body.splitlines() if line.strip()]
+
+        def add(record: dict[str, Any] | None, source: str = "蒲公英可见页面") -> None:
             if record:
                 record["creator_ref"] = creator_ref
+                record["source"] = source
+                record["captured_at"] = local_timestamp()
                 records.append(record)
+
+        overview_tab = page.get_by_text("数据概览", exact=True)
+        if overview_tab.count() == 1 and overview_tab.first.is_visible():
+            try:
+                overview_tab.first.click(timeout=5000)
+                page.wait_for_timeout(350)
+            except Exception:
+                pass
+        lines = capture_visible()
+        add(self._profile_record(lines))
+        add(self._performance_record(lines))
+
+        fans_tab = page.get_by_text("粉丝分析", exact=True)
+        if fans_tab.count() == 1 and fans_tab.first.is_visible():
+            try:
+                fans_tab.first.click(timeout=8000)
+                page.wait_for_timeout(450)
+                add(self._fans_record(capture_visible()))
+            except CaptureError:
+                raise
+            except Exception:
+                # Keep the already captured overview and let the task report missing fields.
+                pass
         return records
 
     def _open_notes_tab(self, page) -> None:
@@ -627,14 +821,53 @@ class PgyVisibleBrowser:
             page.wait_for_timeout(500)
         cards = page.locator(".note-card-wrapper:visible")
         if cards.count() == 0:
+            try:
+                page.locator(".note-card-wrapper").first.wait_for(state="visible", timeout=8000)
+            except Exception:
+                pass
+            cards = page.locator(".note-card-wrapper:visible")
+        if cards.count() == 0:
             self._check_page_blocker(page, pgy=True, force=True)
             raise CaptureError("创作者详情页没有识别到可见笔记案例卡")
+
+    @staticmethod
+    def _note_card_title_from_text(text: str) -> str | None:
+        excluded = re.compile(
+            r"(?:阅读量|曝光量|点赞量|收藏量|评论量|分享量|关注量|播放量|发布于|发布时间|"
+            r"含推广流量|推广笔记|视频笔记|图文笔记|视频|图文|广告)",
+            re.I,
+        )
+        for value in text.splitlines():
+            line = re.sub(r"\s+", " ", value).strip(" ·|\t")
+            if len(line) < 4 or len(line) > 240 or excluded.search(line):
+                continue
+            if re.fullmatch(r"[\d.,+%¥￥元万wW:：—–-]+", line):
+                continue
+            return line
+        return None
+
+    @staticmethod
+    def _titles_match(expected: str | None, actual: str | None) -> bool:
+        normalize = lambda value: re.sub(r"[^\w\u3400-\u9fff]+", "", str(value or "").casefold())
+        left, right = normalize(expected), normalize(actual)
+        if not left or not right:
+            return False
+        if left == right:
+            return True
+        shorter, longer = sorted((left, right), key=len)
+        return len(shorter) >= 5 and longer.startswith(shorter)
 
     def _open_and_copy_note(self, page, note_index: int, creator_ref: str):
         cards = page.locator(".note-card-wrapper:visible")
         if note_index >= cards.count():
             raise CaptureError("目标笔记案例卡当前不可见")
         card = cards.nth(note_index)
+        try:
+            expected_title = self._note_card_title_from_text(card.inner_text(timeout=5000))
+        except Exception:
+            expected_title = None
+        if not expected_title:
+            raise CaptureError("无法从可见笔记卡确认标题；已跳过该笔记")
         mask = card.locator(".note-card__mask:visible")
         if mask.count() != 1:
             raise CaptureError("笔记卡片可见点击区域不唯一；已跳过该笔记")
@@ -679,8 +912,21 @@ class PgyVisibleBrowser:
         record = self._note_detail_record(lines)
         if record:
             record.setdefault("fields", {})
-            record.update({"type": "note_detail", "creator_ref": creator_ref, "note_ref": canonical})
-        return record, {"copied_url": copied, "canonical": canonical}
+            record["fields"].setdefault("笔记标题", expected_title)
+            record.update(
+                {
+                    "type": "note_detail",
+                    "source": "蒲公英可见笔记详情",
+                    "captured_at": local_timestamp(),
+                    "creator_ref": creator_ref,
+                    "note_ref": canonical,
+                }
+            )
+        return record, {
+            "copied_url": copied,
+            "canonical": canonical,
+            "expected_title": expected_title,
+        }
 
     @staticmethod
     def _read_clipboard(page) -> str:
@@ -720,7 +966,14 @@ class PgyVisibleBrowser:
         self._close_phone_login_prompt(tab)
         return tab
 
-    def _capture_public_note(self, page, creator_ref: str, note_ref: str) -> dict[str, Any] | None:
+    def _capture_public_note(
+        self,
+        page,
+        creator_ref: str,
+        note_ref: str,
+        *,
+        expected_title: str | None = None,
+    ) -> dict[str, Any] | None:
         title = self._visible_first_text(
             page,
             (".note-content .title", ".note-detail-mask .title", "h1"),
@@ -742,6 +995,8 @@ class PgyVisibleBrowser:
             page,
             (".note-content .date", ".note-detail-mask .date", "time"),
         )
+        if expected_title and not self._titles_match(expected_title, title):
+            raise CaptureError("小红书页面标题与刚复制的蒲公英笔记卡不匹配；已跳过该页面")
         fields: dict[str, Any] = {}
         if title:
             fields["笔记标题"] = title
@@ -751,10 +1006,55 @@ class PgyVisibleBrowser:
             fields["发布时间"] = published
         if topics:
             fields["话题"] = " ".join(topics)
+        metric_selectors = {
+            "点赞量": (
+                ".interact-container .like-wrapper .count",
+                ".interact-container .like-count",
+                "[class*='like-wrapper'] [class*='count']",
+            ),
+            "收藏量": (
+                ".interact-container .collect-wrapper .count",
+                ".interact-container .collect-count",
+                "[class*='collect-wrapper'] [class*='count']",
+            ),
+            "评论量": (
+                ".interact-container .chat-wrapper .count",
+                ".interact-container .comment-count",
+                "[class*='chat-wrapper'] [class*='count']",
+            ),
+            "分享量": (
+                ".interact-container .share-wrapper .count",
+                ".interact-container .share-count",
+                "[class*='share-wrapper'] [class*='count']",
+            ),
+        }
+        for key, selectors in metric_selectors.items():
+            value = self._visible_first_text(page, selectors)
+            if value is not None:
+                fields[key] = value
+        if "评论量" not in fields:
+            try:
+                visible_text = page.locator("body").inner_text(timeout=5000)
+            except Exception:
+                visible_text = ""
+            comment_total = self._inline_count(
+                visible_text,
+                r"共\s*([\d.,]+\s*(?:万|w|千)?\+?)\s*条评论",
+            )
+            if comment_total:
+                fields["评论量"] = comment_total
         if not fields:
-            raise CaptureError("公开笔记页未识别到可见正文；未保存整页文本")
+            try:
+                visible_text = page.locator("body").inner_text(timeout=5000)
+            except Exception:
+                visible_text = ""
+            if re.search(r"登录后查看|登录后浏览|登录后查看笔记|登录查看完整内容", visible_text):
+                raise PauseForUser("小红书笔记内容要求登录才能查看；受限内容未采集")
+            raise CaptureError("公开笔记页未识别到可见字段；未保存整页文本")
         return {
             "type": "xhs_public_note",
+            "source": "小红书公开笔记页",
+            "captured_at": local_timestamp(),
             "creator_ref": creator_ref,
             "note_ref": note_ref,
             "note_topics": topics,
@@ -767,6 +1067,7 @@ class PgyVisibleBrowser:
         note_ref: str,
         limit: int,
         check_control: Callable[[], None],
+        comment_scope: str,
         report_dom_delta: Callable[[int], None],
     ) -> tuple[list[dict[str, Any]], int]:
         if limit <= 0:
@@ -803,7 +1104,7 @@ class PgyVisibleBrowser:
             for row in rows:
                 if row["level"] == 1:
                     local_id = self._comment_fingerprint(
-                        note_ref, row.get("text"), row.get("time"), 1, None
+                        comment_scope, note_ref, row.get("text"), row.get("time"), 1, None
                     )
                     parent_ids[(str(row.get("text") or ""), str(row.get("time") or ""))] = local_id
                     comments.setdefault(
@@ -823,7 +1124,7 @@ class PgyVisibleBrowser:
                         (str(row.get("parent_text") or ""), str(row.get("parent_time") or ""))
                     )
                     local_id = self._comment_fingerprint(
-                        note_ref, row.get("text"), row.get("time"), 2, parent_id
+                        comment_scope, note_ref, row.get("text"), row.get("time"), 2, parent_id
                     )
                     comments.setdefault(
                         local_id,
@@ -905,10 +1206,22 @@ class PgyVisibleBrowser:
 
     @staticmethod
     def _comment_fingerprint(
-        note_ref: str, text: Any, displayed_time: Any, level: int, parent_id: str | None
+        batch_scope: str,
+        note_ref: str,
+        text: Any,
+        displayed_time: Any,
+        level: int,
+        parent_id: str | None,
     ) -> str:
         material = "\x1f".join(
-            (note_ref, str(text or ""), str(displayed_time or ""), str(level), parent_id or "")
+            (
+                batch_scope,
+                note_ref,
+                str(text or ""),
+                str(displayed_time or ""),
+                str(level),
+                parent_id or "",
+            )
         )
         return hashlib.sha256(material.encode("utf-8")).hexdigest()[:24]
 
@@ -1069,6 +1382,13 @@ class PgyVisibleBrowser:
             except Exception:
                 pass
         self._playwright = None
+        self._last_status = {
+            "open": False,
+            "domain": "",
+            "page_kind": "",
+            "tab_count": 0,
+            "tabs": [],
+        }
         return {"open": False, "message": "蒲公英浏览器已关闭"}
 
     def shutdown(self) -> None:
