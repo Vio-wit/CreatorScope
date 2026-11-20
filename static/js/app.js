@@ -38,7 +38,8 @@
     [
       'typeChart', 'noteChart', 'fanChart', 'categoryChart', 'wordChart',
       'followerDistChart', 'quoteDistChart', 'followerPriceChart', 'readingEngagementChart',
-      'fanAggregateChart', 'correlationChart', 'trendChart', 'noteMetricsChart',
+      'fanAggregateChart', 'correlationChart', 'trendChart', 'noteMetricsChart', 'sourceShareChart',
+      'noteReadRankChart', 'noteInteractionRankChart', 'notePublishChart', 'noteTrendChart',
     ].forEach((id) => {
       const element = document.getElementById(id);
       if (element && window.echarts) charts[id] = echarts.init(element);
@@ -174,9 +175,10 @@
 
     const trend = chartsData.batch_trend || [];
     $('#trendStatus').textContent = data.availability?.history || '历史快照不足';
-    if (trend.length >= 2) {
-      charts.trendChart?.setOption({ ...baseChart, grid: { left: 45, right: 15, top: 15, bottom: 38 }, xAxis: { type: 'category', data: trend.map((item) => item.captured_at), axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, series: [{ type: 'line', smooth: true, symbolSize: 6, data: trend.map((item) => item.median_followers), itemStyle: { color: '#438f6c' }, areaStyle: { color: '#83b99b33' } }] }, true);
-    } else setEmptyChart(charts.trendChart, '需要不同采集时间的快照');
+    if (trend.length) {
+      const times = [...new Set(trend.flatMap((group) => group.points.map((point) => point.captured_at)))].sort();
+      charts.trendChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 15, top: 12, bottom: 48 }, xAxis: { type: 'category', data: times, axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, series: trend.map((group) => { const byTime = new Map(group.points.map((point) => [point.captured_at, point.median_followers])); return { name: `${group.source} · ${group.period}`, type: 'line', smooth: true, symbolSize: 6, connectNulls: false, data: times.map((time) => byTime.get(time) ?? null) }; }) }, true);
+    } else setEmptyChart(charts.trendChart, '需要同来源、同周期、重复创作者快照');
 
     $('#followerPriceStatus').textContent = data.availability?.follower_price || '';
     $('#readingStatus').textContent = data.availability?.reading_engagement || '';
@@ -187,6 +189,73 @@
       return { name, value: values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null };
     });
     setBarChart('noteMetricsChart', metricItems);
+  }
+
+  function renderOverview(data) {
+    const counts = data.counts || {};
+    $('#overviewCreators').textContent = Number(counts.creators || 0).toLocaleString('zh-CN');
+    $('#overviewNotes').textContent = Number(counts.notes || 0).toLocaleString('zh-CN');
+    $('#overviewComments').textContent = Number(counts.comments || 0).toLocaleString('zh-CN');
+    $('#overviewBatches').textContent = Number(counts.batches || 0).toLocaleString('zh-CN');
+    $('#overviewUpdatedAt').textContent = `最近更新 ${data.latest_updated_at || '暂无'}`;
+    $('#sourceShareScope').textContent = data.source_scope || '按采集来源统计';
+    const sources = (data.sources || []).filter((item) => item.total_count > 0);
+    if (!sources.length) return setEmptyChart(charts.sourceShareChart, '暂无来源记录');
+    charts.sourceShareChart?.setOption({ ...baseChart, color: ['#438f6c', '#78ad86', '#aec9aa', '#e8c58f', '#b6c6d9', '#d48d7f'], tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.name)}<br>${item.value.toLocaleString()} 行 (${item.percent}%)` }, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '44%'], label: { formatter: '{b} {d}%', fontSize: 8 }, data: sources.map((item) => ({ name: item.source, value: item.total_count })) }] }, true);
+  }
+
+  function renderGroupedRanking(chartId, groups, statusId = null) {
+    const validGroups = (groups || []).filter((group) => group.items?.length);
+    if (!validGroups.length) return setEmptyChart(charts[chartId], '当前筛选没有可用指标');
+    const labels = [...new Set(validGroups.flatMap((group) => group.items.slice(0, 7).map((item) => item.label)))];
+    charts[chartId]?.setOption({ ...baseChart, color: ['#438f6c', '#d19a64', '#7596bd', '#c8796d', '#8a78aa'], legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 118, right: 18, top: 12, bottom: 35 }, tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } }, xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } }, series: validGroups.map((group) => { const values = new Map(group.items.slice(0, 7).map((item) => [item.label, item.value])); return { name: group.source, type: 'bar', barMaxWidth: 12, data: labels.map((label) => values.get(label) ?? null) }; }) }, true);
+    if (statusId) $(`#${statusId}`).textContent = validGroups.length > 1 ? `按来源分别排名（${validGroups.length} 组）` : `来源：${validGroups[0].source}`;
+  }
+
+  function getNoteFilterParams() {
+    const params = new URLSearchParams();
+    const values = { creator_id: $('#noteCreatorFilter').value, date_from: $('#noteDateFrom').value, date_to: $('#noteDateTo').value, note_type: $('#noteTypeFilter').value, topic: $('#noteTopicFilter').value };
+    Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, value); });
+    return params;
+  }
+
+  function renderNotes(data) {
+    $('#noteCountLabel').textContent = `${data.count || 0} 篇笔记`;
+    const fill = (selector, rows, valueKey, labelFn, emptyLabel, current) => {
+      const node = $(selector);
+      node.innerHTML = `<option value="">${emptyLabel}</option>` + rows.map((row) => `<option value="${escapeHtml(row[valueKey])}">${escapeHtml(labelFn(row))}</option>`).join('');
+      if (rows.some((row) => String(row[valueKey]) === current)) node.value = current;
+    };
+    fill('#noteCreatorFilter', data.creators || [], 'creator_id', (row) => row.pseudonym, '全部创作者', $('#noteCreatorFilter').value);
+    fill('#noteTypeFilter', (data.note_types || []).map((value) => ({ value })), 'value', (row) => row.value, '全部类型', $('#noteTypeFilter').value);
+    fill('#noteTopicFilter', (data.topics || []).map((value) => ({ value })), 'value', (row) => row.value, '全部话题', $('#noteTopicFilter').value);
+    const params = getNoteFilterParams();
+    if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
+    $('#exportNotes').href = `/api/notes/export.csv?${params.toString()}`;
+    const chartsData = data.charts || {};
+    renderGroupedRanking('noteReadRankChart', chartsData.top_read, 'noteReadStatus');
+    renderGroupedRanking('noteInteractionRankChart', chartsData.top_interactions);
+    const publish = chartsData.publish_distribution || [];
+    if (publish.length) charts.notePublishChart?.setOption({ ...baseChart, grid: { left: 38, right: 12, top: 12, bottom: 30 }, xAxis: { type: 'category', data: publish.map((item) => item.month), axisLabel: { fontSize: 8, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, series: [{ type: 'bar', data: publish.map((item) => item.count), barMaxWidth: 24, itemStyle: { color: '#7596bd', borderRadius: [4, 4, 0, 0] } }] }, true);
+    else setEmptyChart(charts.notePublishChart, '没有可解析的发布时间');
+    const trends = chartsData.metric_trends || [];
+    $('#noteTrendStatus').textContent = data.availability?.metric_trends || '等待重复快照';
+    if (trends.length) {
+      const times = [...new Set(trends.flatMap((series) => series.points.map((point) => point.captured_at)))].sort();
+      charts.noteTrendChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 15, top: 12, bottom: 48 }, xAxis: { type: 'category', data: times, axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, series: trends.map((group) => { const byTime = new Map(group.points.map((point) => [point.captured_at, point.value])); return { name: group.label, type: 'line', symbolSize: 5, connectNulls: false, data: times.map((time) => byTime.get(time) ?? null) }; }) }, true);
+    } else setEmptyChart(charts.noteTrendChart, '缺少同笔记、来源、指标和统计周期的重复快照');
+    const rows = data.notes || [];
+    $('#noteRows').innerHTML = rows.length ? rows.map((row) => `<tr><td>${escapeHtml(row.creator_name)}</td><td>${escapeHtml(row.title)}</td><td>${escapeHtml(row.published_at || '—')}</td><td>${escapeHtml(row.note_type || '—')}</td><td>${escapeHtml((row.topics || []).join('、') || '—')}</td><td>${escapeHtml(row.source)}<br><small>${escapeHtml(row.batch_id || '—')}</small></td><td>${formatMetric(row.read_count)}</td><td>${formatMetric(row.like_count)}</td><td>${formatMetric(row.favorite_count)}</td><td>${formatMetric(row.interaction_comment_count)}</td><td>${formatMetric(row.share_count)}</td><td>${row.comment_count}</td></tr>`).join('') : '<tr><td colspan="12" class="empty-cell">当前筛选下没有笔记</td></tr>';
+  }
+
+  async function refreshOverview() {
+    renderOverview(await requestJson('/api/overview'));
+  }
+
+  async function refreshNotes() {
+    const params = getNoteFilterParams();
+    if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
+    renderNotes(await requestJson(`/api/notes?${params.toString()}`));
   }
 
   function renderCoverage(data) {
@@ -245,10 +314,8 @@
   function updateSelectOptions(data) {
     const currentBatch = elements.batchSelect.value;
     const batches = data.batches || [];
-    elements.batchSelect.innerHTML = batches.length
-      ? batches.map((batch) => `<option value="${escapeHtml(batch.batch_id)}">${escapeHtml(batch.source)} · ${escapeHtml(batch.captured_at)}</option>`).join('')
-      : '<option value="">暂无批次</option>';
-    if (batches.some((batch) => batch.batch_id === currentBatch)) elements.batchSelect.value = currentBatch;
+    elements.batchSelect.innerHTML = '<option value="__all__">全部批次</option>' + batches.map((batch) => `<option value="${escapeHtml(batch.batch_id)}">${escapeHtml(batch.source)} · ${escapeHtml(batch.captured_at)}</option>`).join('');
+    if (currentBatch === '__all__' || batches.some((batch) => batch.batch_id === currentBatch)) elements.batchSelect.value = currentBatch;
     else if (data.selected_batch_id) elements.batchSelect.value = data.selected_batch_id;
 
     const currentType = elements.typeSelect.value;
@@ -277,25 +344,36 @@
     const params = new URLSearchParams();
     const values = {
       category: $('#categoryFilter').value,
+      location: $('#locationFilter').value,
       followers_min: $('#followersMin').value.trim(),
       followers_max: $('#followersMax').value.trim(),
       quote_min: $('#quoteMin').value.trim(),
       quote_max: $('#quoteMax').value.trim(),
+      sort_by: $('#creatorSort').value,
     };
     Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, value); });
+    if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
     const data = await requestJson(`/api/creators?${params.toString()}`);
     const currentCategory = $('#categoryFilter').value;
+    const currentLocation = $('#locationFilter').value;
+    const compareSelection = Array.from($('#creatorCompareSelect').selectedOptions).map((option) => option.value);
     const categories = data.categories || [];
     $('#categoryFilter').innerHTML = '<option value="">全部领域</option>' + categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
     if (categories.includes(currentCategory)) $('#categoryFilter').value = currentCategory;
+    const locations = data.locations || [];
+    $('#locationFilter').innerHTML = '<option value="">全部地域</option>' + locations.map((location) => `<option value="${escapeHtml(location)}">${escapeHtml(location)}</option>`).join('');
+    if (locations.includes(currentLocation)) $('#locationFilter').value = currentLocation;
     $('#creatorCount').textContent = `${data.count || 0} 位博主`;
     const body = $('#creatorBody');
     if (!data.creators?.length) {
-      body.innerHTML = '<tr><td colspan="8" class="empty-cell">当前筛选条件下没有创作者</td></tr>';
+      body.innerHTML = '<tr><td colspan="9" class="empty-cell">当前筛选条件下没有创作者</td></tr>';
+      $('#creatorCompareSelect').innerHTML = '';
       return;
     }
     const typeLabels = { blogger_list_sample: '列表', creator_profile_sample: '详情', creator_content_performance: '表现', fan_analysis: '画像', note_detail: '笔记' };
-    body.innerHTML = data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${formatMetric(creator.quote, ' 元')}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml((creator.record_types || []).map((type) => typeLabels[type] || type).join(' / '))}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('');
+    body.innerHTML = data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${formatMetric(creator.quote, ' 元')}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml((creator.record_types || []).map((type) => typeLabels[type] || type).join(' / '))}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('');
+    $('#creatorCompareSelect').innerHTML = data.creators.map((creator) => `<option value="${escapeHtml(creator.creator_id)}">${escapeHtml(creator.pseudonym)}</option>`).join('');
+    Array.from($('#creatorCompareSelect').options).forEach((option) => { option.selected = compareSelection.includes(option.value); });
   }
 
   async function refreshFieldDictionary() {
@@ -336,7 +414,7 @@
 
   async function refreshDataViews() {
     await refreshDashboard();
-    await Promise.all([refreshAnalytics(), refreshCreatorLibrary(), refreshCreatorOptions(), refreshFieldDictionary()]);
+    await Promise.all([refreshOverview(), refreshAnalytics(), refreshCreatorLibrary(), refreshCreatorOptions(), refreshFieldDictionary(), refreshNotes()]);
   }
 
   async function refreshTasks() {
@@ -447,10 +525,34 @@
         button.disabled = false;
       }
     });
-    elements.batchSelect.addEventListener('change', () => { refreshDashboard(); refreshAnalytics(); });
+    elements.batchSelect.addEventListener('change', () => {
+      Promise.all([refreshDashboard(), refreshAnalytics(), refreshCreatorLibrary(), refreshNotes()]).catch((error) => toast(error.message, true));
+    });
     elements.typeSelect.addEventListener('change', refreshDashboard);
     $('#filterCreators').addEventListener('click', () => refreshCreatorLibrary().catch((error) => toast(error.message, true)));
-    $('#categoryFilter').addEventListener('change', () => refreshCreatorLibrary().catch((error) => toast(error.message, true)));
+    ['#categoryFilter', '#locationFilter', '#creatorSort'].forEach((selector) => $(selector).addEventListener('change', () => refreshCreatorLibrary().catch((error) => toast(error.message, true))));
+    $('#creatorCompareSelect').addEventListener('change', () => {
+      const selected = Array.from($('#creatorCompareSelect').selectedOptions);
+      if (selected.length > 4) { selected.at(-1).selected = false; $('#creatorCompareStatus').textContent = '最多选择 4 位创作者'; }
+      else $('#creatorCompareStatus').textContent = `${selected.length} 位已选择；请选 2 至 4 位`;
+    });
+    $('#compareCreators').addEventListener('click', async () => {
+      if (elements.batchSelect.value === '__all__') {
+        $('#creatorCompareStatus').textContent = '请选择一个具体采集批次，以保证来源和时间口径一致';
+        return;
+      }
+      const params = new URLSearchParams();
+      Array.from($('#creatorCompareSelect').selectedOptions).forEach((option) => params.append('creator_id', option.value));
+      if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
+      try {
+        const data = await requestJson(`/api/creators/compare?${params.toString()}`);
+        $('#creatorCompareStatus').textContent = `${data.count} 位创作者 · 同一批次指标，单位按列保留`;
+        $('#creatorCompareBody').innerHTML = data.creators.length ? data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${formatMetric(creator.quote, ' 元')}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('') : '<tr><td colspan="8" class="empty-cell">所选创作者在当前批次没有可比记录</td></tr>';
+      } catch (error) { $('#creatorCompareStatus').textContent = error.message; }
+    });
+    $('#filterNotes').addEventListener('click', () => refreshNotes().catch((error) => toast(error.message, true)));
+    ['#noteCreatorFilter', '#noteTypeFilter', '#noteTopicFilter'].forEach((selector) => $(selector).addEventListener('change', () => refreshNotes().catch((error) => toast(error.message, true))));
+    ['#noteDateFrom', '#noteDateTo'].forEach((selector) => $(selector).addEventListener('change', () => refreshNotes().catch((error) => toast(error.message, true))));
     const today = new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
     $('#todayLabel').textContent = today;
   }
