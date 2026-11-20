@@ -54,7 +54,7 @@
         <span class="analysis-count" id="overviewUpdatedAt">最近更新 —</span>
       </section>
       <section class="kpi-grid overview-kpis">
-        <article class="kpi-card"><div class="kpi-label">创作者总数<span class="kpi-symbol">◎</span></div><div class="kpi-value" id="overviewCreators">—</div><div class="kpi-foot">匿名创作者实体</div></article>
+        <article class="kpi-card"><div class="kpi-label">创作者总数<span class="kpi-symbol">◎</span></div><div class="kpi-value" id="overviewCreators">—</div><div class="kpi-foot">保留来源中采集到的名称与平台 ID</div></article>
         <article class="kpi-card"><div class="kpi-label">笔记总数<span class="kpi-symbol green">▧</span></div><div class="kpi-value" id="overviewNotes">—</div><div class="kpi-foot">去重后的笔记实体</div></article>
         <article class="kpi-card"><div class="kpi-label">评论总数<span class="kpi-symbol blue">↳</span></div><div class="kpi-value" id="overviewComments">—</div><div class="kpi-foot">已保存评论快照行</div></article>
         <article class="kpi-card"><div class="kpi-label">采集批次数<span class="kpi-symbol amber">▤</span></div><div class="kpi-value" id="overviewBatches">—</div><div class="kpi-foot">导入与采集批次</div></article>
@@ -68,7 +68,7 @@
           <div class="panel-icon">↗</div>
           <div>
             <h2>采集工作台</h2>
-            <p>先导入已匿名的真实样本，或打开独立浏览器并手动登录后采集当前可见页面。</p>
+            <p>导入历史样本，或打开独立浏览器并手动登录后采集当前可见页面；已采集字段按来源原值保存。</p>
           </div>
         </div>
         <div class="collection-controls">
@@ -80,7 +80,7 @@
           <a class="button button-secondary download-link" id="exportMetricsJson" href="/api/export/metrics.json">清洗指标 JSON</a>
           <a class="button button-secondary download-link" id="exportMetricsCsv" href="/api/export/metrics.csv">清洗指标 CSV</a>
           <a class="button button-secondary download-link" id="exportAnalyticsJson" href="/api/export/analytics.json">统计结果 JSON</a>
-          <label class="select-wrap creator-select-wrap" aria-label="选择当前博主"><span>当前博主</span><select id="creatorSelect"><option value="">新建匿名博主</option></select></label>
+          <label class="select-wrap creator-select-wrap" aria-label="选择当前博主"><span>当前博主</span><select id="creatorSelect"><option value="">新建创作者</option></select></label>
           <button class="button button-secondary" id="openBrowserButton">打开蒲公英浏览器</button>
           <button class="button button-secondary" id="captureButton" disabled>采集当前页面</button>
           <button class="button button-quiet" id="closeBrowserButton" disabled>关闭窗口</button>
@@ -147,12 +147,12 @@
       </section>
 
       <section class="section-heading" id="creators">
-        <div><p class="eyebrow">CREATOR LIBRARY</p><h2>博主库</h2><p class="subheading">只显示系统匿名编号；身份列在导入时仅用于哈希去重，不入库。</p></div>
+        <div><p class="eyebrow">CREATOR LIBRARY</p><h2>博主库</h2><p class="subheading">展示采集到的创作者名称与平台 ID；历史样本缺少原始身份字段时明确标记，不从哈希反推。</p></div>
       </section>
       <section class="creator-filter-panel">
         <label>领域<select id="categoryFilter"><option value="">全部领域</option></select></label>
         <label>地域<select id="locationFilter"><option value="">全部地域</option></select></label>
-        <label>排序<select id="creatorSort"><option value="followers">粉丝数</option><option value="quote">报价</option><option value="reading">阅读</option><option value="engagement">互动</option><option value="pseudonym">匿名编号</option></select></label>
+        <label>排序<select id="creatorSort"><option value="followers">粉丝数</option><option value="quote">报价</option><option value="reading">阅读</option><option value="engagement">互动</option><option value="pseudonym">名称 / ID</option></select></label>
         <label>粉丝下限<input id="followersMin" inputmode="numeric" placeholder="人"></label>
         <label>粉丝上限<input id="followersMax" inputmode="numeric" placeholder="人"></label>
         <label>报价下限<input id="quoteMin" inputmode="numeric" placeholder="元"></label>
@@ -161,12 +161,12 @@
         <span id="creatorCount">0 位博主</span>
       </section>
       <section class="table-card creator-table-card">
-        <div class="table-scroll"><table><thead><tr><th>匿名编号</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价估值</th><th>阅读中位数</th><th>互动中位数</th><th>数据类型</th><th>最新批次</th></tr></thead><tbody id="creatorBody"><tr><td colspan="9" class="empty-cell">暂无创作者记录</td></tr></tbody></table></div>
+        <div class="table-scroll"><table><thead><tr><th>创作者名称</th><th>平台 ID</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价估值</th><th>阅读中位数</th><th>互动中位数</th><th>数据类型</th><th>最新批次</th></tr></thead><tbody id="creatorBody"><tr><td colspan="10" class="empty-cell">暂无创作者记录</td></tr></tbody></table></div>
       </section>
 
       <section class="creator-comparison-panel">
         <div class="comparison-controls"><div><strong>创作者对比</strong><small>选择具体批次后，选择 2 至 4 位</small></div><select id="creatorCompareSelect" multiple size="4" aria-label="选择 2 至 4 位创作者"></select><button class="button button-primary" id="compareCreators">对比所选</button><span id="creatorCompareStatus">只并列展示同一批次内可用指标</span></div>
-        <div class="table-scroll"><table><thead><tr><th>匿名编号</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价</th><th>阅读中位数</th><th>互动中位数</th><th>数据时间</th></tr></thead><tbody id="creatorCompareBody"><tr><td colspan="8" class="empty-cell">选择创作者后查看并列对比</td></tr></tbody></table></div>
+        <div class="table-scroll"><table><thead><tr><th>创作者名称</th><th>平台 ID</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价</th><th>阅读中位数</th><th>互动中位数</th><th>数据时间</th></tr></thead><tbody id="creatorCompareBody"><tr><td colspan="9" class="empty-cell">选择创作者后查看并列对比</td></tr></tbody></table></div>
       </section>
 
       <section class="section-heading" id="notes">
@@ -207,7 +207,7 @@
       </section>
 
       <section class="table-card field-dictionary-card">
-        <div class="card-heading table-heading"><div><h2>蒲公英字段字典</h2><p>按现有匿名实测样本记录单位与页面周期；未见字段标记为待采</p></div><span class="table-count" id="dictionaryCount">—</span></div>
+        <div class="card-heading table-heading"><div><h2>蒲公英字段字典</h2><p>按现有实测样本记录单位与页面周期；未见字段标记为待采</p></div><span class="table-count" id="dictionaryCount">—</span></div>
         <div class="table-scroll"><table><thead><tr><th>分组</th><th>字段名称</th><th>页面/存储单位</th><th>统计周期</th><th>样本状态</th></tr></thead><tbody id="dictionaryBody"><tr><td colspan="5" class="empty-cell">加载字段字典…</td></tr></tbody></table></div>
       </section>
 

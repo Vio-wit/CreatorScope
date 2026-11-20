@@ -227,11 +227,10 @@ def import_r42_comment_source(
             if creator_name in creator_map:
                 continue
             captured = started_at or now
-            creator_ref = local_creator_id(creator_name)
-            creator_id = ensure_creator(conn, f"xiaohongshu:{creator_ref}", captured)
+            creator_id = ensure_creator(conn, f"xiaohongshu:{creator_name}", captured)
             conn.execute(
-                "UPDATE creators SET platform = 'xiaohongshu' WHERE creator_id = ?",
-                (creator_id,),
+                "UPDATE creators SET platform = 'xiaohongshu', creator_name = ? WHERE creator_id = ?",
+                (creator_name, creator_id),
             )
             creator_map[creator_name] = creator_id
 
@@ -245,9 +244,9 @@ def import_r42_comment_source(
             )
             conn.execute(
                 """UPDATE notes
-                   SET platform_note_id_hash = ?, title = ?, source = 'xiaohongshu'
+                   SET platform_note_id = ?, platform_note_id_hash = ?, title = ?, source = 'xiaohongshu'
                    WHERE note_id = ?""",
-                (_hash(platform_note_id), metadata["title"], note_id),
+                (platform_note_id, _hash(platform_note_id), metadata["title"], note_id),
             )
             note_map[platform_note_id] = note_id
 

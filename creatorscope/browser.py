@@ -1235,7 +1235,7 @@ class PgyVisibleBrowser:
                     if item.is_visible():
                         value = re.sub(r"\s+", " ", item.inner_text(timeout=1000)).strip()
                         if value:
-                            return value[:5000]
+                            return value
                 except Exception:
                     continue
         return None
@@ -1252,7 +1252,7 @@ class PgyVisibleBrowser:
                         continue
                     text = re.sub(r"\s+", " ", item.inner_text(timeout=1000)).strip()
                     if text and text not in values:
-                        values.append(text[:120])
+                        values.append(text)
                 except Exception:
                     continue
         return values

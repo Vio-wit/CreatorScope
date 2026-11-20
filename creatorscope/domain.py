@@ -11,7 +11,7 @@ TYPE_LABELS = {
     "note_detail": "笔记案例",
 }
 
-# Field metadata is based on the retained real, anonymized Pgy sample.
+# Field metadata is based on the retained Pgy source sample; raw identity fields are preserved when present.
 # The unit is the unit shown/represented by the platform; unknown periods stay unknown.
 FIELD_CATALOG: dict[str, dict[str, str]] = {
     "粉丝数": {"group": "创作者", "unit": "人", "period": "采集时页面值"},

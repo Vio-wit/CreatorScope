@@ -20,6 +20,14 @@ from .tasks import TaskManager
 from research.r4_3_comment_analysis.comments_web import comment_analysis_bp
 
 
+def _raw_field(fields: dict[str, Any], names: tuple[str, ...], fallback: Any = None) -> Any:
+    for name in names:
+        value = fields.get(name)
+        if value is not None and str(value).strip():
+            return value
+    return fallback
+
+
 def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     project_root = Path(__file__).resolve().parent.parent
     app = Flask(
@@ -138,7 +146,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     def api_ai_analyze():
         payload = request.get_json(silent=True) or {}
         if payload.get("confirm_upload") is not True:
-            return jsonify({"error": "请先查看脱敏预览并明确确认数据外发"}), 400
+            return jsonify({"error": "请先检查本机原始数据预览并明确确认数据外发"}), 400
         provider = str(payload.get("provider") or "openai_compatible")
         model = str(payload.get("model") or "")
         base_url = str(payload.get("base_url") or "")
@@ -306,7 +314,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             note_type=request.args.get("note_type", "").strip(),
             topic=request.args.get("topic", "").strip(),
         )
-        fields = ["note_id", "creator_name", "title", "published_at", "note_type", "topics", "source", "batch_id", "read_count", "like_count", "favorite_count", "interaction_comment_count", "share_count", "comment_count", "interaction_score"]
+        fields = ["local_note_id", "platform_note_id", "source_url", "creator_name", "platform_creator_id", "title", "published_at", "note_type", "topics", "source", "batch_id", "read_count", "like_count", "favorite_count", "interaction_comment_count", "share_count", "comment_count", "interaction_score"]
         stream = io.StringIO(newline="")
         writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
@@ -445,8 +453,12 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             sql = """
                 SELECT r.record_id, r.batch_id, r.record_type, r.captured_at,
                        r.fields_json, r.creator_id, r.note_id,
+                       c.creator_name, c.platform_creator_id, c.pseudonym,
+                       n.platform_note_id, n.source_url,
                        COALESCE(NULLIF(r.source, ''), b.source) AS source
                 FROM records r JOIN batches b ON b.batch_id = r.batch_id
+                LEFT JOIN creators c ON c.creator_id = r.creator_id
+                LEFT JOIN notes n ON n.note_id = r.note_id
             """
             params: list[Any] = []
             if batch_id:
@@ -460,14 +472,45 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                     "SELECT DISTINCT period FROM metric_values WHERE record_id = ? AND period <> ''",
                     (row["record_id"],),
                 ).fetchall()
+                fields = json.loads(row["fields_json"])
+                if not isinstance(fields, dict):
+                    fields = {}
+                creator_name = _raw_field(
+                    fields, ("creator_name", "nickname", "blogger_name", "达人名称", "达人昵称", "博主名称", "博主名", "创作者名称", "昵称", "账号名称", "作者昵称"),
+                    row["creator_name"] if row["creator_name"] != row["pseudonym"] else None,
+                )
+                platform_creator_id = _raw_field(
+                    fields, ("platform_creator_id", "creator_id", "blogger_id", "达人ID", "博主ID", "创作者ID", "用户ID", "UID", "小红书号"),
+                    row["platform_creator_id"],
+                )
+                platform_note_id = _raw_field(
+                    fields, ("platform_note_id", "note_id", "笔记ID"), row["platform_note_id"]
+                )
+                source_url = _raw_field(
+                    fields, ("source_url", "note_url", "share_url", "share_url_base", "笔记链接"), row["source_url"]
+                )
+                creator_ref = _raw_field(
+                    fields, ("creator_ref", "creator_key", "platform_creator_id", "creator_id"),
+                    platform_creator_id or row["creator_id"],
+                )
+                note_ref = _raw_field(
+                    fields, ("note_ref", "platform_note_id", "note_id"),
+                    platform_note_id or source_url or row["note_id"],
+                )
                 record = {
                     "type": row["record_type"],
                     "batch_id": row["batch_id"],
                     "source": row["source"],
                     "captured_at": row["captured_at"],
-                    "creator_ref": row["creator_id"],
-                    "note_ref": row["note_id"],
-                    "fields": json.loads(row["fields_json"]),
+                    "creator_ref": creator_ref,
+                    "note_ref": note_ref,
+                    "local_creator_id": row["creator_id"],
+                    "local_note_id": row["note_id"],
+                    "creator_name": creator_name,
+                    "platform_creator_id": platform_creator_id,
+                    "platform_note_id": platform_note_id,
+                    "source_url": source_url,
+                    "fields": fields,
                 }
                 periods = [period[0] for period in metric_period]
                 if len(periods) == 1:
@@ -475,7 +518,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 records.append(record)
         payload = {
             "format": "CreatorScope JSON v1",
-            "source": "CreatorScope 本地匿名导出",
+            "source": "CreatorScope 本地原始记录导出",
             "records": records,
         }
         response = make_response(json.dumps(payload, ensure_ascii=False, indent=2))
@@ -492,8 +535,12 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             sql = """
                 SELECT r.record_id, r.batch_id, r.record_type, r.captured_at,
                        r.fields_json, r.creator_id, r.note_id,
+                       c.creator_name, c.platform_creator_id, c.pseudonym,
+                       n.platform_note_id, n.source_url,
                        COALESCE(NULLIF(r.source, ''), b.source) AS source
                 FROM records r JOIN batches b ON b.batch_id = r.batch_id
+                LEFT JOIN creators c ON c.creator_id = r.creator_id
+                LEFT JOIN notes n ON n.note_id = r.note_id
             """
             params: list[Any] = []
             if batch_id:
@@ -504,7 +551,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         stream = io.StringIO(newline="")
         writer = csv.DictWriter(
             stream,
-            fieldnames=["record_id", "batch_id", "record_type", "source", "captured_at", "creator_ref", "note_ref", "period_displayed", "fields_json"],
+            fieldnames=["record_id", "batch_id", "record_type", "source", "captured_at", "creator_ref", "note_ref", "local_creator_id", "local_note_id", "creator_name", "platform_creator_id", "platform_note_id", "source_url", "period_displayed", "fields_json"],
         )
         writer.writeheader()
         for row in rows:
@@ -514,6 +561,21 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                     (row["record_id"],),
                 ).fetchall()
             period_values = [str(period[0]) for period in periods]
+            fields = json.loads(row["fields_json"])
+            if not isinstance(fields, dict):
+                fields = {}
+            creator_name = _raw_field(
+                fields, ("creator_name", "nickname", "blogger_name", "达人名称", "达人昵称", "博主名称", "博主名", "创作者名称", "昵称", "账号名称", "作者昵称"),
+                row["creator_name"] if row["creator_name"] != row["pseudonym"] else None,
+            )
+            platform_creator_id = _raw_field(
+                fields, ("platform_creator_id", "creator_id", "blogger_id", "达人ID", "博主ID", "创作者ID", "用户ID", "UID", "小红书号"),
+                row["platform_creator_id"],
+            )
+            platform_note_id = _raw_field(fields, ("platform_note_id", "note_id", "笔记ID"), row["platform_note_id"])
+            source_url = _raw_field(fields, ("source_url", "note_url", "share_url", "share_url_base", "笔记链接"), row["source_url"])
+            creator_ref = _raw_field(fields, ("creator_ref", "creator_key", "platform_creator_id", "creator_id"), platform_creator_id or row["creator_id"])
+            note_ref = _raw_field(fields, ("note_ref", "platform_note_id", "note_id"), platform_note_id or source_url or row["note_id"])
             writer.writerow(
                 {
                     "record_id": row["record_id"],
@@ -521,8 +583,14 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                     "record_type": row["record_type"],
                     "source": row["source"],
                     "captured_at": row["captured_at"],
-                    "creator_ref": row["creator_id"],
-                    "note_ref": row["note_id"],
+                    "creator_ref": creator_ref,
+                    "note_ref": note_ref,
+                    "local_creator_id": row["creator_id"],
+                    "local_note_id": row["note_id"],
+                    "creator_name": creator_name,
+                    "platform_creator_id": platform_creator_id,
+                    "platform_note_id": platform_note_id,
+                    "source_url": source_url,
                     "period_displayed": period_values[0] if len(period_values) == 1 else "、".join(period_values),
                     "fields_json": row["fields_json"],
                 }
@@ -540,12 +608,19 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         sql = """
             SELECT m.metric_id, r.record_id, r.batch_id, r.record_type,
                    COALESCE(NULLIF(r.source, ''), b.source) AS source,
-                   r.creator_id, r.note_id, r.captured_at, m.metric_key,
+                   COALESCE(NULLIF(c.platform_creator_id, ''), r.creator_id) AS creator_ref,
+                   COALESCE(NULLIF(n.platform_note_id, ''), NULLIF(n.source_url, ''), r.note_id) AS note_ref,
+                   r.creator_id AS local_creator_id, r.note_id AS local_note_id,
+                   c.creator_name, c.platform_creator_id,
+                   n.platform_note_id, n.source_url,
+                   r.captured_at, m.metric_key,
                    m.raw_value, m.numeric_value AS normalized_value, m.unit,
                    m.period, m.parse_status
             FROM metric_values m
             JOIN records r ON r.record_id=m.record_id
             JOIN batches b ON b.batch_id=r.batch_id
+            LEFT JOIN creators c ON c.creator_id=r.creator_id
+            LEFT JOIN notes n ON n.note_id=r.note_id
         """
         params: list[Any] = []
         if batch_id:
@@ -578,13 +653,19 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         sql = """
             SELECT m.metric_id, r.record_id, r.batch_id, r.record_type,
                    COALESCE(NULLIF(r.source, ''), b.source) AS source,
-                   r.creator_id AS creator_ref, r.note_id AS note_ref,
+                   COALESCE(NULLIF(c.platform_creator_id, ''), r.creator_id) AS creator_ref,
+                   COALESCE(NULLIF(n.platform_note_id, ''), NULLIF(n.source_url, ''), r.note_id) AS note_ref,
+                   r.creator_id AS local_creator_id, r.note_id AS local_note_id,
+                   c.creator_name, c.platform_creator_id,
+                   n.platform_note_id, n.source_url,
                    r.captured_at, m.metric_key, m.raw_value,
                    m.numeric_value AS normalized_value, m.unit, m.period,
                    m.parse_status
             FROM metric_values m
             JOIN records r ON r.record_id=m.record_id
             JOIN batches b ON b.batch_id=r.batch_id
+            LEFT JOIN creators c ON c.creator_id=r.creator_id
+            LEFT JOIN notes n ON n.note_id=r.note_id
         """
         params: list[Any] = []
         if batch_id:
@@ -595,7 +676,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             rows = [dict(row) for row in conn.execute(sql, params).fetchall()]
         fields = [
             "metric_id", "record_id", "batch_id", "record_type", "source",
-            "creator_ref", "note_ref", "captured_at", "metric_key", "raw_value",
+            "creator_ref", "note_ref", "local_creator_id", "local_note_id", "creator_name", "platform_creator_id",
+            "platform_note_id", "source_url", "captured_at", "metric_key", "raw_value",
             "normalized_value", "unit", "period", "parse_status", "missing_status",
         ]
         stream = io.StringIO(newline="")

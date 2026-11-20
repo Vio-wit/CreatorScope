@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import socket
 import urllib.error
 import urllib.parse
@@ -45,12 +44,13 @@ PROVIDERS: dict[str, dict[str, Any]] = {
 ANALYSES = {
     "creator_summary": ("创作者分析摘要", "概括给定创作者的可用指标、优势和数据缺口。"),
     "note_summary": ("笔记内容总结", "总结所选笔记的主题、表达方式和可观察的互动特点。"),
-    "comment_topics": ("评论主题提取", "根据聚合词频、评论长度和统计计数归纳主题，不推断未提供的原文。"),
-    "comment_sentiment": ("评论情绪探索", "根据聚合词频与样本计数作谨慎的情绪倾向探索，说明样本局限。"),
+    "comment_topics": ("评论主题提取", "根据所选评论原文和统计数据归纳主题；保留原文依据，不推断未提供的信息。"),
+    "comment_sentiment": ("评论情绪探索", "根据所选评论原文作谨慎的情绪倾向探索，说明样本局限。"),
     "creator_note_compare": ("创作者对比", "比较所选创作者的同批次指标，明确缺失字段和口径限制。"),
     "anomaly": ("数据异常提示", "指出可从已提供数值中观察到的异常、缺失或需要复核之处。"),
     "operations_advice": ("内容运营建议", "基于所选创作者或笔记的事实数据提出可执行建议，并标记推断。"),
 }
+MAX_PREVIEW_CHARS = 500_000
 
 
 class AIServiceError(ValueError):
@@ -205,13 +205,6 @@ def _call_model(
     return text.strip()
 
 
-def _redact(value: Any) -> str:
-    text = re.sub(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", "[邮箱]", str(value or ""))
-    text = re.sub(r"(?<!\d)1[3-9]\d{9}(?!\d)", "[手机号]", text)
-    text = re.sub(r"https?://\S+", "[链接]", text, flags=re.IGNORECASE)
-    return text
-
-
 def build_preview(
     db_path: Path,
     *,
@@ -228,9 +221,9 @@ def build_preview(
     label, instruction = ANALYSES[analysis_type]
     if analysis_type == "creator_note_compare" and not selected_batch:
         raise AIServiceError("创作者或笔记对比必须选择一个具体批次")
-    safe_data: dict[str, Any]
+    raw_data: dict[str, Any]
     scope_summary: str
-    redaction = "邮箱、手机号和 URL 在预览与请求正文中替换；评论分析只发送统计与高频词，不发送评论原文。"
+    data_notice = "原始采集字段不脱敏、不截断。预览仅在本机生成；确认运行后，所选完整数据会发送给当前模型服务商。"
 
     if analysis_type in {"creator_summary", "creator_note_compare", "anomaly", "operations_advice"} and creators:
         if len(creators) > 4:
@@ -240,17 +233,19 @@ def build_preview(
         result = creator_library(db_path, batch_id=selected_batch or None, creator_ids=creators)
         if result["count"] != len(creators):
             raise AIServiceError("部分创作者不在当前数据库范围内")
-        safe_data = {
+        raw_data = {
             "creators": [
                 {
-                    "anonymous_name": item["pseudonym"], "followers": item["followers"], "quote": item["quote"],
+                    "creator_name": item["pseudonym"],
+                    "platform_creator_id": item.get("platform_creator_id"),
+                    "followers": item["followers"], "quote": item["quote"],
                     "reading_median": item["reading"], "engagement_median": item["engagement"],
                     "categories": item["categories"], "record_types": item["record_types"], "captured_at": item["last_seen_at"],
                 }
                 for item in result["creators"]
             ]
         }
-        scope_summary = f"{len(creators)} 位匿名创作者；指标按所选批次或本地最新记录取值。"
+        scope_summary = f"{len(creators)} 位创作者的名称、平台 ID 和指标；指标按所选批次或本地最新记录取值。"
     elif analysis_type in {"note_summary", "creator_note_compare", "anomaly", "operations_advice"} and notes:
         if len(notes) > 3:
             raise AIServiceError("一次最多选择 3 篇笔记")
@@ -263,18 +258,24 @@ def build_preview(
         with connection(db_path) as conn:
             placeholders = ",".join("?" for _ in notes)
             rows = conn.execute(
-                f"""SELECT n.note_id,n.title,n.body,n.topics_json,n.published_at,n.note_type,c.pseudonym
+                f"""SELECT n.note_id,n.platform_note_id,n.source_url,n.title,n.body,n.topics_json,
+                           n.published_at,n.note_type,c.creator_name,c.platform_creator_id,c.pseudonym
                     FROM notes n JOIN creators c ON c.creator_id=n.creator_id
                     WHERE n.note_id IN ({placeholders})""",
                 notes,
             ).fetchall()
         content_by_id = {row["note_id"]: row for row in rows}
-        safe_data = {
+        raw_data = {
             "notes": [
                 {
-                    "creator": content_by_id[note_id]["pseudonym"],
-                    "title": _redact(content_by_id[note_id]["title"]),
-                    "body_redacted_preview": _redact(content_by_id[note_id]["body"])[:3000],
+                    "creator_name": selected[note_id]["creator_name"],
+                    "platform_creator_id": content_by_id[note_id]["platform_creator_id"],
+                    "note_id": content_by_id[note_id]["platform_note_id"] or note_id,
+                    "local_note_id": note_id,
+                    "platform_note_id": content_by_id[note_id]["platform_note_id"],
+                    "source_url": content_by_id[note_id]["source_url"],
+                    "title": content_by_id[note_id]["title"],
+                    "body": content_by_id[note_id]["body"],
                     "topics": selected[note_id]["topics"],
                     "published_at": selected[note_id]["published_at"],
                     "note_type": selected[note_id]["note_type"],
@@ -283,7 +284,7 @@ def build_preview(
                 for note_id in notes
             ]
         }
-        scope_summary = f"{len(notes)} 篇笔记；正文仅发送经脱敏并截断到每篇 3000 字符的预览。"
+        scope_summary = f"{len(notes)} 篇笔记的完整原文、来源链接、创作者标识和指标。"
     elif analysis_type in {"comment_topics", "comment_sentiment"} and notes:
         if not selected_batch:
             raise AIServiceError("评论分析必须选择一个具体批次")
@@ -292,17 +293,17 @@ def build_preview(
         from research.r4_3_comment_analysis.comment_analysis import fetch_comments, summarize
 
         note_summaries = []
+        all_comments = []
         total_comments = 0
-        for index, note_id in enumerate(notes, start=1):
+        for note_id in notes:
             rows = fetch_comments(db_path, {"batch_id": selected_batch, "note_id": note_id})
-            if len(rows) > 300:
-                rows = rows[:300]
             if not rows:
                 continue
             analysis = summarize(rows)
+            all_comments.extend(rows)
             total_comments += len(rows)
             note_summaries.append({
-                "note_label": f"所选笔记 {index}",
+                "note_label": rows[0]["note_title"],
                 "summary": analysis["summary"],
                 "top_words": analysis["top_words"][:20],
                 "length_histogram": analysis["length_histogram"],
@@ -310,15 +311,15 @@ def build_preview(
             })
         if not note_summaries:
             raise AIServiceError("所选批次和笔记没有可分析的已保存评论")
-        safe_data = {"comment_samples": note_summaries, "comment_count_total": total_comments}
-        scope_summary = f"批次内 {total_comments} 条已保存评论的统计摘要；评论原文、平台身份和链接不发送。"
+        raw_data = {"comment_summaries": note_summaries, "comment_count_total": total_comments, "comments": all_comments}
+        scope_summary = f"批次内 {total_comments} 条已保存评论；包含原文、已采集公开身份字段和来源字段。"
     else:
         raise AIServiceError("当前分析类型需要选择对应的创作者或笔记")
 
-    payload = {"analysis_type": analysis_type, "analysis_label": label, "scope_summary": scope_summary, "redaction": redaction, "data": safe_data}
+    payload = {"analysis_type": analysis_type, "analysis_label": label, "scope_summary": scope_summary, "data_notice": data_notice, "data": raw_data}
     serialized = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-    if len(serialized) > 30000:
-        raise AIServiceError("预览数据超过 30 KB，请减少所选对象")
+    if len(serialized) > MAX_PREVIEW_CHARS:
+        raise AIServiceError("所选原始数据超过单次预览上限；请减少所选对象，系统不会截断采集内容")
     return {**payload, "instruction": instruction, "preview_chars": len(serialized)}
 
 

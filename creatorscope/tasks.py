@@ -38,7 +38,7 @@ class TaskManager:
     def submit_baseline_import(self) -> str:
         return self._submit(
             "baseline_import",
-            "蒲公英匿名实测样本",
+            "蒲公英历史样本基线（原始身份字段不全）",
             self._run_baseline_import,
         )
 
@@ -499,7 +499,7 @@ class TaskManager:
 
     def _run_baseline_import(self, task_id: str) -> dict[str, Any]:
         payload = load_baseline(self.baseline_path)
-        payload["creator_ref"] = "baseline:pgy-anonymized-2026-11-19"
+        payload["creator_ref"] = "baseline:pgy-sample-2026-11-19"
         profile = next(
             (item for item in payload["records"] if item.get("type") == "creator_profile_sample"),
             None,
@@ -519,7 +519,7 @@ class TaskManager:
             self.db_path,
             task_id,
             payload,
-            source_override="蒲公英匿名实测基线",
+            source_override="蒲公英历史样本基线（原始身份字段不全）",
         )
         result["message"] = (
             f"导入完成：{result['record_count']} 条记录，"

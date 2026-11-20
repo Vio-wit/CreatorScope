@@ -49,13 +49,13 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
 
     def _seed(self) -> None:
         with connection(self.db_path) as conn:
-            for creator_id, pseudonym, location in (
-                ("creator-a", "匿名创作者 A", "上海"),
-                ("creator-b", "匿名创作者 B", "杭州"),
+            for creator_id, pseudonym, creator_name, platform_id, location in (
+                ("creator-a", "博主 0001", "Creator A", "platform-creator-a", "上海"),
+                ("creator-b", "博主 0002", "Creator B", "platform-creator-b", "杭州"),
             ):
                 conn.execute(
-                    "INSERT INTO creators(creator_id,pseudonym,creator_name,platform,location,source_key_hash,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?)",
-                    (creator_id, pseudonym, "", "xiaohongshu", location, f"hash-{creator_id}", "2026-11-01", "2026-11-02"),
+                    "INSERT INTO creators(creator_id,pseudonym,creator_name,platform,platform_creator_id,location,source_key_hash,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?,?)",
+                    (creator_id, pseudonym, creator_name, "xiaohongshu", platform_id, location, f"hash-{creator_id}", "2026-11-01", "2026-11-02"),
                 )
             for batch_id, source, captured in (
                 ("batch-a", "pgy_visible", "2026-11-01T10:00:00"),
@@ -65,12 +65,12 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
             ):
                 self._batch(conn, batch_id, source, captured)
             conn.execute(
-                "INSERT INTO notes(note_id,creator_id,note_key_hash,title,body,topics_json,published_at,note_type,source,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                ("note-a", "creator-a", "note-hash-a", "上海护肤分享", "", json.dumps(["#护肤", "#日常"], ensure_ascii=False), "2026-11-01", "视频", "pgy_visible", "2026-11-01", "2026-11-02"),
+                "INSERT INTO notes(note_id,creator_id,note_key_hash,platform_note_id,title,body,topics_json,published_at,note_type,source_url,source,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                ("note-a", "creator-a", "note-hash-a", "platform-note-a", "上海护肤分享", "raw note body", json.dumps(["#护肤", "#日常"], ensure_ascii=False), "2026-11-01", "视频", "https://example.test/note-a", "pgy_visible", "2026-11-01", "2026-11-02"),
             )
             conn.execute(
-                "INSERT INTO notes(note_id,creator_id,note_key_hash,title,body,topics_json,published_at,note_type,source,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                ("note-b", "creator-b", "note-hash-b", "旅行记录", "", json.dumps(["#旅行"], ensure_ascii=False), "2026-11-12", "图文", "xhs_import", "2026-11-03", "2026-11-03"),
+                "INSERT INTO notes(note_id,creator_id,note_key_hash,platform_note_id,title,body,topics_json,published_at,note_type,source_url,source,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                ("note-b", "creator-b", "note-hash-b", "platform-note-b", "旅行记录", "raw travel body", json.dumps(["#旅行"], ensure_ascii=False), "2026-11-12", "图文", "https://example.test/note-b", "xhs_import", "2026-11-03", "2026-11-03"),
             )
             self._record(conn, "batch-a", "creator_profile_sample", "2026-11-01T10:00:00", "creator-a", None, {"粉丝数": "100", "阅读中位数": "20", "互动中位数": "5", "全部报价": "500", "内容类目": "美妆"}, "当前粉丝快照")
             self._record(conn, "batch-a", "creator_profile_sample", "2026-11-01T10:00:00", "creator-b", None, {"粉丝数": "200", "阅读中位数": "35", "互动中位数": "9", "全部报价": "800", "内容类目": "旅行"}, "当前粉丝快照")
@@ -146,6 +146,9 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
         exported = client.get("/api/notes/export.csv?topic=%23%E6%8A%A4%E8%82%A4&batch_id=batch-b")
         self.assertEqual(exported.status_code, 200)
         self.assertIn("上海护肤分享", exported.get_data(as_text=True))
+        self.assertIn("platform-note-a", exported.get_data(as_text=True))
+        self.assertIn("https://example.test/note-a", exported.get_data(as_text=True))
+        self.assertIn("platform-creator-a", exported.get_data(as_text=True))
         self.assertNotIn("旅行记录", exported.get_data(as_text=True))
         compared = client.get("/api/creators/compare?creator_id=creator-a&creator_id=creator-b&batch_id=batch-a")
         self.assertEqual(compared.status_code, 200)
@@ -192,12 +195,22 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
         self.assertEqual(raw_note["batch_id"], "batch-b")
         self.assertEqual(raw_note["source"], "pgy_note_detail_source")
         self.assertEqual(raw_note["fields"]["阅读量"], "1200")
+        self.assertEqual(raw_note["creator_name"], "Creator A")
+        self.assertEqual(raw_note["platform_creator_id"], "platform-creator-a")
+        self.assertEqual(raw_note["platform_note_id"], "platform-note-a")
+        self.assertEqual(raw_note["source_url"], "https://example.test/note-a")
+        self.assertEqual(raw_note["local_creator_id"], "creator-a")
+        self.assertEqual(raw_note["local_note_id"], "note-a")
 
         raw_csv = client.get("/api/export/csv?batch_id=batch-b")
         self.assertEqual(raw_csv.status_code, 200)
         csv_rows = list(csv.DictReader(raw_csv.data.decode("utf-8-sig").splitlines()))
         csv_note = next(row for row in csv_rows if row["record_type"] == "note_detail")
         self.assertEqual(csv_note["source"], "pgy_note_detail_source")
+        self.assertEqual(csv_note["creator_name"], "Creator A")
+        self.assertEqual(csv_note["platform_creator_id"], "platform-creator-a")
+        self.assertEqual(csv_note["platform_note_id"], "platform-note-a")
+        self.assertEqual(csv_note["source_url"], "https://example.test/note-a")
 
         metrics_json = client.get("/api/export/metrics.json?batch_id=batch-b")
         self.assertEqual(metrics_json.status_code, 200)
@@ -208,6 +221,9 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
         self.assertEqual(reading["unit"], "count")
         self.assertEqual(reading["period"], "累计")
         self.assertEqual(reading["source"], "pgy_note_detail_source")
+        self.assertEqual(reading["creator_name"], "Creator A")
+        self.assertEqual(reading["platform_creator_id"], "platform-creator-a")
+        self.assertEqual(reading["platform_note_id"], "platform-note-a")
         self.assertEqual(reading["missing_status"], "present")
         unavailable = next(row for row in metrics if row["record_id"] == note_record and row["metric_key"] == "收藏量")
         self.assertIsNone(unavailable["normalized_value"])

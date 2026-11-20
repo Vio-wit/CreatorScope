@@ -60,20 +60,24 @@ KNOWN_LABELS = {
 
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024
 MAX_UPLOAD_RECORDS = 500
-IDENTITY_KEYS = {
-    "昵称", "博主名称", "博主名", "达人名称", "达人昵称", "创作者名称",
-    "博主id", "达人id", "创作者id", "用户id", "uid", "小红书号",
-    "creatorid", "bloggerid", "userid", "nickname", "creatorname",
-    "bloggername", "creatorref", "creatorkey", "creatorurl", "bloggerurl",
-    "profileurl", "username", "userhandle", "账号名称", "账号名", "账号昵称",
-    "作者昵称", "博主主页链接", "笔记链接", "researchid", "noteref", "研究对象编号",
+AUTH_SECRET_NAMES = {
+    "password", "passwd", "pwd", "cookie", "cookies", "session", "sessionid",
+    "sessiontoken", "token", "authtoken", "accesstoken", "refreshtoken", "bearertoken",
+    "authorization", "auth", "authdata", "credentials", "credential", "secret",
+    "apikey", "clientsecret", "apisecret", "privatekey",
 }
-PRIVATE_KEYS = {"password", "passwd", "cookie", "token", "手机号", "手机号码", "邮箱", "登录账号"}
+AUTH_SECRET_SUFFIXES = (
+    "password", "passwd", "pwd", "cookie", "cookies", "session", "sessionid", "sessiontoken",
+    "token", "authtoken", "accesstoken", "refreshtoken", "bearertoken", "authorization",
+    "credential", "secret", "apikey", "clientsecret", "apisecret", "privatekey",
+)
 EXPORT_META_KEYS = {
     "batch_id", "record_id", "record_type", "type", "captured_at", "creator_ref",
     "note_ref", "period_displayed", "period_selector_displayed", "fields_json",
     "creator_key", "identity_key", "数据类型", "采集时间", "批次编号",
+    "local_creator_id", "local_note_id",
 }
+RAW_ID_KEYS = {"creator_ref", "creator_key", "creator_id", "note_ref", "note_id"}
 
 
 def normalize_value(key: str, raw_value: Any) -> tuple[float | None, str, str]:
@@ -165,19 +169,30 @@ def _normalized_key(key: Any) -> str:
 
 def _is_private_field(key: Any) -> bool:
     normalized = _normalized_key(key)
-    return (
-        normalized in IDENTITY_KEYS
-        or normalized in PRIVATE_KEYS
-        or any(token in normalized for token in ("password", "cookie", "token", "手机号", "邮箱", "头像"))
-    )
+    session_data = normalized.startswith("session")
+    auth_data = normalized.startswith("auth") and not normalized.startswith("author")
+    return normalized in AUTH_SECRET_NAMES or normalized.endswith(AUTH_SECRET_SUFFIXES) or session_data or auth_data
+
+
+def _retain_collected_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): _retain_collected_value(item)
+            for key, item in value.items()
+            if not _is_private_field(key)
+        }
+    if isinstance(value, list):
+        return [_retain_collected_value(item) for item in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
 
 
 def _clean_fields(fields: dict[str, Any]) -> dict[str, Any]:
     return {
-        str(key): value
+        str(key): _retain_collected_value(value)
         for key, value in fields.items()
         if not _is_private_field(key)
-        and (isinstance(value, (str, int, float, bool)) or value is None)
     }
 
 
@@ -225,12 +240,12 @@ def payload_from_upload(filename: str, content: bytes) -> dict[str, Any]:
         creator_ref = _first_present(
             row,
             (
-                "creator_ref", "creator_key", "creator_id", "blogger_id", "达人ID",
+                "creator_ref", "creator_key", "platform_creator_id", "creator_id", "blogger_id", "达人ID",
                 "博主ID", "创作者ID", "用户ID", "UID", "小红书号", "研究对象编号",
                 "博主名称", "达人昵称", "昵称",
             ),
         )
-        note_ref = _first_present(row, ("note_ref", "note_id", "笔记ID"))
+        note_ref = _first_present(row, ("note_ref", "platform_note_id", "note_id", "source_url", "笔记ID", "笔记链接"))
         captured_at = _first_present(row, ("captured_at", "采集时间"))
         period = _first_present(row, ("period_displayed", "period_selector_displayed", "统计周期"))
 
@@ -251,6 +266,10 @@ def payload_from_upload(filename: str, content: bytes) -> dict[str, Any]:
                     continue
                 if value is not None and str(value).strip() != "":
                     fields[str(key)] = str(value).strip()
+
+        for key in ("creator_name", "platform_creator_id", "platform_note_id", "source_url"):
+            if row.get(key) is not None and str(row[key]).strip():
+                fields.setdefault(key, str(row[key]).strip())
 
         raw_type = record_type or "blogger_list_sample"
         type_aliases = {
@@ -331,24 +350,49 @@ def ingest_payload(
             clean_fields = _clean_fields(fields)
             record_source = str(item.get("source") or source)
             record_captured_at = str(item.get("captured_at") or captured_at)
+            for key in ("creator_ref", "creator_key", "creator_id", "note_ref", "note_id"):
+                if item.get(key):
+                    clean_fields.setdefault(key, str(item[key]))
             record_creator_ref = (
                 creator_id_override
                 or item.get("creator_ref")
                 or item.get("creator_key")
+                or item.get("creator_id")
                 or payload.get("creator_ref")
                 or payload.get("creator_key")
                 or f"task:{task_id}:creator:1"
+            )
+            creator_name = _first_present(
+                clean_fields,
+                ("creator_name", "nickname", "blogger_name", "达人名称", "达人昵称", "博主名称", "博主名", "创作者名称", "昵称", "账号名称", "作者昵称"),
+            )
+            platform_creator_id = _first_present(
+                clean_fields,
+                ("platform_creator_id", "creator_id", "blogger_id", "达人ID", "博主ID", "创作者ID", "用户ID", "UID", "小红书号"),
             )
             if creator_id_override:
                 creator_row = conn.execute(
                     "SELECT 1 FROM creators WHERE creator_id = ?", (creator_id_override,)
                 ).fetchone()
                 if not creator_row:
-                    raise ValueError("所选匿名博主已不存在，请刷新页面后重试")
+                    raise ValueError("所选创作者已不存在，请刷新页面后重试")
                 creator_id = creator_id_override
             else:
                 creator_id = ensure_creator_ref(
-                    conn, str(record_creator_ref), str(item.get("captured_at") or captured_at)
+                    conn,
+                    str(record_creator_ref),
+                    str(item.get("captured_at") or captured_at),
+                    creator_name=creator_name,
+                    platform_creator_id=platform_creator_id,
+                    platform="pgy" if "蒲公英" in record_source else None,
+                )
+            if creator_id_override and (creator_name or platform_creator_id):
+                conn.execute(
+                    """UPDATE creators SET
+                         creator_name = CASE WHEN ? <> '' THEN ? ELSE creator_name END,
+                         platform_creator_id = COALESCE(NULLIF(?, ''), platform_creator_id)
+                       WHERE creator_id = ?""",
+                    (creator_name, creator_name, platform_creator_id, creator_id),
                 )
 
             # Scope the dedupe key to a creator so identical field values for
@@ -359,31 +403,38 @@ def ingest_payload(
                 title = str(clean_fields.get("笔记标题") or clean_fields.get("标题") or "")
                 published = str(clean_fields.get("发布时间") or "")
                 note_timestamp = record_captured_at
-                if item.get("note_ref"):
-                    note_id = ensure_note_ref(conn, creator_id, str(item["note_ref"]), note_timestamp)
-                    platform_note_id_hash = hashlib.sha256(
-                        str(item["note_ref"]).encode("utf-8")
-                    ).hexdigest()
+                source_note_ref = item.get("note_ref") or item.get("note_id")
+                if source_note_ref:
+                    note_id = ensure_note_ref(conn, creator_id, str(source_note_ref), note_timestamp)
+                    note_ref = str(source_note_ref)
+                    platform_note_id = note_ref.rstrip("/").split("/")[-1].split("?")[0]
+                    platform_note_id_hash = hashlib.sha256(note_ref.encode("utf-8")).hexdigest()
                 else:
                     # Without a platform ID, keep this note scoped to this record
                     # and batch instead of treating its title as an identity key.
                     note_key = f"no-platform-id:{batch_id}:{digest}"
                     note_id = ensure_note(conn, creator_id, note_key, note_timestamp)
+                    note_ref = ""
+                    platform_note_id = None
                     platform_note_id_hash = None
                 conn.execute(
-                    """UPDATE notes SET platform_note_id_hash = COALESCE(?, platform_note_id_hash),
+                    """UPDATE notes SET platform_note_id = COALESCE(?, platform_note_id),
+                       platform_note_id_hash = COALESCE(?, platform_note_id_hash),
                        title = COALESCE(?, title), body = COALESCE(?, body),
                        published_at = COALESCE(?, published_at),
                        note_type = COALESCE(?, note_type), source = ?,
+                       source_url = COALESCE(?, source_url),
                        topics_json = COALESCE(?, topics_json)
                        WHERE note_id = ?""",
                     (
+                        platform_note_id,
                         platform_note_id_hash,
                         title or None,
                         clean_fields.get("笔记正文") or clean_fields.get("正文"),
                         published or None,
                         clean_fields.get("笔记类型") or clean_fields.get("内容类型"),
                         record_source,
+                        note_ref if note_ref.startswith(("http://", "https://")) else None,
                         json.dumps(item.get("note_topics"), ensure_ascii=False)
                         if isinstance(item.get("note_topics"), list)
                         else None,
@@ -448,6 +499,8 @@ def ingest_payload(
             inserted_records += 1
             period = _period_for(item)
             for key, value in clean_fields.items():
+                if key in RAW_ID_KEYS or isinstance(value, (dict, list)):
+                    continue
                 numeric_value, unit, status = normalize_value(key, value)
                 raw_value = None if value is None else str(value)
                 conn.execute(
@@ -517,7 +570,7 @@ def ingest_comment_snapshots(
     captured_at: str | None = None,
     source: str = "小红书公开可见页面",
 ) -> dict[str, int]:
-    """Append visible comment rows to the task batch without storing commenter identity."""
+    """Append visible comment rows and retain all collected public fields."""
     from .db import ensure_creator_ref, ensure_note_ref
 
     if len(comments) > 20:
@@ -534,6 +587,18 @@ def ingest_comment_snapshots(
             raise ValueError("采集批次已结束，不能继续写入")
         creator_id = ensure_creator_ref(conn, creator_ref, captured_at)
         note_id = ensure_note_ref(conn, creator_id, note_ref, captured_at)
+        platform_note_id = note_ref.rstrip("/").split("/")[-1].split("?")[0]
+        conn.execute(
+            """UPDATE notes SET platform_note_id = COALESCE(?, platform_note_id),
+               platform_note_id_hash = COALESCE(platform_note_id_hash, ?),
+               source_url = COALESCE(?, source_url) WHERE note_id = ?""",
+            (
+                platform_note_id or None,
+                hashlib.sha256(note_ref.encode("utf-8")).hexdigest() if note_ref else None,
+                note_ref if note_ref.startswith(("http://", "https://")) else None,
+                note_id,
+            ),
+        )
         local_ids: dict[str, str] = {}
         prepared: list[tuple[dict[str, Any], str, str | None]] = []
         for item in comments:
@@ -563,13 +628,8 @@ def ingest_comment_snapshots(
             text = str(item.get("comment_text") or "").strip()
             level = 2 if int(item.get("comment_level") or 1) == 2 else 1
             clean_text = re.sub(r"\s+", " ", text).strip()
-            safe_payload = {
-                "displayed_time": item.get("displayed_time"),
-                "like_count_raw": item.get("like_count_raw"),
-                "reply_count_raw": item.get("reply_count_raw"),
-                "comment_level": level,
-                "is_pinned": item.get("is_pinned"),
-            }
+            safe_payload = _clean_fields(item)
+            safe_payload["comment_level"] = level
             like_raw = item.get("like_count_raw")
             like_value = normalize_value("点赞量", like_raw)[0] if like_raw else None
             cursor = conn.execute(
