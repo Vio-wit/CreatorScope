@@ -7,7 +7,9 @@ import time
 import unittest
 from pathlib import Path
 
+from creatorscope.browser import PauseForUser, PgyVisibleBrowser
 from creatorscope.db import connection, initialize_database
+from creatorscope.ingest import normalize_value
 from creatorscope.tasks import TaskManager
 
 
@@ -24,6 +26,7 @@ class RecordingBrowser:
         report_progress,
         report_failure,
         existing_comment_count,
+        comment_scope="",
     ):
         check_control()
         creator_ref = "pgy:/solar/pre-trade/blogger-detail/synthetic"
@@ -34,17 +37,20 @@ class RecordingBrowser:
                 "records": [
                     {
                         "type": "creator_profile_sample",
+                        "source": "蒲公英可见页面",
                         "creator_ref": creator_ref,
                         "fields": {"粉丝数": "1200"},
                     },
                     {
                         "type": "note_detail",
+                        "source": "蒲公英可见笔记详情",
                         "creator_ref": creator_ref,
                         "note_ref": note_ref,
                         "fields": {"笔记标题": "Synthetic title", "阅读量": "300"},
                     },
                     {
                         "type": "xhs_public_note",
+                        "source": "小红书公开笔记页",
                         "creator_ref": creator_ref,
                         "note_ref": note_ref,
                         "note_topics": ["#synthetic"],
@@ -103,6 +109,7 @@ class GateBrowser:
         report_progress,
         report_failure,
         existing_comment_count,
+        comment_scope="",
     ):
         self.started.set()
         while not self.release.is_set():
@@ -117,6 +124,11 @@ class GateBrowser:
             "failure_count": 0,
             "message": "synthetic control test",
         }
+
+
+class OverlayBrowser:
+    def collect_visible(self, *_args, **_kwargs):
+        raise PauseForUser("蒲公英列表被页面弹层遮挡；请在可见浏览器中确认并关闭后恢复任务")
 
 
 class VisibleCollectionTests(unittest.TestCase):
@@ -144,6 +156,25 @@ class VisibleCollectionTests(unittest.TestCase):
             with connection(self.db_path) as conn:
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM batches WHERE task_id=?", (task_id,)).fetchone()[0], 1)
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM records WHERE batch_id=?", (task["batch_id"],)).fetchone()[0], 3)
+                record_sources = {
+                    row[0]
+                    for row in conn.execute(
+                        "SELECT DISTINCT source FROM records WHERE batch_id=?",
+                        (task["batch_id"],),
+                    )
+                }
+                self.assertEqual(
+                    record_sources,
+                    {"蒲公英可见页面", "蒲公英可见笔记详情", "小红书公开笔记页"},
+                )
+                metric_sources = {
+                    row[0]
+                    for row in conn.execute(
+                        "SELECT DISTINCT source FROM metric_snapshots WHERE batch_id=?",
+                        (task["batch_id"],),
+                    )
+                }
+                self.assertEqual(metric_sources, record_sources)
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM comment_snapshots WHERE batch_id=?", (task["batch_id"],)).fetchone()[0], 2)
                 note = conn.execute(
                     "SELECT platform_note_id, platform_note_id_hash, title, body, topics_json FROM notes"
@@ -206,6 +237,73 @@ class VisibleCollectionTests(unittest.TestCase):
         finally:
             manager.shutdown()
             self._wait_for_manager(manager)
+
+    def test_user_gate_pauses_batch_and_preserves_checkpoint(self) -> None:
+        manager = TaskManager(self.db_path, self.root / "unused-baseline.json", OverlayBrowser())
+        try:
+            task_id = manager.submit_visible_collection({"creator_count": 1})
+            task = self._wait_for_status(task_id, {"paused", "failed"})
+            self.assertEqual(task["status"], "paused", task["message"])
+            self.assertIn("弹层遮挡", task["message"])
+            parameters = json.loads(task["parameters_json"])
+            self.assertEqual(
+                parameters["checkpoint"],
+                {"creator_index": 0, "note_index": 0, "comment_count": 0},
+            )
+            with connection(self.db_path) as conn:
+                batch = conn.execute(
+                    "SELECT status, record_count FROM batches WHERE task_id=?", (task_id,)
+                ).fetchone()
+                self.assertEqual(tuple(batch), ("paused", 0))
+        finally:
+            manager.shutdown()
+            self._wait_for_manager(manager)
+
+    def test_visible_note_title_matching_and_comment_fingerprints_are_scoped(self) -> None:
+        title = PgyVisibleBrowser._note_card_title_from_text(
+            "谁说北京过冬只能穿黑羽绒服，厉娜\n视频笔记\n阅读量 109,282"
+        )
+        self.assertEqual(title, "谁说北京过冬只能穿黑羽绒服，厉娜")
+        self.assertTrue(PgyVisibleBrowser._titles_match(title, "谁说北京过冬只能穿黑羽绒服，厉娜"))
+        self.assertTrue(PgyVisibleBrowser._titles_match(title, "谁说北京过冬只能穿黑羽绒服"))
+        self.assertFalse(PgyVisibleBrowser._titles_match(title, "另一个创作者的笔记"))
+        first = PgyVisibleBrowser._comment_fingerprint("batch-a", "note", "正文", "1天前", 1, None)
+        second = PgyVisibleBrowser._comment_fingerprint("batch-b", "note", "正文", "1天前", 1, None)
+        self.assertNotEqual(first, second)
+        self.assertTrue(
+            PgyVisibleBrowser._is_modal_overlay_interception(
+                {"hit": "div.d-modal-mask", "containsHit": False}
+            )
+        )
+        self.assertFalse(
+            PgyVisibleBrowser._is_modal_overlay_interception(
+                {"hit": "img.head-photo", "containsHit": True}
+            )
+        )
+        self.assertIsNone(normalize_value("点赞量", "10+")[0])
+        self.assertEqual(normalize_value("点赞量", "10+")[2], "not_numeric")
+        self.assertEqual(normalize_value("视频时长", "01:49"), (109, "seconds", "parsed"))
+
+    def test_browser_status_is_nonblocking_during_long_collection(self) -> None:
+        browser = PgyVisibleBrowser(self.root / "browser-profile")
+        browser._last_status = {
+            "open": True,
+            "domain": "pgy.xiaohongshu.com",
+            "page_kind": "博主广场",
+            "tab_count": 1,
+            "tabs": [{"domain": "pgy.xiaohongshu.com", "page_kind": "博主广场"}],
+        }
+        browser._operation_busy.set()
+        try:
+            started = time.monotonic()
+            status = browser.status()
+            self.assertLess(time.monotonic() - started, 0.25)
+            self.assertTrue(status["busy"])
+            self.assertEqual(status["domain"], "pgy.xiaohongshu.com")
+            self.assertEqual(status["tab_count"], 1)
+        finally:
+            browser._operation_busy.clear()
+            browser.shutdown()
 
     def _read_task(self, task_id: str):
         with connection(self.db_path) as conn:

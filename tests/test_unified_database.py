@@ -40,11 +40,33 @@ class UnifiedDatabaseTests(unittest.TestCase):
                 {"collection_batches", "collection_tasks", "metric_snapshots"}.issubset(views)
             )
             self.assertEqual(
-                conn.execute("SELECT COUNT(*) FROM schema_migrations WHERE version=1").fetchone()[0],
+                conn.execute("SELECT COUNT(*) FROM schema_migrations WHERE version=2").fetchone()[0],
                 1,
             )
+            records = {row[1] for row in conn.execute('PRAGMA table_info("records")')}
+            self.assertIn("source", records)
+            view_sql = conn.execute(
+                "SELECT sql FROM sqlite_master WHERE type='view' AND name='metric_snapshots'"
+            ).fetchone()[0]
+            self.assertIn("COALESCE(r.source, b.source)", view_sql)
             self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")
             self.assertEqual(conn.execute("PRAGMA foreign_key_check").fetchall(), [])
+
+    def test_record_source_column_is_added_to_an_existing_database(self) -> None:
+        db_path = self.root / "unified.sqlite3"
+        initialize_database(db_path)
+        with connection(db_path) as conn:
+            conn.execute("DROP VIEW metric_snapshots")
+            conn.execute('ALTER TABLE records DROP COLUMN "source"')
+
+        initialize_database(db_path)
+        with connection(db_path) as conn:
+            columns = {row[1] for row in conn.execute('PRAGMA table_info("records")')}
+            self.assertIn("source", columns)
+            view_sql = conn.execute(
+                "SELECT sql FROM sqlite_master WHERE type='view' AND name='metric_snapshots'"
+            ).fetchone()[0]
+            self.assertIn("COALESCE(r.source, b.source)", view_sql)
 
     def test_legacy_copy_is_idempotent_and_keeps_source_unchanged(self) -> None:
         source = self.root / "legacy.sqlite3"

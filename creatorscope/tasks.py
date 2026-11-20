@@ -447,6 +447,7 @@ class TaskManager:
             report_progress=report_progress,
             report_failure=report_failure,
             existing_comment_count=existing_comment_count,
+            comment_scope=batch_id,
         )
         self._append_result(
             task_id,

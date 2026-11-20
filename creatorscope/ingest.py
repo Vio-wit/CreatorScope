@@ -35,6 +35,8 @@ COUNT_KEYS = {
     "中位评论量",
     "中位分享量",
     "中位关注量",
+    "关注量",
+    "新增关注",
 }
 RATE_KEYS = {
     "互动率",
@@ -47,6 +49,7 @@ RATE_KEYS = {
     "下单粉丝占比",
 }
 PRICE_KEYS = {"全部报价", "图文笔记一口价", "视频笔记一口价"}
+DURATION_KEYS = {"视频时长", "时长"}
 KNOWN_LABELS = {
     *COUNT_KEYS,
     *RATE_KEYS,
@@ -80,6 +83,14 @@ def normalize_value(key: str, raw_value: Any) -> tuple[float | None, str, str]:
     raw = str(raw_value).strip()
     if not raw or raw in {"-", "—", "–"}:
         return None, _unit_for(key), "displayed_unavailable"
+
+    if key in DURATION_KEYS:
+        match = re.fullmatch(r"(\d{1,3}):(\d{2})(?::(\d{2}))?", raw)
+        if match:
+            parts = [int(part) for part in match.groups() if part is not None]
+            seconds = parts[0] * 60 + parts[1] if len(parts) == 2 else parts[0] * 3600 + parts[1] * 60 + parts[2]
+            return seconds, "seconds", "parsed"
+        return None, "seconds", "not_numeric"
 
     # Do not extract incidental digits from category labels or dates.
     if key not in COUNT_KEYS | RATE_KEYS | PRICE_KEYS:
@@ -123,6 +134,8 @@ def _unit_for(key: str) -> str:
         return "likes_and_favorites"
     if key == "发布时间":
         return "datetime"
+    if key in DURATION_KEYS:
+        return "seconds"
     if key in COUNT_KEYS or key.endswith("数") or key.endswith("量"):
         return "count"
     return "text"
@@ -316,6 +329,8 @@ def ingest_payload(
                 continue
             # Persist only the selected, visible fields; never store whole-page text.
             clean_fields = _clean_fields(fields)
+            record_source = str(item.get("source") or source)
+            record_captured_at = str(item.get("captured_at") or captured_at)
             record_creator_ref = (
                 creator_id_override
                 or item.get("creator_ref")
@@ -343,7 +358,7 @@ def ingest_payload(
             if record_type in {"note_detail", "xhs_public_note"}:
                 title = str(clean_fields.get("笔记标题") or clean_fields.get("标题") or "")
                 published = str(clean_fields.get("发布时间") or "")
-                note_timestamp = str(item.get("captured_at") or captured_at)
+                note_timestamp = record_captured_at
                 if item.get("note_ref"):
                     note_id = ensure_note_ref(conn, creator_id, str(item["note_ref"]), note_timestamp)
                     platform_note_id_hash = hashlib.sha256(
@@ -368,7 +383,7 @@ def ingest_payload(
                         clean_fields.get("笔记正文") or clean_fields.get("正文"),
                         published or None,
                         clean_fields.get("笔记类型") or clean_fields.get("内容类型"),
-                        source,
+                        record_source,
                         json.dumps(item.get("note_topics"), ensure_ascii=False)
                         if isinstance(item.get("note_topics"), list)
                         else None,
@@ -411,13 +426,15 @@ def ingest_payload(
             cur = conn.execute(
                 """
                 INSERT OR IGNORE INTO records
-                    (batch_id, record_type, captured_at, fields_json, fields_hash, creator_id, note_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (batch_id, record_type, source, captured_at, fields_json,
+                     fields_hash, creator_id, note_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     batch_id,
                     record_type,
-                    str(item.get("captured_at") or captured_at),
+                    record_source,
+                    record_captured_at,
                     json.dumps(clean_fields, ensure_ascii=False, sort_keys=True),
                     digest,
                     creator_id,
