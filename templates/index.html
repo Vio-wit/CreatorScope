@@ -21,6 +21,7 @@
       <a class="nav-item" href="#collection"><span class="nav-icon">↧</span>采集任务</a>
       <a class="nav-item" href="#analytics"><span class="nav-icon">◷</span>统计分析</a>
       <a class="nav-item" href="#creators"><span class="nav-icon">◎</span>博主库</a>
+      <a class="nav-item" href="#notes"><span class="nav-icon">▧</span>笔记管理</a>
       <a class="nav-item" href="#records"><span class="nav-icon">▤</span>样本记录</a>
       <a class="nav-item" href="/comments"><span class="nav-icon">▧</span>评论分析</a>
       <div class="sidebar-bottom">
@@ -42,9 +43,23 @@
           <p class="subheading">把采集、清洗、存储与分析连成一个可复现的课程实验。</p>
         </div>
         <div class="heading-actions">
-          <label class="select-wrap" aria-label="选择批次"><span>批次</span><select id="batchSelect"><option value="">暂无批次</option></select></label>
+          <label class="select-wrap" aria-label="选择批次"><span>批次</span><select id="batchSelect"><option value="__all__">全部批次</option></select></label>
           <label class="select-wrap" aria-label="筛选记录类型"><span>数据类型</span><select id="typeSelect"><option value="">全部数据</option></select></label>
         </div>
+      </section>
+
+      <section class="section-heading" aria-label="数据总览">
+        <div><p class="eyebrow">DATA OVERVIEW</p><h2>统一数据总览</h2><p class="subheading">按本地统一数据库中的实体与采集来源统计。</p></div>
+        <span class="analysis-count" id="overviewUpdatedAt">最近更新 —</span>
+      </section>
+      <section class="kpi-grid overview-kpis">
+        <article class="kpi-card"><div class="kpi-label">创作者总数<span class="kpi-symbol">◎</span></div><div class="kpi-value" id="overviewCreators">—</div><div class="kpi-foot">匿名创作者实体</div></article>
+        <article class="kpi-card"><div class="kpi-label">笔记总数<span class="kpi-symbol green">▧</span></div><div class="kpi-value" id="overviewNotes">—</div><div class="kpi-foot">去重后的笔记实体</div></article>
+        <article class="kpi-card"><div class="kpi-label">评论总数<span class="kpi-symbol blue">↳</span></div><div class="kpi-value" id="overviewComments">—</div><div class="kpi-foot">已保存评论快照行</div></article>
+        <article class="kpi-card"><div class="kpi-label">采集批次数<span class="kpi-symbol amber">▤</span></div><div class="kpi-value" id="overviewBatches">—</div><div class="kpi-foot">导入与采集批次</div></article>
+      </section>
+      <section class="charts-grid overview-source-grid">
+        <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>数据来源占比</h2><p id="sourceShareScope">记录行与评论行</p></div></div><div class="chart" id="sourceShareChart"></div></article>
       </section>
 
       <section class="collection-panel" id="collection">
@@ -83,7 +98,7 @@
       </section>
 
       <section class="kpi-grid" aria-label="数据概览">
-        <article class="kpi-card"><div class="kpi-label">当前批次记录<span class="kpi-symbol">▤</span></div><div class="kpi-value" id="recordCount">—</div><div class="kpi-foot" id="batchCount">历史批次 0</div></article>
+        <article class="kpi-card"><div class="kpi-label">所选范围记录<span class="kpi-symbol">▤</span></div><div class="kpi-value" id="recordCount">—</div><div class="kpi-foot" id="batchCount">历史批次 0</div></article>
         <article class="kpi-card"><div class="kpi-label">字段覆盖率<span class="kpi-symbol green">◉</span></div><div class="kpi-value" id="coverageRate">—</div><div class="kpi-foot" id="fieldCount">—</div></article>
         <article class="kpi-card"><div class="kpi-label">粉丝规模<span class="kpi-symbol blue">◎</span></div><div class="kpi-value compact" id="followersValue">—</div><div class="kpi-foot">当前可用博主样本</div></article>
         <article class="kpi-card"><div class="kpi-label">阅读中位数<span class="kpi-symbol amber">⌁</span></div><div class="kpi-value compact" id="readingValue">—</div><div class="kpi-foot">按页面显示值保留单位</div></article>
@@ -132,6 +147,8 @@
       </section>
       <section class="creator-filter-panel">
         <label>领域<select id="categoryFilter"><option value="">全部领域</option></select></label>
+        <label>地域<select id="locationFilter"><option value="">全部地域</option></select></label>
+        <label>排序<select id="creatorSort"><option value="followers">粉丝数</option><option value="quote">报价</option><option value="reading">阅读</option><option value="engagement">互动</option><option value="pseudonym">匿名编号</option></select></label>
         <label>粉丝下限<input id="followersMin" inputmode="numeric" placeholder="人"></label>
         <label>粉丝上限<input id="followersMax" inputmode="numeric" placeholder="人"></label>
         <label>报价下限<input id="quoteMin" inputmode="numeric" placeholder="元"></label>
@@ -140,8 +157,34 @@
         <span id="creatorCount">0 位博主</span>
       </section>
       <section class="table-card creator-table-card">
-        <div class="table-scroll"><table><thead><tr><th>匿名编号</th><th>领域</th><th>粉丝数</th><th>报价估值</th><th>阅读中位数</th><th>互动中位数</th><th>数据类型</th><th>最新批次</th></tr></thead><tbody id="creatorBody"><tr><td colspan="8" class="empty-cell">暂无创作者记录</td></tr></tbody></table></div>
+        <div class="table-scroll"><table><thead><tr><th>匿名编号</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价估值</th><th>阅读中位数</th><th>互动中位数</th><th>数据类型</th><th>最新批次</th></tr></thead><tbody id="creatorBody"><tr><td colspan="9" class="empty-cell">暂无创作者记录</td></tr></tbody></table></div>
       </section>
+
+      <section class="creator-comparison-panel">
+        <div class="comparison-controls"><div><strong>创作者对比</strong><small>选择具体批次后，选择 2 至 4 位</small></div><select id="creatorCompareSelect" multiple size="4" aria-label="选择 2 至 4 位创作者"></select><button class="button button-primary" id="compareCreators">对比所选</button><span id="creatorCompareStatus">只并列展示同一批次内可用指标</span></div>
+        <div class="table-scroll"><table><thead><tr><th>匿名编号</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价</th><th>阅读中位数</th><th>互动中位数</th><th>数据时间</th></tr></thead><tbody id="creatorCompareBody"><tr><td colspan="8" class="empty-cell">选择创作者后查看并列对比</td></tr></tbody></table></div>
+      </section>
+
+      <section class="section-heading" id="notes">
+        <div><p class="eyebrow">NOTE MANAGEMENT</p><h2>笔记管理与分析</h2><p class="subheading">筛选条件同步作用于笔记列表、排行、发布时间分布和指标趋势。</p></div>
+        <div class="heading-actions"><a class="button button-primary download-link" id="exportNotes" href="/api/notes/export.csv">导出筛选笔记 CSV</a></div>
+      </section>
+      <section class="note-filter-panel">
+        <label>创作者<select id="noteCreatorFilter"><option value="">全部创作者</option></select></label>
+        <label>发布时间起<input id="noteDateFrom" type="date"></label>
+        <label>发布时间止<input id="noteDateTo" type="date"></label>
+        <label>内容类型<select id="noteTypeFilter"><option value="">全部类型</option></select></label>
+        <label>话题<select id="noteTopicFilter"><option value="">全部话题</option></select></label>
+        <button class="button button-primary" id="filterNotes">筛选</button>
+        <span id="noteCountLabel">0 篇笔记</span>
+      </section>
+      <section class="charts-grid note-chart-grid">
+        <article class="chart-card"><div class="card-heading"><div><h2>阅读量排行</h2><p id="noteReadStatus">按来源分组</p></div></div><div class="chart" id="noteReadRankChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>点赞收藏评论分享</h2><p>同一来源内汇总各笔记最新值</p></div></div><div class="chart" id="noteInteractionRankChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>发布时间分布</h2><p>按笔记记录的年月统计</p></div></div><div class="chart" id="notePublishChart"></div></article>
+        <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>笔记指标历史趋势</h2><p id="noteTrendStatus">等待同来源同周期重复快照</p></div></div><div class="chart" id="noteTrendChart"></div></article>
+      </section>
+      <section class="table-card note-table-card"><div class="table-scroll"><table><thead><tr><th>创作者</th><th>笔记标题</th><th>发布时间</th><th>内容类型</th><th>话题</th><th>来源 / 批次</th><th>阅读</th><th>点赞</th><th>收藏</th><th>评论</th><th>分享</th><th>保存评论</th></tr></thead><tbody id="noteRows"><tr><td colspan="12" class="empty-cell">加载笔记…</td></tr></tbody></table></div></section>
 
       <section class="data-grid" id="records">
         <article class="table-card">

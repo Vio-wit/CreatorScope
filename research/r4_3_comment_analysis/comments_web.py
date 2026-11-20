@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import sqlite3
 
 from flask import Blueprint, Response, current_app, jsonify, make_response, render_template, request
 
@@ -46,6 +47,40 @@ def comments_analysis():
     result = summarize_fn(rows)
     for row in result["comments"]:
         row.pop("raw_payload", None)
+    return jsonify(result)
+
+
+@comment_analysis_bp.get("/api/comments/word-change")
+def comments_word_change():
+    db_path, fetch_fn, _, _, _ = _service()
+    baseline_id = request.args.get("baseline_batch_id", "").strip()
+    comparison_id = request.args.get("comparison_batch_id", "").strip()
+    if not baseline_id or not comparison_id or baseline_id == comparison_id:
+        return jsonify({"error": "请选择两个不同的评论批次"}), 400
+    conn = sqlite3.connect(str(db_path), timeout=10)
+    try:
+        sources = dict(conn.execute(
+            "SELECT batch_id, source FROM batches WHERE batch_id IN (?, ?)",
+            (baseline_id, comparison_id),
+        ).fetchall())
+    finally:
+        conn.close()
+    if len(sources) != 2:
+        return jsonify({"error": "所选批次不存在"}), 404
+    if sources[baseline_id] != sources[comparison_id]:
+        return jsonify({"error": "只能比较相同采集来源的批次"}), 400
+
+    filters = _filters()
+    filters["batch_id"] = baseline_id
+    baseline_rows = fetch_fn(db_path, filters)
+    filters["batch_id"] = comparison_id
+    comparison_rows = fetch_fn(db_path, filters)
+    from .comment_analysis import compare_word_frequencies
+
+    result = compare_word_frequencies(baseline_rows, comparison_rows)
+    result["source"] = sources[baseline_id]
+    result["baseline_batch_id"] = baseline_id
+    result["comparison_batch_id"] = comparison_id
     return jsonify(result)
 
 

@@ -1,7 +1,7 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
   const charts = {};
-  const ids = ['topWordsChart', 'noteCountChart', 'lengthChart', 'likesChart', 'noteWordsChart', 'lengthLikesChart'];
+  const ids = ['topWordsChart', 'noteCountChart', 'creatorCommentChart', 'lengthChart', 'likesChart', 'noteWordsChart', 'lengthLikesChart', 'wordChangeChart'];
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
   async function requestJson(url) {
@@ -38,7 +38,14 @@
     const data = await requestJson('/api/comments/options');
     fillSelect('#creatorFilter', data.creators || [], 'creator_id', (row) => row.creator_name, '全部创作者');
     fillSelect('#noteFilter', data.notes || [], 'note_id', (row) => `${row.creator_name} · ${row.title}`, '全部笔记');
-    fillSelect('#batchFilter', data.batches || [], 'batch_id', (row) => `${row.source} · ${row.started_at || row.batch_id}`, '全部批次');
+    const batches = data.batches || [];
+    fillSelect('#batchFilter', batches, 'batch_id', (row) => `${row.source} · ${row.started_at || row.batch_id}`, '全部批次');
+    fillSelect('#wordChangeBaseline', batches, 'batch_id', (row) => `${row.source} · ${row.started_at || row.batch_id}`, '选择基线批次');
+    fillSelect('#wordChangeCurrent', batches, 'batch_id', (row) => `${row.source} · ${row.started_at || row.batch_id}`, '选择对比批次');
+    if (batches.length >= 2) {
+      if (!$('#wordChangeBaseline').value) $('#wordChangeBaseline').value = batches[1].batch_id;
+      if (!$('#wordChangeCurrent').value) $('#wordChangeCurrent').value = batches[0].batch_id;
+    }
   }
 
   function chart(id) {
@@ -145,12 +152,51 @@
     setBar('topWordsChart', top.map((item) => item.word).reverse(), top.map((item) => item.count).reverse(), true);
     const notes = data.by_note || [];
     setBar('noteCountChart', notes.map((item) => item.label), notes.map((item) => item.count), true, '#789c83');
+    const creators = data.by_creator || [];
+    setBar('creatorCommentChart', creators.map((item) => item.label), creators.map((item) => item.count), true, '#7596bd');
     setBar('lengthChart', data.length_histogram.map((item) => item.label), data.length_histogram.map((item) => item.count), false, '#799cbb');
     const likes = data.like_histogram || [];
     setBar('likesChart', likes.map((item) => item.label), likes.map((item) => item.count), false, '#dfa05c');
     renderNoteWords(data.note_words || []);
     renderScatter(data.scatter || []);
     renderRows(data.comments || []);
+  }
+
+  async function loadWordChange() {
+    const baseline = $('#wordChangeBaseline').value;
+    const comparison = $('#wordChangeCurrent').value;
+    if (!baseline || !comparison || baseline === comparison) {
+      $('#wordChangeStatus').textContent = '请选择两个不同的批次';
+      return;
+    }
+    const params = filters();
+    params.delete('batch_id');
+    params.set('baseline_batch_id', baseline);
+    params.set('comparison_batch_id', comparison);
+    try {
+      const data = await requestJson(`/api/comments/word-change?${params.toString()}`);
+      $('#wordChangeStatus').textContent = `${data.message} · 共同笔记 ${data.common_note_count || 0} 篇 · ${data.baseline_comment_count || 0} / ${data.comparison_comment_count || 0} 条评论`;
+      const words = data.words || [];
+      if (!words.length) {
+        chart('wordChangeChart').clear();
+        chart('wordChangeChart').setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: data.message || '没有可比较词频', fill: '#9aa39d', fontSize: 13 } }] });
+        return;
+      }
+      const option = baseOption();
+      option.grid = { left: 58, right: 28, top: 24, bottom: 90, containLabel: true };
+      option.legend = { bottom: 8, type: 'scroll' };
+      option.xAxis = { type: 'category', data: words.map((item) => item.word), axisLabel: { rotate: 28, interval: 0 } };
+      option.yAxis = { type: 'value', minInterval: 1 };
+      option.tooltip = { trigger: 'axis', formatter: (items) => {
+        const row = words.find((item) => item.word === items[0]?.axisValue);
+        return `${escapeHtml(row?.word)}<br>基线：${row?.baseline_count ?? 0}<br>对比：${row?.comparison_count ?? 0}<br>变化：${row?.delta > 0 ? '+' : ''}${row?.delta ?? 0}`;
+      } };
+      option.series = [
+        { name: '基线', type: 'bar', data: words.map((item) => item.baseline_count), barMaxWidth: 24 },
+        { name: '对比', type: 'bar', data: words.map((item) => item.comparison_count), barMaxWidth: 24 },
+      ];
+      chart('wordChangeChart').setOption(option, true);
+    } catch (error) { $('#wordChangeStatus').textContent = error.message; }
   }
 
   async function refresh() {
@@ -176,6 +222,7 @@
       $('#keywordFilter').value = '';
       loadAnalysis().catch((error) => { $('#analysisStatus').textContent = error.message; });
     });
+    $('#compareWordChange').addEventListener('click', loadWordChange);
     window.addEventListener('resize', () => Object.values(charts).forEach((instance) => instance.resize()));
     refresh();
   });

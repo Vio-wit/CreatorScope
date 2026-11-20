@@ -52,6 +52,11 @@
         <button class="button button-secondary" type="button" id="clearFilters">清除</button>
       </form>
 
+      <section class="comment-word-change-panel">
+        <div class="word-change-controls"><div><strong>高频词变化</strong><small>只比较相同来源、共同笔记的两个批次</small></div><label>基线批次<select id="wordChangeBaseline"><option value="">选择批次</option></select></label><label>对比批次<select id="wordChangeCurrent"><option value="">选择批次</option></select></label><button class="button button-primary" id="compareWordChange">比较</button><span id="wordChangeStatus">未运行</span></div>
+        <div class="comment-chart comment-chart-tall" id="wordChangeChart"></div>
+      </section>
+
       <section class="kpi-grid comment-kpis" aria-label="评论统计概览">
         <article class="kpi-card"><div class="kpi-label">筛选后评论<span class="kpi-symbol">▤</span></div><div class="kpi-value" id="commentCount">—</div><div class="kpi-foot">页面可见记录</div></article>
         <article class="kpi-card"><div class="kpi-label">一级 / 回复<span class="kpi-symbol green">↳</span></div><div class="kpi-value compact" id="levelCounts">—</div><div class="kpi-foot">按 DOM 层级区分</div></article>
@@ -64,6 +69,7 @@
         <article class="chart-card wordcloud-card"><div class="card-heading"><div><h2>评论词云</h2><p>jieba 分词；否定词保留；按当前筛选更新</p></div></div><div class="wordcloud-wrap"><img id="commentWordcloud" alt="当前筛选评论的中文词云"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>高频词 Top 20</h2><p>基于原始评论的派生清洗文本</p></div></div><div class="comment-chart" id="topWordsChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>各笔记评论数量</h2><p>当前样本中实际保存的记录数</p></div></div><div class="comment-chart" id="noteCountChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>创作者评论数量对比</h2><p>按当前筛选的已保存样本统计</p></div></div><div class="comment-chart" id="creatorCommentChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>评论长度分布</h2><p>统计口径：Unicode 字符数</p></div></div><div class="comment-chart" id="lengthChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>精确点赞数分布</h2><p id="likesScope">非精确值不会进入数值图</p></div></div><div class="comment-chart" id="likesChart"></div></article>
         <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>不同笔记关键词对比</h2><p>每篇笔记分别统计高频词</p></div></div><div class="comment-chart comment-chart-tall" id="noteWordsChart"></div></article>

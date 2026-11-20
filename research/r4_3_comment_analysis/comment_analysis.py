@@ -145,6 +145,8 @@ def summarize(rows: list[dict[str, Any]], stopwords: set[str] | None = None) -> 
     stop = load_stopwords() if stopwords is None else stopwords
     note_counts = Counter(row["note_id"] for row in rows)
     note_labels = {row["note_id"]: f"{row['creator_name']} · {row['note_title']}" for row in rows}
+    creator_counts = Counter(row["creator_id"] for row in rows)
+    creator_labels = {row["creator_id"]: row["creator_name"] for row in rows}
     levels = Counter(row["comment_level"] for row in rows)
     lengths = [len(row["cleaned_text"]) for row in rows]
     likes = [int(row["like_count_normalized"]) for row in rows if row["like_count_normalized"] is not None]
@@ -189,6 +191,10 @@ def summarize(rows: list[dict[str, Any]], stopwords: set[str] | None = None) -> 
             "scope_notice": status,
         },
         "by_note": note_items,
+        "by_creator": [
+            {"creator_id": creator_id, "label": creator_labels[creator_id], "count": count}
+            for creator_id, count in sorted(creator_counts.items(), key=lambda item: (-item[1], creator_labels[item[0]]))
+        ],
         "length_histogram": length_hist,
         "like_histogram": like_hist,
         "top_words": [{"word": word, "count": count} for word, count in sorted_words[:20]],
@@ -196,6 +202,47 @@ def summarize(rows: list[dict[str, Any]], stopwords: set[str] | None = None) -> 
         "note_words": note_top_words,
         "scatter": scatter,
         "comments": rows,
+    }
+
+
+def compare_word_frequencies(
+    baseline_rows: list[dict[str, Any]],
+    comparison_rows: list[dict[str, Any]],
+    stopwords: set[str] | None = None,
+) -> dict[str, Any]:
+    stop = load_stopwords() if stopwords is None else stopwords
+    baseline_notes = {row["note_id"] for row in baseline_rows}
+    comparison_notes = {row["note_id"] for row in comparison_rows}
+    common_notes = baseline_notes & comparison_notes
+    if not common_notes:
+        return {"common_note_count": 0, "words": [], "message": "两个批次没有可直接对比的同一篇笔记"}
+    baseline_sources = {row.get("source") for row in baseline_rows}
+    comparison_sources = {row.get("source") for row in comparison_rows}
+    common_sources = baseline_sources & comparison_sources
+    if not common_sources:
+        return {"common_note_count": len(common_notes), "words": [], "message": "两个批次没有相同的评论来源"}
+
+    def count_words(rows: list[dict[str, Any]]) -> Counter[str]:
+        counts: Counter[str] = Counter()
+        for row in rows:
+            if row["note_id"] in common_notes and row.get("source") in common_sources:
+                counts.update(tokenize(row.get("cleaned_text") or "", stop))
+        return counts
+
+    baseline_counts = count_words(baseline_rows)
+    comparison_counts = count_words(comparison_rows)
+    words = set(baseline_counts) | set(comparison_counts)
+    ranked = sorted(words, key=lambda word: (-abs(comparison_counts[word] - baseline_counts[word]), -comparison_counts[word], word))[:20]
+    return {
+        "common_note_count": len(common_notes),
+        "common_comment_sources": sorted(str(source) for source in common_sources),
+        "baseline_comment_count": sum(1 for row in baseline_rows if row["note_id"] in common_notes and row.get("source") in common_sources),
+        "comparison_comment_count": sum(1 for row in comparison_rows if row["note_id"] in common_notes and row.get("source") in common_sources),
+        "words": [
+            {"word": word, "baseline_count": baseline_counts[word], "comparison_count": comparison_counts[word], "delta": comparison_counts[word] - baseline_counts[word]}
+            for word in ranked
+        ],
+        "message": "仅比较同一来源、共同笔记的已保存评论样本；词频变化不代表总体舆情变化",
     }
 
 

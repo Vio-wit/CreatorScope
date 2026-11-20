@@ -56,6 +56,8 @@ def dashboard_data(
     db_path: Path,
     batch_id: str | None = None,
     record_type: str | None = None,
+    *,
+    all_batches: bool = False,
 ) -> dict[str, Any]:
     with connection(db_path) as conn:
         batches = [
@@ -78,22 +80,28 @@ def dashboard_data(
             ).fetchall()
         ]
 
-    if batch_id and any(item["batch_id"] == batch_id for item in batches):
+    if all_batches:
+        selected_batch = None
+    elif batch_id and any(item["batch_id"] == batch_id for item in batches):
         selected_batch = batch_id
     else:
         selected_batch = batches[0]["batch_id"] if batches else None
 
     records: list[dict[str, Any]] = []
     metric_rows: list[dict[str, Any]] = []
-    if selected_batch:
+    if selected_batch or all_batches:
         with connection(db_path) as conn:
             sql = """
                 SELECT record_id, record_type, captured_at, fields_json
-                FROM records WHERE batch_id = ?
+                FROM records
             """
-            params: list[Any] = [selected_batch]
+            params: list[Any] = []
+            if selected_batch:
+                sql += " WHERE batch_id = ?"
+                params.append(selected_batch)
             if record_type:
-                sql += " AND record_type = ?"
+                sql += " AND " if params or selected_batch else " WHERE "
+                sql += "record_type = ?"
                 params.append(record_type)
             sql += " ORDER BY record_id"
             for row in conn.execute(sql, params).fetchall():
@@ -106,11 +114,14 @@ def dashboard_data(
                        m.numeric_value, m.unit, m.period, m.parse_status
                 FROM records r
                 JOIN metric_values m ON m.record_id = r.record_id
-                WHERE r.batch_id = ?
             """
-            metric_params: list[Any] = [selected_batch]
+            metric_params: list[Any] = []
+            if selected_batch:
+                metric_sql += " WHERE r.batch_id = ?"
+                metric_params.append(selected_batch)
             if record_type:
-                metric_sql += " AND r.record_type = ?"
+                metric_sql += " AND " if metric_params or selected_batch else " WHERE "
+                metric_sql += "r.record_type = ?"
                 metric_params.append(record_type)
             metric_rows = [
                 dict(row) for row in conn.execute(metric_sql, metric_params).fetchall()
@@ -252,7 +263,8 @@ def dashboard_data(
     ]
 
     return {
-        "selected_batch_id": selected_batch,
+        "selected_batch_id": "__all__" if all_batches else selected_batch,
+        "all_batches": all_batches,
         "batches": batches,
         "tasks": tasks,
         "counts": {
@@ -301,7 +313,7 @@ def _creator_snapshots(db_path: Path, batch_id: str | None = None) -> tuple[list
         sql = """
             SELECT r.record_id, r.batch_id, r.record_type, r.captured_at,
                    r.fields_json, r.creator_id, c.pseudonym,
-                   b.captured_at AS batch_captured_at, b.source AS batch_source
+                   c.location, b.captured_at AS batch_captured_at, b.source AS batch_source
             FROM records r
             JOIN creators c ON c.creator_id = r.creator_id
             JOIN batches b ON b.batch_id = r.batch_id
@@ -336,6 +348,7 @@ def _merge_creator_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             {
                 "creator_id": creator_id,
                 "pseudonym": row["pseudonym"],
+                "location": row.get("location") or "",
                 "fields": {},
                 "record_types": set(),
                 "last_seen_at": row["batch_captured_at"],
@@ -393,10 +406,16 @@ def creator_library(
     followers_max: float | None = None,
     quote_min: float | None = None,
     quote_max: float | None = None,
+    location: str = "",
+    sort_by: str = "pseudonym",
+    sort_desc: bool = True,
+    batch_id: str | None = None,
+    creator_ids: list[str] | None = None,
 ) -> dict[str, Any]:
-    rows, _batches = _creator_snapshots(db_path)
+    rows, _batches = _creator_snapshots(db_path, batch_id=batch_id)
     creators = _merge_creator_rows(rows)
     q = query.casefold().strip()
+    location_filter = location.casefold().strip()
     selected = []
     for creator in creators:
         if q and q not in creator["pseudonym"].casefold():
@@ -411,10 +430,15 @@ def creator_library(
             continue
         if quote_max is not None and (creator["quote"] is None or creator["quote"] > quote_max):
             continue
+        if location_filter and location_filter not in str(creator.get("location") or "").casefold():
+            continue
+        if creator_ids and creator["creator_id"] not in creator_ids:
+            continue
         selected.append(
             {
                 "creator_id": creator["creator_id"],
                 "pseudonym": creator["pseudonym"],
+                "location": creator.get("location") or "",
                 "followers": creator["followers"],
                 "quote": creator["quote"],
                 "image_price": creator["image_price"],
@@ -426,8 +450,245 @@ def creator_library(
                 "last_seen_at": creator["last_seen_at"],
             }
         )
+    sort_fields = {"pseudonym": "pseudonym", "followers": "followers", "quote": "quote", "reading": "reading", "engagement": "engagement"}
+    sort_field = sort_fields.get(sort_by, "pseudonym")
+    if sort_field == "pseudonym":
+        selected.sort(key=lambda item: item["pseudonym"].casefold(), reverse=not sort_desc)
+    else:
+        selected.sort(
+            key=lambda item: (
+                item[sort_field] is None,
+                -(item[sort_field] or 0) if sort_desc else (item[sort_field] or 0),
+                item["pseudonym"].casefold(),
+            )
+        )
     categories = sorted({category for item in creators for category in item["categories"]})
-    return {"count": len(selected), "categories": categories, "creators": selected}
+    locations = sorted({str(item.get("location")) for item in creators if item.get("location")})
+    return {"count": len(selected), "categories": categories, "locations": locations, "creators": selected}
+
+
+def overview_data(db_path: Path) -> dict[str, Any]:
+    with connection(db_path) as conn:
+        counts = {
+            "creators": int(conn.execute("SELECT COUNT(*) FROM creators").fetchone()[0]),
+            "notes": int(conn.execute("SELECT COUNT(*) FROM notes").fetchone()[0]),
+            "comments": int(conn.execute("SELECT COUNT(*) FROM comment_snapshots").fetchone()[0]),
+            "batches": int(conn.execute("SELECT COUNT(*) FROM batches").fetchone()[0]),
+        }
+        latest = conn.execute(
+            """SELECT MAX(value) FROM (
+                   SELECT MAX(captured_at) AS value FROM records
+                   UNION ALL SELECT MAX(captured_at) FROM comment_snapshots
+                   UNION ALL SELECT MAX(captured_at) FROM batches
+               )"""
+        ).fetchone()[0]
+        sources = [
+            dict(row)
+            for row in conn.execute(
+                """SELECT b.source,
+                          COUNT(DISTINCT r.record_id) AS record_count,
+                          COUNT(DISTINCT c.id) AS comment_count
+                   FROM batches b
+                   LEFT JOIN records r ON r.batch_id=b.batch_id
+                   LEFT JOIN comment_snapshots c ON c.batch_id=b.batch_id
+                   GROUP BY b.source ORDER BY (COUNT(DISTINCT r.record_id)+COUNT(DISTINCT c.id)) DESC, b.source"""
+            ).fetchall()
+        ]
+    for item in sources:
+        item["total_count"] = int(item["record_count"] or 0) + int(item["comment_count"] or 0)
+    total = sum(item["total_count"] for item in sources)
+    for item in sources:
+        item["share_pct"] = round(item["total_count"] * 100 / total, 1) if total else 0.0
+    return {"counts": counts, "latest_updated_at": latest, "sources": sources, "source_scope": "按已保存记录行与评论行统计"}
+
+
+def _topics(value: Any) -> list[str]:
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value) if isinstance(value, str) else value
+    except (TypeError, json.JSONDecodeError):
+        return []
+    if isinstance(parsed, list):
+        return [str(item).strip() for item in parsed if str(item).strip()]
+    return []
+
+
+def _note_day(value: Any) -> str | None:
+    match = re.search(r"(\d{4})[-/.年](\d{1,2})(?:[-/.月](\d{1,2}))?", str(value or ""))
+    if not match:
+        return None
+    year, month, day = int(match.group(1)), int(match.group(2)), int(match.group(3) or 1)
+    if not (1 <= month <= 12 and 1 <= day <= 31):
+        return None
+    return f"{year:04d}-{month:02d}-{day:02d}"
+
+
+def notes_data(
+    db_path: Path,
+    *,
+    batch_id: str | None = None,
+    creator_id: str = "",
+    date_from: str = "",
+    date_to: str = "",
+    note_type: str = "",
+    topic: str = "",
+) -> dict[str, Any]:
+    with connection(db_path) as conn:
+        creators = [dict(row) for row in conn.execute(
+            "SELECT DISTINCT c.creator_id, c.pseudonym FROM creators c JOIN notes n ON n.creator_id=c.creator_id ORDER BY c.pseudonym"
+        ).fetchall()]
+        batches = [dict(row) for row in conn.execute(
+            "SELECT DISTINCT b.batch_id, b.source, b.captured_at FROM batches b JOIN records r ON r.batch_id=b.batch_id WHERE r.note_id IS NOT NULL ORDER BY b.captured_at DESC, b.rowid DESC"
+        ).fetchall()]
+        base_rows = conn.execute(
+            "SELECT topics_json, note_type FROM notes"
+        ).fetchall()
+        available_topics = sorted({item for row in base_rows for item in _topics(row["topics_json"])})
+        note_types = sorted({str(row["note_type"]) for row in base_rows if row["note_type"]})
+
+        sql = """SELECT n.note_id, n.creator_id, c.pseudonym, n.title, n.topics_json,
+                        n.published_at, n.note_type, n.source AS note_source,
+                        n.first_seen_at, n.last_seen_at,
+                        r.record_id AS metric_record_id, r.batch_id AS metric_batch_id,
+                        r.captured_at AS metric_captured_at, b.source AS metric_source,
+                        COALESCE(cs.comment_count, 0) AS comment_count
+                 FROM notes n JOIN creators c ON c.creator_id=n.creator_id
+                 LEFT JOIN records r ON r.record_id=(
+                     SELECT r2.record_id FROM records r2
+                     WHERE r2.note_id=n.note_id AND r2.record_type IN ('note_detail','xhs_public_note')"""
+        params: list[Any] = []
+        if batch_id:
+            sql += " AND r2.batch_id=?"
+            params.append(batch_id)
+        sql += " ORDER BY r2.captured_at DESC, r2.record_id DESC LIMIT 1)"
+        sql += " LEFT JOIN batches b ON b.batch_id=r.batch_id"
+        comment_subquery = "SELECT note_id, COUNT(*) AS comment_count FROM comment_snapshots"
+        if batch_id:
+            comment_subquery += " WHERE batch_id=?"
+            params.append(batch_id)
+        comment_subquery += " GROUP BY note_id"
+        sql += f" LEFT JOIN ({comment_subquery}) cs ON cs.note_id=n.note_id"
+        clauses: list[str] = []
+        if creator_id:
+            clauses.append("n.creator_id=?")
+            params.append(creator_id)
+        if note_type:
+            clauses.append("n.note_type=?")
+            params.append(note_type)
+        if batch_id:
+            clauses.append("(EXISTS (SELECT 1 FROM records rb WHERE rb.note_id=n.note_id AND rb.batch_id=?) OR EXISTS (SELECT 1 FROM comment_snapshots cb WHERE cb.note_id=n.note_id AND cb.batch_id=?))")
+            params.extend([batch_id, batch_id])
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY COALESCE(r.captured_at,n.last_seen_at) DESC, n.note_id"
+        rows = [dict(row) for row in conn.execute(sql, params).fetchall()]
+
+        record_ids = [int(row["metric_record_id"]) for row in rows if row["metric_record_id"] is not None]
+        metric_values: dict[int, dict[str, Any]] = {}
+        for offset in range(0, len(record_ids), 500):
+            chunk = record_ids[offset:offset + 500]
+            if not chunk:
+                continue
+            marks = ",".join("?" for _ in chunk)
+            metric_rows = conn.execute(
+                f"SELECT record_id, metric_key, numeric_value, raw_value, unit, period FROM metric_values WHERE record_id IN ({marks})",
+                chunk,
+            ).fetchall()
+            for metric in metric_rows:
+                metric_values.setdefault(int(metric["record_id"]), {})[str(metric["metric_key"])] = {
+                    "value": float(metric["numeric_value"]) if metric["numeric_value"] is not None else None,
+                    "raw_value": metric["raw_value"],
+                    "unit": metric["unit"],
+                    "period": metric["period"],
+                }
+
+        history_rows = []
+        note_ids = list(dict.fromkeys(row["note_id"] for row in rows))
+        for offset in range(0, len(note_ids), 500):
+            chunk = note_ids[offset:offset + 500]
+            if not chunk:
+                continue
+            marks = ",".join("?" for _ in chunk)
+            history_rows.extend(conn.execute(
+                f"""SELECT r.note_id, r.captured_at, m.metric_key, m.numeric_value,
+                           m.period, b.source
+                    FROM records r JOIN metric_values m ON m.record_id=r.record_id
+                    JOIN batches b ON b.batch_id=r.batch_id
+                    WHERE r.note_id IN ({marks}) AND r.record_type IN ('note_detail','xhs_public_note')
+                      AND m.numeric_value IS NOT NULL AND m.period<>''""",
+                chunk,
+            ).fetchall())
+
+    filtered = []
+    for row in rows:
+        topics = _topics(row["topics_json"])
+        day = _note_day(row["published_at"])
+        if topic and topic not in topics:
+            continue
+        if date_from and (day is None or day < date_from):
+            continue
+        if date_to and (day is None or day > date_to):
+            continue
+        metrics = metric_values.get(int(row["metric_record_id"]), {}) if row["metric_record_id"] is not None else {}
+        get_metric = lambda *keys: next((metrics[key]["value"] for key in keys if key in metrics), None)
+        item = {
+            "note_id": row["note_id"], "creator_id": row["creator_id"], "creator_name": row["pseudonym"],
+            "title": row["title"] or "（无标题）", "topics": topics, "published_at": row["published_at"],
+            "note_type": row["note_type"] or "", "source": row["metric_source"] or row["note_source"] or "未知来源",
+            "batch_id": row["metric_batch_id"] or "", "metric_captured_at": row["metric_captured_at"] or "",
+            "comment_count": int(row["comment_count"] or 0), "read_count": get_metric("阅读量", "阅读数"),
+            "like_count": get_metric("点赞量", "点赞数"), "favorite_count": get_metric("收藏量", "收藏数"),
+            "interaction_comment_count": get_metric("评论量", "评论数"), "share_count": get_metric("分享量", "分享数"),
+            "metrics": metrics,
+        }
+        if item["read_count"] is not None:
+            item["read_count"] = float(item["read_count"])
+        interaction_values = [item[key] for key in ("like_count", "favorite_count", "interaction_comment_count", "share_count") if item[key] is not None]
+        item["interaction_score"] = sum(interaction_values) if interaction_values else None
+        item["label"] = f"{item['creator_name']} · {item['title']}"
+        filtered.append(item)
+
+    source_rows: dict[str, list[dict[str, Any]]] = {}
+    for item in filtered:
+        source_rows.setdefault(item["source"], []).append(item)
+    top_read = []
+    top_interactions = []
+    for source, source_items in sorted(source_rows.items()):
+        top_read.append({"source": source, "items": [
+            {"label": row["label"], "value": row["read_count"]} for row in sorted(source_items, key=lambda row: (row["read_count"] is None, -(row["read_count"] or 0)))[:10] if row["read_count"] is not None
+        ]})
+        top_interactions.append({"source": source, "items": [
+            {"label": row["label"], "value": row["interaction_score"]} for row in sorted(source_items, key=lambda row: (row["interaction_score"] is None, -(row["interaction_score"] or 0)))[:10] if row["interaction_score"] is not None
+        ]})
+
+    publish_counts = Counter(day[:7] for row in filtered if (day := _note_day(row["published_at"])) is not None)
+    trend_groups: dict[tuple[str, str, str, str], dict[str, float]] = {}
+    note_label = {row["note_id"]: row["label"] for row in filtered}
+    for hist in history_rows:
+        if hist["note_id"] not in note_label:
+            continue
+        key = (str(hist["note_id"]), str(hist["metric_key"]), str(hist["source"]), str(hist["period"]))
+        trend_groups.setdefault(key, {})[str(hist["captured_at"])] = float(hist["numeric_value"])
+    metric_trends = [
+        {"label": f"{note_label[note_id]} · {metric} · {source} · {period}", "points": [{"captured_at": time, "value": value} for time, value in sorted(points.items())]}
+        for (note_id, metric, source, period), points in trend_groups.items() if len(points) >= 2
+    ]
+
+    public_rows = [{key: value for key, value in row.items() if key != "metrics"} for row in filtered]
+    return {
+        "count": len(filtered), "notes": public_rows, "creators": creators,
+        "note_types": note_types, "topics": available_topics, "batches": batches,
+        "charts": {
+            "top_read": top_read, "top_interactions": top_interactions,
+            "publish_distribution": [{"month": month, "count": count} for month, count in sorted(publish_counts.items())],
+            "metric_trends": metric_trends,
+        },
+        "availability": {
+            "read_rankings": "按来源分组，使用每篇笔记最新可用指标快照" if any(group["items"] for group in top_read) else "当前筛选没有可比较的阅读指标",
+            "metric_trends": "仅展示同一笔记、来源、指标和统计周期的重复快照" if metric_trends else "缺少同一笔记、来源、指标和统计周期的重复快照",
+        },
+    }
 
 
 def analytics_data(db_path: Path, batch_id: str | None = None) -> dict[str, Any]:
@@ -497,18 +758,42 @@ def analytics_data(db_path: Path, batch_id: str | None = None) -> dict[str, Any]
             "sample_count": max_pair_count,
         }
 
-    trend_points = []
+    trend_groups: list[dict[str, Any]] = []
     if not batch_id:
-        by_time: dict[str, list[dict[str, Any]]] = {}
-        for row in rows:
-            by_time.setdefault(row["batch_captured_at"], []).append(row)
-        distinct_times = sorted(by_time)
-        if len(distinct_times) >= 2:
-            for captured_at in distinct_times:
-                snapshot_creators = _merge_creator_rows(by_time[captured_at])
-                values = [item["followers"] for item in snapshot_creators if item["followers"] is not None]
-                if values:
-                    trend_points.append({"captured_at": captured_at, "median_followers": float(pd.Series(values).median()), "creator_count": len(values)})
+        with connection(db_path) as conn:
+            snapshots = [dict(row) for row in conn.execute(
+                """SELECT r.creator_id, r.captured_at, r.record_id, m.numeric_value,
+                          m.period, b.source
+                   FROM records r JOIN metric_values m ON m.record_id=r.record_id
+                   JOIN batches b ON b.batch_id=r.batch_id
+                   WHERE r.creator_id IS NOT NULL AND m.metric_key='粉丝数'
+                     AND m.parse_status='parsed' AND m.numeric_value IS NOT NULL
+                     AND TRIM(m.period)<>''
+                   ORDER BY r.captured_at, r.record_id"""
+            ).fetchall()]
+        by_source_period: dict[tuple[str, str], dict[str, dict[str, float]]] = {}
+        for snapshot in snapshots:
+            key = (str(snapshot["source"]), str(snapshot["period"]))
+            by_time = by_source_period.setdefault(key, {})
+            values = by_time.setdefault(str(snapshot["captured_at"]), {})
+            # At a shared timestamp, keep the last saved snapshot for that creator.
+            values[str(snapshot["creator_id"])] = float(snapshot["numeric_value"])
+        for (source, period), by_time in sorted(by_source_period.items()):
+            times = sorted(by_time)
+            if len(times) < 2:
+                continue
+            common_creators = set.intersection(*(set(by_time[time]) for time in times))
+            if not common_creators:
+                continue
+            points = []
+            for captured_at in times:
+                values = [by_time[captured_at][creator_id] for creator_id in common_creators]
+                points.append({
+                    "captured_at": captured_at,
+                    "median_followers": float(pd.Series(values).median()),
+                    "creator_count": len(common_creators),
+                })
+            trend_groups.append({"source": source, "period": period, "metric_key": "粉丝数", "points": points})
 
     text_samples = []
     for row in rows:
@@ -528,7 +813,11 @@ def analytics_data(db_path: Path, batch_id: str | None = None) -> dict[str, Any]
             "follower_price": "可展示样本点" if any(item["followers"] is not None and item["quote"] is not None for item in creators) else "缺少共同字段",
             "reading_engagement": "可展示样本点" if reads else "缺少共同字段",
             "correlation": f"已按两两完整值计算（最多 {max_pair_count} 个样本）" if correlation else f"样本不足：每组指标至少需要 3 条共同有效值，目前共同完整样本 {len(complete)} 条",
-            "history": "可展示不同采集时间的粉丝量趋势" if len(trend_points) >= 2 else "暂不可判断：至少需要两个不同采集时间的快照；重复导入同一固定样本不构成趋势",
+            "history": (
+                f"按来源与统计周期分组；仅比较跨快照重复创作者（{len(trend_groups)} 组可比数据）"
+                if trend_groups else
+                "当前选择了单批次，或缺少同一创作者、来源、粉丝指标和统计周期的重复快照"
+            ),
             "word_frequency": f"已从 {len(text_samples)} 条真实文本字段分词" if text_samples else "当前真实样本未保存标题、正文或内容标签",
         },
         "charts": {
@@ -539,7 +828,7 @@ def analytics_data(db_path: Path, batch_id: str | None = None) -> dict[str, Any]
             "reading_engagement_scatter": [{"name": item["pseudonym"], "x": item["reading"], "y": item["engagement"]} for item in reads],
             "fan_analysis": fan_averages,
             "correlation": correlation,
-            "batch_trend": trend_points,
+            "batch_trend": trend_groups,
             "note_metrics": note_metrics,
             "word_frequency": [{"word": str(word), "count": int(count)} for word, count in frequency.items()],
         },

@@ -10,7 +10,7 @@ from typing import Any
 
 from flask import Flask, jsonify, make_response, render_template, request
 
-from .analytics import analytics_data, creator_library, dashboard_data, wordcloud_png
+from .analytics import analytics_data, creator_library, dashboard_data, notes_data, overview_data, wordcloud_png
 from .browser import PgyVisibleBrowser
 from .db import connection, initialize_database
 from .domain import field_dictionary
@@ -65,26 +65,35 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.get("/api/dashboard")
     def api_dashboard():
+        raw_batch_id = request.args.get("batch_id") or None
+        all_batches = raw_batch_id == "__all__"
         data = dashboard_data(
             app.config["DATABASE_PATH"],
-            batch_id=request.args.get("batch_id") or None,
+            batch_id=None if all_batches else raw_batch_id,
             record_type=request.args.get("record_type") or None,
+            all_batches=all_batches,
         )
         return jsonify(data)
 
+    @app.get("/api/overview")
+    def api_overview():
+        return jsonify(overview_data(app.config["DATABASE_PATH"]))
+
     @app.get("/api/analytics")
     def api_analytics():
+        raw_batch_id = request.args.get("batch_id") or None
         return jsonify(analytics_data(
             app.config["DATABASE_PATH"],
-            batch_id=request.args.get("batch_id") or None,
+            batch_id=None if raw_batch_id == "__all__" else raw_batch_id,
         ))
 
     @app.get("/api/wordcloud.png")
     def api_wordcloud():
         try:
+            raw_batch_id = request.args.get("batch_id") or None
             image = wordcloud_png(
                 app.config["DATABASE_PATH"],
-                batch_id=request.args.get("batch_id") or None,
+                batch_id=None if raw_batch_id == "__all__" else raw_batch_id,
             )
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 422
@@ -120,10 +129,76 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 followers_max=optional_number("followers_max"),
                 quote_min=optional_number("quote_min"),
                 quote_max=optional_number("quote_max"),
+                location=request.args.get("location", ""),
+                sort_by=request.args.get("sort_by", "pseudonym"),
+                sort_desc=request.args.get("sort_desc", "true").casefold() != "false",
+                batch_id=(request.args.get("batch_id") or None) if request.args.get("batch_id") != "__all__" else None,
             )
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
         return jsonify(data)
+
+    @app.get("/api/creators/compare")
+    def api_creator_compare():
+        creator_ids = list(dict.fromkeys(request.args.getlist("creator_id")))
+        if not 2 <= len(creator_ids) <= 4:
+            return jsonify({"error": "请选择 2 至 4 位创作者进行对比"}), 400
+        raw_batch_id = request.args.get("batch_id") or None
+        if not raw_batch_id or raw_batch_id == "__all__":
+            return jsonify({"error": "请选择一个具体采集批次，以保持对比口径一致"}), 400
+        data = creator_library(
+            app.config["DATABASE_PATH"],
+            batch_id=raw_batch_id,
+            creator_ids=creator_ids,
+            sort_by="pseudonym",
+        )
+        return jsonify(data)
+
+    @app.get("/api/notes")
+    def api_notes():
+        date_from = request.args.get("date_from", "").strip()
+        date_to = request.args.get("date_to", "").strip()
+        for name, value in (("date_from", date_from), ("date_to", date_to)):
+            if value:
+                try:
+                    from datetime import date
+                    date.fromisoformat(value)
+                except ValueError:
+                    return jsonify({"error": f"{name} 必须是 YYYY-MM-DD 日期"}), 400
+        raw_batch_id = request.args.get("batch_id") or None
+        data = notes_data(
+            app.config["DATABASE_PATH"],
+            batch_id=None if raw_batch_id == "__all__" else raw_batch_id,
+            creator_id=request.args.get("creator_id", "").strip(),
+            date_from=date_from,
+            date_to=date_to,
+            note_type=request.args.get("note_type", "").strip(),
+            topic=request.args.get("topic", "").strip(),
+        )
+        return jsonify(data)
+
+    @app.get("/api/notes/export.csv")
+    def api_notes_export():
+        raw_batch_id = request.args.get("batch_id") or None
+        data = notes_data(
+            app.config["DATABASE_PATH"],
+            batch_id=None if raw_batch_id == "__all__" else raw_batch_id,
+            creator_id=request.args.get("creator_id", "").strip(),
+            date_from=request.args.get("date_from", "").strip(),
+            date_to=request.args.get("date_to", "").strip(),
+            note_type=request.args.get("note_type", "").strip(),
+            topic=request.args.get("topic", "").strip(),
+        )
+        fields = ["note_id", "creator_name", "title", "published_at", "note_type", "topics", "source", "batch_id", "read_count", "like_count", "favorite_count", "interaction_comment_count", "share_count", "comment_count", "interaction_score"]
+        stream = io.StringIO(newline="")
+        writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
+        writer.writeheader()
+        for row in data["notes"]:
+            writer.writerow({**row, "topics": "、".join(row["topics"])})
+        response = make_response("\ufeff" + stream.getvalue())
+        response.headers["Content-Type"] = "text/csv; charset=utf-8"
+        response.headers["Content-Disposition"] = 'attachment; filename="creatorscope_notes.csv"'
+        return response
 
     @app.get("/api/fields")
     def api_fields():
@@ -247,6 +322,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @app.get("/api/export/json")
     def api_export_json():
         batch_id = request.args.get("batch_id") or None
+        if batch_id == "__all__":
+            batch_id = None
         with connection(app.config["DATABASE_PATH"]) as conn:
             sql = """
                 SELECT r.record_id, r.batch_id, r.record_type, r.captured_at,
@@ -289,6 +366,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @app.get("/api/export/csv")
     def api_export_csv():
         batch_id = request.args.get("batch_id") or None
+        if batch_id == "__all__":
+            batch_id = None
         with connection(app.config["DATABASE_PATH"]) as conn:
             sql = """
                 SELECT r.record_id, r.batch_id, r.record_type, r.captured_at,
