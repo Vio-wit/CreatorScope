@@ -66,6 +66,19 @@
           <button class="button button-secondary" id="captureButton" disabled>采集当前页面</button>
           <button class="button button-quiet" id="closeBrowserButton" disabled>关闭窗口</button>
         </div>
+        <div class="visible-collect-settings" id="visibleCollectSettings">
+          <label>采集来源<select id="collectSource"><option value="pgy_xhs_visible">蒲公英 → 小红书公开笔记页</option></select></label>
+          <fieldset><legend>采集类型</legend>
+            <label><input id="collectCreator" type="checkbox" checked> 创作者资料与指标</label>
+            <label><input id="collectNotes" type="checkbox" checked> 笔记案例与正文</label>
+            <label><input id="collectComments" type="checkbox" checked> 可见评论</label>
+          </fieldset>
+          <label>创作者数<input id="creatorLimit" type="number" min="1" max="10" value="10"></label>
+          <label>每人笔记数<input id="noteLimit" type="number" min="1" max="3" value="3"></label>
+          <label>每篇评论数<input id="commentLimit" type="number" min="0" max="20" value="20"></label>
+          <button class="button button-primary" id="startCollectionButton">启动可见采集</button>
+          <span class="collect-cap-note">每项有上限；单任务总评论最多 300 条。登录或验证页面会暂停并保留断点。</span>
+        </div>
         <div class="browser-hint" id="browserHint"><span class="status-dot muted"></span><span>新建隔离浏览器配置；请在窗口内正常登录并手动打开要验证的页面。应用只读取蒲公英域名下当前可见页面的少量字段。</span></div>
       </section>
 
