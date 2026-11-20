@@ -1,0 +1,184 @@
+from __future__ import annotations
+
+import json
+import os
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+from creatorscope import create_app
+from creatorscope.ai import AIServiceError, build_preview, provider_status, run_analysis, test_connection
+from creatorscope.db import connection, initialize_database
+
+
+class AIServiceTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory(prefix="creatorscope-ai-")
+        self.db_path = Path(self.temp_dir.name) / "ai.sqlite3"
+        initialize_database(self.db_path)
+        with connection(self.db_path) as conn:
+            for batch_id, captured in (("batch-a", "2026-11-01T10:00:00"), ("batch-b", "2026-11-02T10:00:00")):
+                task_id = "task-" + batch_id
+                conn.execute(
+                    "INSERT INTO tasks(task_id,task_type,source,status,progress,message,parameters_json,created_at,finished_at) VALUES(?,?,?,?,?,?,?,?,?)",
+                    (task_id, "file_import", "pgy_visible", "completed", 100, "fixture", "{}", captured, captured),
+                )
+                conn.execute(
+                    "INSERT INTO batches(batch_id,task_id,source,captured_at,started_at,completed_at,status) VALUES(?,?,?,?,?,?,?)",
+                    (batch_id, task_id, "pgy_visible", captured, captured, captured, "completed"),
+                )
+            conn.execute(
+                "INSERT INTO creators(creator_id,pseudonym,creator_name,platform,source_key_hash,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?)",
+                ("creator-a", "匿名创作者 A", "", "xiaohongshu", "ai-hash-creator", "2026-11-01", "2026-11-02"),
+            )
+            conn.execute(
+                "INSERT INTO notes(note_id,creator_id,note_key_hash,title,body,topics_json,published_at,note_type,source,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                ("note-a", "creator-a", "ai-hash-note", "护肤分享", "", json.dumps(["#护肤"], ensure_ascii=False), "2026-11-01", "视频", "pgy_visible", "2026-11-01", "2026-11-02"),
+            )
+            for batch_id, captured, followers, reading in (
+                ("batch-a", "2026-11-01T10:00:00", "100", "1000"),
+                ("batch-b", "2026-11-02T10:00:00", "120", "1200"),
+            ):
+                profile = conn.execute(
+                    "INSERT INTO records(batch_id,record_type,captured_at,fields_json,fields_hash,creator_id) VALUES(?,?,?,?,?,?)",
+                    (batch_id, "creator_profile_sample", captured, json.dumps({"粉丝数": followers}, ensure_ascii=False), "ai-profile-" + batch_id, "creator-a"),
+                )
+                conn.execute(
+                    "INSERT INTO metric_values(record_id,metric_key,raw_value,numeric_value,unit,period,parse_status) VALUES(?,?,?,?,?,?,?)",
+                    (profile.lastrowid, "粉丝数", followers, float(followers), "count", "当前粉丝快照", "parsed"),
+                )
+                note = conn.execute(
+                    "INSERT INTO records(batch_id,record_type,captured_at,fields_json,fields_hash,creator_id,note_id) VALUES(?,?,?,?,?,?,?)",
+                    (batch_id, "note_detail", captured, json.dumps({"阅读量": reading}, ensure_ascii=False), "ai-note-" + batch_id, "creator-a", "note-a"),
+                )
+                conn.execute(
+                    "INSERT INTO metric_values(record_id,metric_key,raw_value,numeric_value,unit,period,parse_status) VALUES(?,?,?,?,?,?,?)",
+                    (note.lastrowid, "阅读量", reading, float(reading), "count", "累计", "parsed"),
+                )
+            conn.execute(
+                "INSERT INTO comment_snapshots(batch_id,note_id,local_comment_id_hash,comment_text,cleaned_text,comment_level,source,captured_at,raw_payload_json) VALUES(?,?,?,?,?,?,?,?,?)",
+                ("batch-a", "note-a", "ai-comment-hash", "好用 温和 保湿", "好用 温和 保湿", 1, "visible_public", "2026-11-01T12:00:00", "{}"),
+            )
+
+    def tearDown(self) -> None:
+        self.temp_dir.cleanup()
+
+    def test_no_key_keeps_preview_available_and_model_call_blocked(self) -> None:
+        empty_keys = {
+            "OPENAI_API_KEY": "", "DEEPSEEK_API_KEY": "", "ANTHROPIC_API_KEY": "",
+            "GEMINI_API_KEY": "", "GOOGLE_API_KEY": "", "CREATORSCOPE_AI_MODEL": "",
+        }
+        with patch.dict(os.environ, empty_keys):
+            status = provider_status("openai_compatible", model="local-model")
+            preview = build_preview(self.db_path, analysis_type="creator_summary", creator_ids=["creator-a"], batch_id="batch-a")
+            self.assertFalse(status["key_available"])
+            self.assertNotIn("openai-test-key", json.dumps(status))
+            self.assertEqual(preview["data"]["creators"][0]["anonymous_name"], "匿名创作者 A")
+            with self.assertRaisesRegex(AIServiceError, "未配置密钥"):
+                test_connection(provider="openai_compatible", model="local-model", base_url="https://api.openai.com/v1")
+
+    def test_note_preview_redacts_direct_contact_and_url(self) -> None:
+        with connection(self.db_path) as conn:
+            conn.execute(
+                "UPDATE notes SET body=? WHERE note_id=?",
+                ("联系 me@example.com 或 13800138000，链接 https://example.test/private", "note-a"),
+            )
+        preview = build_preview(self.db_path, analysis_type="note_summary", note_ids=["note-a"], batch_id="batch-a")
+        serialized = json.dumps(preview["data"], ensure_ascii=False)
+        self.assertIn("[邮箱]", serialized)
+        self.assertIn("[手机号]", serialized)
+        self.assertIn("[链接]", serialized)
+        self.assertNotIn("me@example.com", serialized)
+        self.assertNotIn("13800138000", serialized)
+        self.assertNotIn("https://example.test", serialized)
+
+    def test_comment_preview_sends_aggregate_without_comment_text(self) -> None:
+        preview = build_preview(
+            self.db_path,
+            analysis_type="comment_topics",
+            note_ids=["note-a"],
+            batch_id="batch-a",
+        )
+        serialized = json.dumps(preview["data"], ensure_ascii=False)
+        self.assertIn("comment_count_total", serialized)
+        self.assertNotIn("好用 温和 保湿", serialized)
+        self.assertNotIn("comment_text", serialized)
+        self.assertNotIn("local_comment_id", serialized)
+
+    def test_provider_adapters_use_provider_auth_headers_without_leaking_key_to_url(self) -> None:
+        keys = {
+            "OPENAI_API_KEY": "openai-test-key",
+            "DEEPSEEK_API_KEY": "deepseek-test-key",
+            "ANTHROPIC_API_KEY": "claude-test-key",
+            "GEMINI_API_KEY": "gemini-test-key",
+        }
+        responses = {
+            "openai_compatible": {"choices": [{"message": {"content": "OK"}}]},
+            "deepseek": {"choices": [{"message": {"content": "OK"}}]},
+            "claude": {"content": [{"type": "text", "text": "OK"}]},
+            "gemini": {"candidates": [{"content": {"parts": [{"text": "OK"}]}}]},
+        }
+        config = {
+            "openai_compatible": ("https://api.openai.com/v1", "OPENAI_API_KEY"),
+            "deepseek": ("https://api.deepseek.com", "DEEPSEEK_API_KEY"),
+            "claude": ("https://api.anthropic.com", "ANTHROPIC_API_KEY"),
+            "gemini": ("https://generativelanguage.googleapis.com/v1beta", "GEMINI_API_KEY"),
+        }
+        with patch.dict(os.environ, keys):
+            for provider, (base_url, env_name) in config.items():
+                with self.subTest(provider=provider), patch("creatorscope.ai._request_json", return_value=responses[provider]) as request:
+                    result = test_connection(provider=provider, model="test-model", base_url=base_url)
+                    self.assertEqual(result, "OK")
+                    url, headers, _payload = request.call_args.args
+                    self.assertNotIn(keys[env_name], url)
+                    if provider == "gemini":
+                        self.assertEqual(headers["x-goog-api-key"], keys[env_name])
+                        self.assertNotIn("Authorization", headers)
+                    else:
+                        self.assertEqual(headers["Authorization"], "Bearer " + keys[env_name])
+                    if provider == "claude":
+                        self.assertEqual(headers["anthropic-version"], "2026-10-21")
+
+    def test_base_url_blocks_remote_http_and_embedded_credentials(self) -> None:
+        with self.assertRaisesRegex(AIServiceError, "HTTPS"):
+            provider_status("openai_compatible", base_url="http://models.example.test/v1", model="model")
+        with self.assertRaisesRegex(AIServiceError, "有效的 HTTPS"):
+            provider_status("openai_compatible", base_url="https://user:pass@models.example.test/v1", model="model")
+        self.assertEqual(provider_status("openai_compatible", base_url="http://127.0.0.1:11434/v1", model="model")["base_url"], "http://127.0.0.1:11434/v1")
+
+    def test_ai_routes_allow_offline_preview_and_require_explicit_upload_confirmation(self) -> None:
+        empty_keys = {
+            "OPENAI_API_KEY": "", "DEEPSEEK_API_KEY": "", "ANTHROPIC_API_KEY": "",
+            "GEMINI_API_KEY": "", "GOOGLE_API_KEY": "",
+        }
+        app = create_app({"DATABASE_PATH": self.db_path, "BASELINE_PATH": self.db_path.parent / "missing.json", "TESTING": True})
+        client = app.test_client()
+        with patch.dict(os.environ, empty_keys):
+            self.assertEqual(client.get("/ai").status_code, 200)
+            config = client.get("/api/ai/config?provider=gemini").get_json()
+            self.assertFalse(config["key_available"])
+            preview = client.post("/api/ai/preview", json={
+                "analysis_type": "creator_summary", "creator_ids": ["creator-a"], "batch_id": "batch-a",
+            })
+            self.assertEqual(preview.status_code, 200)
+            rejected = client.post("/api/ai/analyze", json={
+                "provider": "openai_compatible", "model": "model", "analysis_type": "creator_summary",
+                "creator_ids": ["creator-a"], "batch_id": "batch-a",
+            })
+            self.assertEqual(rejected.status_code, 400)
+            not_configured = client.post("/api/ai/analyze", json={
+                "confirm_upload": True, "provider": "openai_compatible", "model": "model",
+                "analysis_type": "creator_summary", "creator_ids": ["creator-a"], "batch_id": "batch-a",
+            })
+            self.assertEqual(not_configured.status_code, 200)
+            self.assertEqual(not_configured.get_json()["status"], "not_configured")
+            no_key = client.post("/api/ai/test", json={
+                "provider": "openai_compatible", "model": "model", "base_url": "https://api.openai.com/v1",
+            })
+            self.assertEqual(no_key.status_code, 200)
+            self.assertEqual(no_key.get_json()["status"], "not_configured")
+
+
+if __name__ == "__main__":
+    unittest.main()
