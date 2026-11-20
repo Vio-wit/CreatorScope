@@ -21,7 +21,8 @@ from wordcloud import WordCloud
 
 
 OUTPUT_DIR = Path(__file__).resolve().parent
-DEFAULT_DB = OUTPUT_DIR / "validation.sqlite3"
+PROJECT_ROOT = OUTPUT_DIR.parents[1]
+DEFAULT_DB = PROJECT_ROOT / "instance" / "creatorscope_unified.sqlite3"
 STOPWORDS_PATH = OUTPUT_DIR / "stopwords.txt"
 CHARTS_DIR = OUTPUT_DIR / "charts"
 EXPORTS_DIR = OUTPUT_DIR / "exports"
@@ -91,7 +92,7 @@ def _where(filters: dict[str, Any] | None = None) -> tuple[str, list[Any]]:
         params.append(1 if pinned in {"true", "1"} else 0)
     query = str(filters.get("q") or "").strip()
     if query:
-        clauses.append("(s.comment_text LIKE ? OR n.title LIKE ? OR c.creator_name LIKE ?)")
+        clauses.append("(s.comment_text LIKE ? OR n.title LIKE ? OR c.pseudonym LIKE ?)")
         params.extend([f"%{query}%"] * 3)
     return (" WHERE " + " AND ".join(clauses)) if clauses else "", params
 
@@ -104,14 +105,16 @@ def fetch_comments(db_path: Path = DEFAULT_DB, filters: dict[str, Any] | None = 
     try:
         rows = conn.execute(
             """SELECT s.batch_id, s.note_id, n.title AS note_title,
-                      n.creator_id, c.creator_name, s.local_comment_id,
-                      s.parent_comment_id, s.comment_text, s.cleaned_text,
-                      s.displayed_time, s.like_count_raw, s.like_count_normalized,
+                      n.creator_id, c.pseudonym AS creator_name,
+                      s.local_comment_id_hash AS local_comment_id,
+                      s.parent_comment_id_hash AS parent_comment_id,
+                      s.comment_text, s.cleaned_text, s.displayed_time,
+                      s.like_count_raw, s.like_count AS like_count_normalized,
                       s.reply_count_raw, s.is_pinned, s.comment_level, s.source,
-                      s.captured_at, s.raw_payload
+                      s.captured_at, s.raw_payload_json AS raw_payload
                FROM comment_snapshots s
-               JOIN comment_notes n ON n.note_id=s.note_id
-               JOIN comment_creators c ON c.creator_id=n.creator_id"""
+               JOIN notes n ON n.note_id=s.note_id
+               JOIN creators c ON c.creator_id=n.creator_id"""
             + where
             + " ORDER BY s.note_id, s.comment_level, s.id",
             params,
@@ -130,9 +133,9 @@ def filter_options(db_path: Path = DEFAULT_DB) -> dict[str, list[dict[str, Any]]
     conn.row_factory = sqlite3.Row
     try:
         return {
-            "batches": [dict(row) for row in conn.execute("SELECT batch_id, source, started_at, completed_at, record_count FROM collection_batches ORDER BY started_at DESC")],
-            "creators": [dict(row) for row in conn.execute("SELECT creator_id, creator_name FROM comment_creators ORDER BY creator_name")],
-            "notes": [dict(row) for row in conn.execute("SELECT n.note_id, n.title, n.creator_id, c.creator_name FROM comment_notes n JOIN comment_creators c ON c.creator_id=n.creator_id ORDER BY c.creator_name, n.title")],
+            "batches": [dict(row) for row in conn.execute("SELECT batch_id, source, started_at, completed_at, record_count FROM collection_batches WHERE batch_id IN (SELECT DISTINCT batch_id FROM comment_snapshots) ORDER BY started_at DESC")],
+            "creators": [dict(row) for row in conn.execute("SELECT creator_id, pseudonym AS creator_name FROM creators WHERE creator_id IN (SELECT DISTINCT n.creator_id FROM notes n JOIN comment_snapshots s ON s.note_id=n.note_id) ORDER BY pseudonym")],
+            "notes": [dict(row) for row in conn.execute("SELECT n.note_id, n.title, n.creator_id, c.pseudonym AS creator_name FROM notes n JOIN creators c ON c.creator_id=n.creator_id WHERE n.note_id IN (SELECT DISTINCT note_id FROM comment_snapshots) ORDER BY c.pseudonym, n.title")],
         }
     finally:
         conn.close()

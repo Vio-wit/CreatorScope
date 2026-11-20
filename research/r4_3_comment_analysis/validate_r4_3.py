@@ -45,9 +45,9 @@ def run_validation(db_path: Path = DEFAULT_DB) -> dict[str, Any]:
         foreign_keys = [tuple(row) for row in conn.execute("PRAGMA foreign_key_check")]
         counts = {level: conn.execute("SELECT COUNT(*) FROM comment_snapshots WHERE comment_level=?", (level,)).fetchone()[0] for level in (1, 2)}
         total = conn.execute("SELECT COUNT(*) FROM comment_snapshots").fetchone()[0]
-        duplicate_keys = conn.execute("SELECT COUNT(*) FROM (SELECT batch_id,note_id,local_comment_id FROM comment_snapshots GROUP BY 1,2,3 HAVING COUNT(*)>1)").fetchone()[0]
-        null_metric_count = conn.execute("SELECT COUNT(*) FROM comment_snapshots WHERE like_count_normalized IS NULL").fetchone()[0]
-        bad_parent_count = conn.execute("SELECT COUNT(*) FROM comment_snapshots child LEFT JOIN comment_snapshots parent ON parent.batch_id=child.batch_id AND parent.note_id=child.note_id AND parent.local_comment_id=child.parent_comment_id WHERE child.comment_level=2 AND parent.id IS NULL").fetchone()[0]
+        duplicate_keys = conn.execute("SELECT COUNT(*) FROM (SELECT batch_id,note_id,local_comment_id_hash FROM comment_snapshots GROUP BY 1,2,3 HAVING COUNT(*)>1)").fetchone()[0]
+        null_metric_count = conn.execute("SELECT COUNT(*) FROM comment_snapshots WHERE like_count IS NULL").fetchone()[0]
+        bad_parent_count = conn.execute("SELECT COUNT(*) FROM comment_snapshots child LEFT JOIN comment_snapshots parent ON parent.batch_id=child.batch_id AND parent.note_id=child.note_id AND parent.local_comment_id_hash=child.parent_comment_id_hash WHERE child.comment_level=2 AND parent.id IS NULL").fetchone()[0]
     finally:
         conn.close()
     check(integrity == "ok" and not foreign_keys, "SQLite integrity or foreign key check failed")
@@ -55,21 +55,23 @@ def run_validation(db_path: Path = DEFAULT_DB) -> dict[str, Any]:
     check(duplicate_keys == 0 and bad_parent_count == 0, "Duplicate batch keys or reply parent association found")
     check(null_metric_count > 0, "Missing or non-exact metrics were not retained as NULL")
 
-    app = create_app({
-        "DATABASE_PATH": Path(":memory:"),
-        "COMMENT_ANALYSIS_DATABASE_PATH": db_path.resolve(),
-        "TESTING": True,
-    })
+    app = create_app({"DATABASE_PATH": db_path.resolve(), "TESTING": True})
     client = app.test_client()
     page = client.get("/comments")
     options_response = client.get("/api/comments/options")
     all_response = client.get("/api/comments/analysis")
     check(page.status_code == 200 and b"\xe8\xaf\x84\xe8\xae\xba\xe5\x88\x86\xe6\x9e\x90" in page.data, "Comment page route did not render")
-    check(app.config["DATABASE_PATH"] != app.config["COMMENT_ANALYSIS_DATABASE_PATH"], "Comment routes must use the dedicated database config")
+    check(app.config["DATABASE_PATH"] == app.config["COMMENT_ANALYSIS_DATABASE_PATH"], "All analysis modules must use one database")
     options = options_response.get_json()
     all_data = all_response.get_json()
     check(options_response.status_code == 200 and len(options["creators"]) == 2 and len(options["notes"]) == 3 and len(options["batches"]) == 1, "Creator/note/batch options mismatch")
     check(all_data["summary"]["comment_count"] == 29, "Dashboard total count mismatch")
+    unified_rows = fetch_comments(db_path)
+    unified_payloads = {
+        json.dumps(row["raw_payload"], ensure_ascii=False, sort_keys=True)
+        for row in unified_rows
+    }
+    check(unified_payloads == {json.dumps(row, ensure_ascii=False, sort_keys=True) for row in source_rows}, "Unified comment rows differ from R4.2 source payloads")
     note_id = options["notes"][0]["note_id"]
     expected_note_count = sum(
         1 for row in all_data["comments"] if row["note_id"] == note_id
@@ -93,7 +95,7 @@ def run_validation(db_path: Path = DEFAULT_DB) -> dict[str, Any]:
     web_jsonl = client.get("/api/comments/export.jsonl")
     web_jsonl_rows = [json.loads(line) for line in web_jsonl.data.decode("utf-8").splitlines() if line.strip()]
     check(web_csv.status_code == 200 and len(list(csv.DictReader(web_csv.data.decode("utf-8-sig").splitlines()))) == 29, "Web CSV export count mismatch")
-    check(web_jsonl.status_code == 200 and len(web_jsonl_rows) == 29 and all(row["comment_text"] == by_key[(row["batch_id"], row["note_id"], row["local_comment_id"])]["comment_text"] for row in web_jsonl_rows), "Web JSONL export changed source comment text")
+    check(web_jsonl.status_code == 200 and len(web_jsonl_rows) == 29 and all(row["raw_payload"] in source_rows and row["comment_text"] == row["raw_payload"]["comment_text"] for row in web_jsonl_rows), "Web JSONL export changed source comment text")
     check(len([row for row in fetch_comments(db_path)]) == 29 and summarize(fetch_comments(db_path))["summary"]["comment_count"] == 29, "Analysis service did not return all real rows")
 
     charts = sorted(path.name for path in CHARTS_DIR.glob("*.png"))
@@ -125,7 +127,7 @@ def run_validation(db_path: Path = DEFAULT_DB) -> dict[str, Any]:
         "creator_options": len(options["creators"]),
         "note_options": len(options["notes"]),
         "batch_options": len(options["batches"]),
-        "comment_database_separate_from_main": app.config["DATABASE_PATH"] != app.config["COMMENT_ANALYSIS_DATABASE_PATH"],
+        "comment_database_unified_with_main": app.config["DATABASE_PATH"] == app.config["COMMENT_ANALYSIS_DATABASE_PATH"],
         "batch_filter_count": batch_data["summary"]["comment_count"],
         "not_pinned_filter_count": pinned_data["summary"]["comment_count"],
         "note_filter_count": note_data["summary"]["comment_count"],

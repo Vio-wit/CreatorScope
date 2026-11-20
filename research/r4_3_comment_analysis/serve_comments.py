@@ -11,21 +11,18 @@ if str(PROJECT_ROOT) not in sys.path:
 from creatorscope import create_app
 
 
-DEFAULT_DB = Path(__file__).resolve().parent / "validation.sqlite3"
+DEFAULT_DB = PROJECT_ROOT / "instance" / "creatorscope_unified.sqlite3"
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run the CreatorScope R4.3 comment page against the isolated validation database.")
+    parser = argparse.ArgumentParser(description="Run the CreatorScope comment page against the unified local database.")
     parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8766)
     args = parser.parse_args()
-    app = create_app({
-        "DATABASE_PATH": args.db.resolve(),
-        "COMMENT_ANALYSIS_DATABASE_PATH": args.db.resolve(),
-    })
-    print(f"R4.3 comment dashboard: http://{args.host}:{args.port}/comments")
-    print(f"Isolated database: {args.db.resolve()}")
+    app = create_app({"DATABASE_PATH": args.db.resolve()})
+    print(f"CreatorScope comment dashboard: http://{args.host}:{args.port}/comments")
+    print(f"Unified database: {args.db.resolve()}")
     app.run(host=args.host, port=args.port, debug=False, use_reloader=False, threaded=True)
     return 0
 

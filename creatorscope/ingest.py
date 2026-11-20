@@ -287,8 +287,10 @@ def ingest_payload(
 
     with connection(db_path) as conn:
         conn.execute(
-            "INSERT INTO batches(batch_id, task_id, source, captured_at) VALUES (?, ?, ?, ?)",
-            (batch_id, task_id, source, captured_at),
+            """INSERT INTO batches
+               (batch_id, task_id, source, captured_at, started_at, status)
+               VALUES (?, ?, ?, ?, ?, 'running')""",
+            (batch_id, task_id, source, captured_at, captured_at),
         )
         for item in records:
             if not isinstance(item, dict):
@@ -329,9 +331,62 @@ def ingest_payload(
                 note_timestamp = str(item.get("captured_at") or captured_at)
                 if item.get("note_ref"):
                     note_id = ensure_note_ref(conn, creator_id, str(item["note_ref"]), note_timestamp)
+                    platform_note_id_hash = hashlib.sha256(
+                        str(item["note_ref"]).encode("utf-8")
+                    ).hexdigest()
                 else:
-                    note_key = f"{title}:{published}" if title else (published or digest)
+                    # Without a platform ID, keep this note scoped to this record
+                    # and batch instead of treating its title as an identity key.
+                    note_key = f"no-platform-id:{batch_id}:{digest}"
                     note_id = ensure_note(conn, creator_id, note_key, note_timestamp)
+                    platform_note_id_hash = None
+                conn.execute(
+                    """UPDATE notes SET platform_note_id_hash = ?, title = ?,
+                       body = ?, published_at = ?, note_type = ?, source = ?
+                       WHERE note_id = ?""",
+                    (
+                        platform_note_id_hash,
+                        title or None,
+                        clean_fields.get("笔记正文") or clean_fields.get("正文"),
+                        published or None,
+                        clean_fields.get("笔记类型") or clean_fields.get("内容类型"),
+                        source,
+                        note_id,
+                    ),
+                )
+
+            if record_type == "creator_profile_sample":
+                follower_value = next(
+                    (
+                        value
+                        for key, value in clean_fields.items()
+                        if key in {"粉丝数", "粉丝量", "粉丝数量"}
+                    ),
+                    None,
+                )
+                follower_count = (
+                    normalize_value("粉丝数", follower_value)[0]
+                    if follower_value is not None
+                    else None
+                )
+                category = next(
+                    (clean_fields[key] for key in ("领域", "内容领域", "创作领域", "类目") if clean_fields.get(key)),
+                    None,
+                )
+                location = next(
+                    (clean_fields[key] for key in ("所在地", "城市", "地区", "地域") if clean_fields.get(key)),
+                    None,
+                )
+                introduction = next(
+                    (clean_fields[key] for key in ("简介", "个人简介", "创作者简介") if clean_fields.get(key)),
+                    None,
+                )
+                conn.execute(
+                    """UPDATE creators SET platform = ?, category = ?, location = ?,
+                       follower_count = COALESCE(?, follower_count), introduction = ?
+                       WHERE creator_id = ?""",
+                    ("xiaohongshu", category, location, follower_count, introduction, creator_id),
+                )
             cur = conn.execute(
                 """
                 INSERT OR IGNORE INTO records
@@ -386,8 +441,9 @@ def ingest_payload(
             parsed_count = 0
 
         conn.execute(
-            "UPDATE batches SET record_count = ? WHERE batch_id = ?",
-            (inserted_records, batch_id),
+            """UPDATE batches SET record_count = ?, completed_at = ?,
+               status = 'completed' WHERE batch_id = ?""",
+            (inserted_records, local_timestamp(), batch_id),
         )
         conn.execute(
             "UPDATE tasks SET batch_id = ? WHERE task_id = ?",
