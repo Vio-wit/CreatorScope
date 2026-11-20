@@ -368,13 +368,14 @@ def _backfill_creator_links(conn: sqlite3.Connection) -> None:
     batch_ids = [
         row[0]
         for row in conn.execute(
-            "SELECT DISTINCT batch_id FROM records WHERE creator_id IS NULL"
+            "SELECT DISTINCT batch_id FROM records WHERE creator_id IS NULL AND record_type != 'comment_excerpt_sample'"
         ).fetchall()
     ]
     for batch_id in batch_ids:
         rows = conn.execute(
             """SELECT record_id, record_type, captured_at, fields_json, fields_hash
-               FROM records WHERE batch_id = ? AND creator_id IS NULL ORDER BY record_id""",
+               FROM records WHERE batch_id = ? AND creator_id IS NULL
+                 AND record_type != 'comment_excerpt_sample' ORDER BY record_id""",
             (batch_id,),
         ).fetchall()
         profiles = [row for row in rows if row[1] == "creator_profile_sample"]
