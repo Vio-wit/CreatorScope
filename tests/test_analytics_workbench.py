@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import json
 import tempfile
 import unittest
@@ -155,6 +156,76 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
         self.assertEqual(word_change.status_code, 200)
         self.assertEqual(word_change.get_json()["common_note_count"], 1)
         self.assertGreater(len(word_change.get_json()["words"]), 0)
+
+    def test_per_record_source_and_raw_cleaned_and_statistics_exports(self) -> None:
+        with connection(self.db_path) as conn:
+            note_record = conn.execute(
+                "SELECT record_id FROM records WHERE batch_id='batch-b' AND record_type='note_detail'"
+            ).fetchone()[0]
+            conn.execute(
+                "UPDATE records SET source='pgy_note_detail_source' WHERE record_id=?",
+                (note_record,),
+            )
+            conn.execute(
+                "UPDATE metric_values SET raw_value='—', numeric_value=NULL, parse_status='displayed_unavailable' WHERE record_id=? AND metric_key='收藏量'",
+                (note_record,),
+            )
+
+        overview = overview_data(self.db_path)
+        source_counts = {item["source"]: item["record_count"] for item in overview["sources"]}
+        self.assertEqual(source_counts["pgy_note_detail_source"], 1)
+        note = next(
+            item for item in notes_data(self.db_path, batch_id="batch-b")["notes"]
+            if item["note_id"] == "note-a"
+        )
+        self.assertEqual(note["source"], "pgy_note_detail_source")
+
+        client = create_app({
+            "DATABASE_PATH": self.db_path,
+            "BASELINE_PATH": self.db_path.parent / "missing.json",
+            "TESTING": True,
+        }).test_client()
+        raw_json = client.get("/api/export/json?batch_id=batch-b")
+        self.assertEqual(raw_json.status_code, 200)
+        raw_records = raw_json.get_json()["records"]
+        raw_note = next(row for row in raw_records if row["type"] == "note_detail")
+        self.assertEqual(raw_note["batch_id"], "batch-b")
+        self.assertEqual(raw_note["source"], "pgy_note_detail_source")
+        self.assertEqual(raw_note["fields"]["阅读量"], "1200")
+
+        raw_csv = client.get("/api/export/csv?batch_id=batch-b")
+        self.assertEqual(raw_csv.status_code, 200)
+        csv_rows = list(csv.DictReader(raw_csv.data.decode("utf-8-sig").splitlines()))
+        csv_note = next(row for row in csv_rows if row["record_type"] == "note_detail")
+        self.assertEqual(csv_note["source"], "pgy_note_detail_source")
+
+        metrics_json = client.get("/api/export/metrics.json?batch_id=batch-b")
+        self.assertEqual(metrics_json.status_code, 200)
+        metrics = metrics_json.get_json()["metrics"]
+        reading = next(row for row in metrics if row["record_id"] == note_record and row["metric_key"] == "阅读量")
+        self.assertEqual(reading["raw_value"], "1200")
+        self.assertEqual(reading["normalized_value"], 1200)
+        self.assertEqual(reading["unit"], "count")
+        self.assertEqual(reading["period"], "累计")
+        self.assertEqual(reading["source"], "pgy_note_detail_source")
+        self.assertEqual(reading["missing_status"], "present")
+        unavailable = next(row for row in metrics if row["record_id"] == note_record and row["metric_key"] == "收藏量")
+        self.assertIsNone(unavailable["normalized_value"])
+        self.assertEqual(unavailable["parse_status"], "displayed_unavailable")
+        self.assertEqual(unavailable["missing_status"], "missing")
+
+        metrics_csv = client.get("/api/export/metrics.csv?batch_id=batch-b")
+        self.assertEqual(metrics_csv.status_code, 200)
+        metric_csv_rows = list(csv.DictReader(metrics_csv.data.decode("utf-8-sig").splitlines()))
+        csv_reading = next(row for row in metric_csv_rows if row["record_id"] == str(note_record) and row["metric_key"] == "阅读量")
+        self.assertEqual(csv_reading["source"], "pgy_note_detail_source")
+        self.assertEqual(csv_reading["normalized_value"], "1200.0")
+        self.assertEqual(csv_reading["period"], "累计")
+
+        api_statistics = client.get("/api/analytics?batch_id=batch-b").get_json()
+        exported_statistics = client.get("/api/export/analytics.json?batch_id=batch-b")
+        self.assertEqual(exported_statistics.status_code, 200)
+        self.assertEqual(exported_statistics.get_json()["statistics"], api_statistics)
 
 
 if __name__ == "__main__":

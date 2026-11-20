@@ -325,6 +325,9 @@
     const suffix = elements.batchSelect.value ? `?batch_id=${encodeURIComponent(elements.batchSelect.value)}` : '';
     $('#exportJson').href = `/api/export/json${suffix}`;
     $('#exportCsv').href = `/api/export/csv${suffix}`;
+    $('#exportMetricsJson').href = `/api/export/metrics.json${suffix}`;
+    $('#exportMetricsCsv').href = `/api/export/metrics.csv${suffix}`;
+    $('#exportAnalyticsJson').href = `/api/export/analytics.json${suffix}`;
   }
 
   function formatMetric(value, suffix = '') {

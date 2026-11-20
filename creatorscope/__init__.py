@@ -444,7 +444,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         with connection(app.config["DATABASE_PATH"]) as conn:
             sql = """
                 SELECT r.record_id, r.batch_id, r.record_type, r.captured_at,
-                       r.fields_json, r.creator_id, r.note_id, b.source
+                       r.fields_json, r.creator_id, r.note_id,
+                       COALESCE(NULLIF(r.source, ''), b.source) AS source
                 FROM records r JOIN batches b ON b.batch_id = r.batch_id
             """
             params: list[Any] = []
@@ -461,6 +462,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 ).fetchall()
                 record = {
                     "type": row["record_type"],
+                    "batch_id": row["batch_id"],
+                    "source": row["source"],
                     "captured_at": row["captured_at"],
                     "creator_ref": row["creator_id"],
                     "note_ref": row["note_id"],
@@ -488,8 +491,9 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         with connection(app.config["DATABASE_PATH"]) as conn:
             sql = """
                 SELECT r.record_id, r.batch_id, r.record_type, r.captured_at,
-                       r.fields_json, r.creator_id, r.note_id
-                FROM records r
+                       r.fields_json, r.creator_id, r.note_id,
+                       COALESCE(NULLIF(r.source, ''), b.source) AS source
+                FROM records r JOIN batches b ON b.batch_id = r.batch_id
             """
             params: list[Any] = []
             if batch_id:
@@ -500,7 +504,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         stream = io.StringIO(newline="")
         writer = csv.DictWriter(
             stream,
-            fieldnames=["record_id", "batch_id", "record_type", "captured_at", "creator_ref", "note_ref", "period_displayed", "fields_json"],
+            fieldnames=["record_id", "batch_id", "record_type", "source", "captured_at", "creator_ref", "note_ref", "period_displayed", "fields_json"],
         )
         writer.writeheader()
         for row in rows:
@@ -515,6 +519,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                     "record_id": row["record_id"],
                     "batch_id": row["batch_id"],
                     "record_type": row["record_type"],
+                    "source": row["source"],
                     "captured_at": row["captured_at"],
                     "creator_ref": row["creator_id"],
                     "note_ref": row["note_id"],
@@ -525,6 +530,103 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         response = make_response("\ufeff" + stream.getvalue())
         response.headers["Content-Type"] = "text/csv; charset=utf-8"
         response.headers["Content-Disposition"] = 'attachment; filename="creatorscope_export.csv"'
+        return response
+
+    @app.get("/api/export/metrics.json")
+    def api_export_metrics_json():
+        batch_id = request.args.get("batch_id") or None
+        if batch_id == "__all__":
+            batch_id = None
+        sql = """
+            SELECT m.metric_id, r.record_id, r.batch_id, r.record_type,
+                   COALESCE(NULLIF(r.source, ''), b.source) AS source,
+                   r.creator_id, r.note_id, r.captured_at, m.metric_key,
+                   m.raw_value, m.numeric_value AS normalized_value, m.unit,
+                   m.period, m.parse_status
+            FROM metric_values m
+            JOIN records r ON r.record_id=m.record_id
+            JOIN batches b ON b.batch_id=r.batch_id
+        """
+        params: list[Any] = []
+        if batch_id:
+            sql += " WHERE r.batch_id=?"
+            params.append(batch_id)
+        sql += " ORDER BY r.captured_at, r.record_id, m.metric_id"
+        with connection(app.config["DATABASE_PATH"]) as conn:
+            rows = [dict(row) for row in conn.execute(sql, params).fetchall()]
+        for row in rows:
+            raw = row["raw_value"]
+            row["missing_status"] = (
+                "missing" if raw is None or str(raw).strip() in {"", "-", "—", "–"} else "present"
+            )
+        payload = {
+            "format": "CreatorScope normalized metrics JSON v1",
+            "generated_at": generated_at(),
+            "batch_id": batch_id or "__all__",
+            "metrics": rows,
+        }
+        response = make_response(json.dumps(payload, ensure_ascii=False, indent=2))
+        response.headers["Content-Type"] = "application/json; charset=utf-8"
+        response.headers["Content-Disposition"] = 'attachment; filename="creatorscope_metrics.json"'
+        return response
+
+    @app.get("/api/export/metrics.csv")
+    def api_export_metrics_csv():
+        batch_id = request.args.get("batch_id") or None
+        if batch_id == "__all__":
+            batch_id = None
+        sql = """
+            SELECT m.metric_id, r.record_id, r.batch_id, r.record_type,
+                   COALESCE(NULLIF(r.source, ''), b.source) AS source,
+                   r.creator_id AS creator_ref, r.note_id AS note_ref,
+                   r.captured_at, m.metric_key, m.raw_value,
+                   m.numeric_value AS normalized_value, m.unit, m.period,
+                   m.parse_status
+            FROM metric_values m
+            JOIN records r ON r.record_id=m.record_id
+            JOIN batches b ON b.batch_id=r.batch_id
+        """
+        params: list[Any] = []
+        if batch_id:
+            sql += " WHERE r.batch_id=?"
+            params.append(batch_id)
+        sql += " ORDER BY r.captured_at, r.record_id, m.metric_id"
+        with connection(app.config["DATABASE_PATH"]) as conn:
+            rows = [dict(row) for row in conn.execute(sql, params).fetchall()]
+        fields = [
+            "metric_id", "record_id", "batch_id", "record_type", "source",
+            "creator_ref", "note_ref", "captured_at", "metric_key", "raw_value",
+            "normalized_value", "unit", "period", "parse_status", "missing_status",
+        ]
+        stream = io.StringIO(newline="")
+        writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
+        writer.writeheader()
+        for row in rows:
+            raw = row["raw_value"]
+            row["missing_status"] = (
+                "missing" if raw is None or str(raw).strip() in {"", "-", "—", "–"} else "present"
+            )
+            writer.writerow(row)
+        response = make_response("\ufeff" + stream.getvalue())
+        response.headers["Content-Type"] = "text/csv; charset=utf-8"
+        response.headers["Content-Disposition"] = 'attachment; filename="creatorscope_metrics.csv"'
+        return response
+
+    @app.get("/api/export/analytics.json")
+    def api_export_analytics_json():
+        batch_id = request.args.get("batch_id") or None
+        if batch_id == "__all__":
+            batch_id = None
+        statistics = analytics_data(app.config["DATABASE_PATH"], batch_id=batch_id)
+        payload = {
+            "format": "CreatorScope analytics JSON v1",
+            "generated_at": generated_at(),
+            "batch_id": batch_id or "__all__",
+            "statistics": statistics,
+        }
+        response = make_response(json.dumps(payload, ensure_ascii=False, indent=2))
+        response.headers["Content-Type"] = "application/json; charset=utf-8"
+        response.headers["Content-Disposition"] = 'attachment; filename="creatorscope_analytics.json"'
         return response
 
     @app.post("/api/browser/open")
