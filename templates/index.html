@@ -77,6 +77,9 @@
           <input id="uploadInput" type="file" accept=".json,.csv,application/json,text/csv" hidden>
           <a class="button button-secondary download-link" id="exportJson" href="/api/export/json">导出 JSON</a>
           <a class="button button-secondary download-link" id="exportCsv" href="/api/export/csv">导出 CSV</a>
+          <a class="button button-secondary download-link" id="exportMetricsJson" href="/api/export/metrics.json">清洗指标 JSON</a>
+          <a class="button button-secondary download-link" id="exportMetricsCsv" href="/api/export/metrics.csv">清洗指标 CSV</a>
+          <a class="button button-secondary download-link" id="exportAnalyticsJson" href="/api/export/analytics.json">统计结果 JSON</a>
           <label class="select-wrap creator-select-wrap" aria-label="选择当前博主"><span>当前博主</span><select id="creatorSelect"><option value="">新建匿名博主</option></select></label>
           <button class="button button-secondary" id="openBrowserButton">打开蒲公英浏览器</button>
           <button class="button button-secondary" id="captureButton" disabled>采集当前页面</button>

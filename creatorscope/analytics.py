@@ -313,7 +313,8 @@ def _creator_snapshots(db_path: Path, batch_id: str | None = None) -> tuple[list
         sql = """
             SELECT r.record_id, r.batch_id, r.record_type, r.captured_at,
                    r.fields_json, r.creator_id, c.pseudonym,
-                   c.location, b.captured_at AS batch_captured_at, b.source AS batch_source
+                   c.location, b.captured_at AS batch_captured_at,
+                   COALESCE(NULLIF(r.source, ''), b.source) AS batch_source
             FROM records r
             JOIN creators c ON c.creator_id = r.creator_id
             JOIN batches b ON b.batch_id = r.batch_id
@@ -485,13 +486,20 @@ def overview_data(db_path: Path) -> dict[str, Any]:
         sources = [
             dict(row)
             for row in conn.execute(
-                """SELECT b.source,
-                          COUNT(DISTINCT r.record_id) AS record_count,
-                          COUNT(DISTINCT c.id) AS comment_count
-                   FROM batches b
-                   LEFT JOIN records r ON r.batch_id=b.batch_id
-                   LEFT JOIN comment_snapshots c ON c.batch_id=b.batch_id
-                   GROUP BY b.source ORDER BY (COUNT(DISTINCT r.record_id)+COUNT(DISTINCT c.id)) DESC, b.source"""
+                """WITH source_counts AS (
+                       SELECT COALESCE(NULLIF(r.source, ''), b.source) AS source_label,
+                              COUNT(*) AS record_count, 0 AS comment_count
+                       FROM records r JOIN batches b ON b.batch_id=r.batch_id
+                       GROUP BY COALESCE(NULLIF(r.source, ''), b.source)
+                       UNION ALL
+                       SELECT source AS source_label, 0 AS record_count,
+                              COUNT(*) AS comment_count
+                       FROM comment_snapshots GROUP BY source
+                   )
+                   SELECT source_label AS source, SUM(record_count) AS record_count,
+                          SUM(comment_count) AS comment_count
+                   FROM source_counts GROUP BY source_label
+                   ORDER BY (SUM(record_count)+SUM(comment_count)) DESC, source_label"""
             ).fetchall()
         ]
     for item in sources:
@@ -551,7 +559,8 @@ def notes_data(
                         n.published_at, n.note_type, n.source AS note_source,
                         n.first_seen_at, n.last_seen_at,
                         r.record_id AS metric_record_id, r.batch_id AS metric_batch_id,
-                        r.captured_at AS metric_captured_at, b.source AS metric_source,
+                        r.captured_at AS metric_captured_at,
+                        COALESCE(NULLIF(r.source, ''), b.source) AS metric_source,
                         COALESCE(cs.comment_count, 0) AS comment_count
                  FROM notes n JOIN creators c ON c.creator_id=n.creator_id
                  LEFT JOIN records r ON r.record_id=(
@@ -612,7 +621,7 @@ def notes_data(
             marks = ",".join("?" for _ in chunk)
             history_rows.extend(conn.execute(
                 f"""SELECT r.note_id, r.captured_at, m.metric_key, m.numeric_value,
-                           m.period, b.source
+                           m.period, COALESCE(NULLIF(r.source, ''), b.source) AS source
                     FROM records r JOIN metric_values m ON m.record_id=r.record_id
                     JOIN batches b ON b.batch_id=r.batch_id
                     WHERE r.note_id IN ({marks}) AND r.record_type IN ('note_detail','xhs_public_note')
@@ -763,7 +772,7 @@ def analytics_data(db_path: Path, batch_id: str | None = None) -> dict[str, Any]
         with connection(db_path) as conn:
             snapshots = [dict(row) for row in conn.execute(
                 """SELECT r.creator_id, r.captured_at, r.record_id, m.numeric_value,
-                          m.period, b.source
+                          m.period, COALESCE(NULLIF(r.source, ''), b.source) AS source
                    FROM records r JOIN metric_values m ON m.record_id=r.record_id
                    JOIN batches b ON b.batch_id=r.batch_id
                    WHERE r.creator_id IS NOT NULL AND m.metric_key='粉丝数'
