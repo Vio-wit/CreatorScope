@@ -30,13 +30,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     instance_dir.mkdir(parents=True, exist_ok=True)
     app.config.update(
         DATABASE_PATH=Path(
-            os.environ.get("CREATORSCOPE_DB", str(instance_dir / "creatorscope.sqlite3"))
-        ),
-        COMMENT_ANALYSIS_DATABASE_PATH=Path(
-            os.environ.get(
-                "CREATORSCOPE_COMMENT_DB",
-                str(project_root / "research" / "r4_3_comment_analysis" / "validation.sqlite3"),
-            )
+            os.environ.get("CREATORSCOPE_DB", str(instance_dir / "creatorscope_unified.sqlite3"))
         ),
         BASELINE_PATH=project_root / "data" / "baseline" / "pgy_live_sample_2026-11-19.json",
         MAX_CONTENT_LENGTH=MAX_UPLOAD_BYTES + 64 * 1024,
@@ -45,7 +39,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         app.config.update(test_config)
 
     app.config["DATABASE_PATH"] = Path(app.config["DATABASE_PATH"])
-    app.config["COMMENT_ANALYSIS_DATABASE_PATH"] = Path(app.config["COMMENT_ANALYSIS_DATABASE_PATH"])
+    # All CreatorScope modules share one local database, including comment analysis.
+    app.config["COMMENT_ANALYSIS_DATABASE_PATH"] = app.config["DATABASE_PATH"]
     app.config["BASELINE_PATH"] = Path(app.config["BASELINE_PATH"])
     initialize_database(app.config["DATABASE_PATH"])
 

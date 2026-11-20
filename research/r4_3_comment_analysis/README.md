@@ -1,14 +1,15 @@
 # CreatorScope R4.3 评论数据分析实验
 
-本目录从 `research/r4_2_comment_validation/raw_comments.jsonl` 导入 29 条真实页面样本，使用隔离数据库 `validation.sqlite3`。不会初始化或覆盖 `instance/creatorscope.sqlite3`。
+本目录保存 R4.3 评论分析代码和本地验证产物。应用现在从 `instance/creatorscope_unified.sqlite3` 读取评论；R4.2 的 29 条原始样本只作为一个历史批次导入，不会把 R4.3 分析数据库计作第二批。
 
-评论正文按 R4.2 原始字段保留，不脱敏、不改写；`cleaned_text` 单独保存，只折叠空白。R4.2 没有评论者身份字段，因此本轮不会补采或推断评论者身份。创作者名称与笔记标题来自 R4.2 实测质量记录的明确映射，原样保留。
+评论正文按 R4.2 原始字段保留，不改写；`cleaned_text` 单独保存，只折叠空白。原始采集文件、验证数据库、导出、图表和截图仅保留在本地，不提交到 Git。R4.2 没有评论者身份字段，因此不会补采或推断评论者身份。统一库使用匿名创作者编号；平台笔记和评论指纹只存哈希，便于关联与同批去重。
 
 ## 本地运行
 
 在项目根目录执行：
 
 ```powershell
+\.venv\Scripts\python.exe -m creatorscope.migrations
 \.venv\Scripts\python.exe research\r4_3_comment_analysis\import_r42_comments.py
 \.venv\Scripts\python.exe research\r4_3_comment_analysis\import_r42_comments.py
 \.venv\Scripts\python.exe research\r4_3_comment_analysis\analyze_comments.py
@@ -16,20 +17,19 @@
 \.venv\Scripts\python.exe research\r4_3_comment_analysis\serve_comments.py
 ```
 
-第二次导入同一个 R4.2 批次应新增 0 条、跳过 29 条已存在记录。页面地址为 `http://127.0.0.1:8766/comments`。这个运行入口通过 Flask 工厂显式指向本目录验证数据库；主库不参与写入。
+重复导入同一个 R4.2 批次应新增 0 条、跳过 29 条已存在记录。独立验证库 `validation.sqlite3` 保留为迁移前校验来源，不再被应用写入。页面地址为 `http://127.0.0.1:8766/comments`。
 
-CreatorScope 主应用已增加 `/comments` 路由入口，并通过 `COMMENT_ANALYSIS_DATABASE_PATH` 与通用 `DATABASE_PATH` 分开；默认评论数据源指向本目录验证库，也可用环境变量 `CREATORSCOPE_COMMENT_DB` 指定。评论页的创作者筛选和明细使用 R4.2 实测的真实显示名称，不替换成匿名编号。
+CreatorScope 主应用和评论页共用 `DATABASE_PATH`，默认位置为 `instance/creatorscope_unified.sqlite3`；可用 `CREATORSCOPE_DB` 指定隔离测试库。评论页使用统一的创作者、笔记、批次和评论表。
 
 本地服务启动后，可用另一个终端运行 `\.venv\Scripts\python.exe research\r4_3_comment_analysis\browser_acceptance.py` 完成可见浏览器交互验收并保存截图。
 
 ## 数据结构
 
-- `collection_batches`：来源批次。
-- `comment_creators`：本次样本能可靠关联到的创作者及真实显示名称。
-- `comment_notes`：笔记 ID、标题和创作者外键。
-- `comment_snapshots`：按批次追加的评论快照，保留原文、派生清洗文本、原始互动显示值和完整源行。
+- `collection_batches`：统一 `batches` 表的只读视图。
+- `creators`、`notes`：与其他来源共用的匿名创作者和笔记。
+- `comment_snapshots`：按来源批次追加的评论快照，保留原文、派生清洗文本、原始互动显示值和完整源行。
 
-`local_comment_id` 只作为同批次指纹，不是平台稳定评论 ID；不用于跨批次覆盖或匹配主体。回复以同批次、同笔记的 `parent_comment_id` 外键关联一级评论。
+哈希后的评论指纹只用于同批次去重，不用于跨批次匹配主体。回复以同批次、同笔记的父评论哈希外键关联一级评论。
 
 ## 输出
 

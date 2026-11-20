@@ -21,7 +21,9 @@ cd K:\work\CreatorScope
 3. 可选：点击“打开蒲公英浏览器”，在新建的隔离配置窗口中正常登录并手动进入页面。应用不会读取旧浏览器配置、调用页面私有接口或保存整页文本。
 4. 确认页面位于 `pgy.xiaohongshu.com` 后点击“采集当前页面”。目前只尝试提取可见 DOM 中已支持的列表指标或详情标签；页面结构不匹配时任务会失败并显示原因，不会猜值。
 
-每次导入/采集都写入新批次。SQLite 文件位于 `instance\creatorscope.sqlite3`；浏览器独立用户目录位于 `%LOCALAPPDATA%\CreatorScope\pgy_browser_profile`。不要把账号凭据复制到项目文件。
+每次导入/采集都写入新批次；浏览器独立用户目录位于 `%LOCALAPPDATA%\CreatorScope\pgy_browser_profile`。不要把账号凭据复制到项目文件。
+
+当前统一数据库位于 `instance\creatorscope_unified.sqlite3`。从旧主库和本地 R4.2 原始样本迁移时，先执行 `\.venv\Scripts\python.exe -m creatorscope.migrations`；旧库会只读复制到新库，备份保存在 `_backup\`，原库不会被覆盖。历史采集文件和 SQLite 数据库保留在本机，不纳入 Git。
 
 ## 当前切片边界
 
