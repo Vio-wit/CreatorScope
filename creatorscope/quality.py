@@ -1,0 +1,208 @@
+from __future__ import annotations
+
+import json
+import sqlite3
+from contextlib import contextmanager
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
+
+
+@contextmanager
+def _read_only_connection(db_path: Path):
+    path = Path(db_path).resolve()
+    conn = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True, timeout=20)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def _elapsed_seconds(started_at: str | None, completed_at: str | None) -> float | None:
+    if not started_at or not completed_at:
+        return None
+    try:
+        start = datetime.fromisoformat(started_at)
+        end = datetime.fromisoformat(completed_at)
+    except ValueError:
+        return None
+    return round(max(0.0, (end - start).total_seconds()), 2)
+
+
+def _coverage_target_key(row: sqlite3.Row) -> str:
+    if row["record_note_id"] is not None:
+        if row["platform_note_id"]:
+            return f"note:{row['platform_note_id']}"
+        if row["source_url"]:
+            parsed = urlparse(str(row["source_url"]))
+            last_segment = parsed.path.rstrip("/").rsplit("/", 1)[-1]
+            return f"note:{last_segment or row['record_note_id']}"
+        return f"note-db:{row['record_note_id']}"
+    if row["record_creator_id"] is not None:
+        if row["platform_creator_id"]:
+            return f"creator:{row['platform_creator_id']}"
+        return f"creator-db:{row['record_creator_id']}"
+
+    entity_ref = str(row["entity_ref"] or "")
+    parsed = urlparse(entity_ref)
+    if parsed.scheme and parsed.netloc:
+        last_segment = parsed.path.rstrip("/").rsplit("/", 1)[-1]
+        if last_segment:
+            return f"note:{last_segment}"
+        return f"url:{parsed.netloc}{parsed.path}"
+    return f"{row['entity_type']}:{entity_ref}"
+
+
+def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
+    """Summarize only saved values and task counters for one collection batch."""
+    with _read_only_connection(db_path) as conn:
+        batch = conn.execute(
+            """SELECT b.*, t.result_json, t.status AS task_status
+               FROM batches b LEFT JOIN tasks t ON t.task_id = b.task_id
+               WHERE b.batch_id = ?""",
+            (batch_id,),
+        ).fetchone()
+        if not batch:
+            return None
+
+        record_rows = conn.execute(
+            """SELECT record_type, COUNT(*) AS row_count
+               FROM records WHERE batch_id = ? GROUP BY record_type ORDER BY record_type""",
+            (batch_id,),
+        ).fetchall()
+        field_rows = conn.execute(
+            """SELECT o.record_type, o.field_name, o.status, o.normalized_value_json,
+                      o.normalization_status, o.entity_type, o.entity_ref, o.captured_at,
+                      r.note_id AS record_note_id, r.creator_id AS record_creator_id,
+                      n.platform_note_id, n.source_url, c.platform_creator_id
+               FROM collection_field_observations o
+               LEFT JOIN records r ON r.record_id = o.record_id
+               LEFT JOIN notes n ON n.note_id = r.note_id
+               LEFT JOIN creators c ON c.creator_id = r.creator_id
+               WHERE o.batch_id = ?
+               ORDER BY o.record_type, o.field_name, o.captured_at""",
+            (batch_id,),
+        ).fetchall()
+        metric_counts = conn.execute(
+            """SELECT COUNT(*) AS total,
+                      COUNT(CASE WHEN raw_value IS NOT NULL AND raw_value <> '' THEN 1 END) AS raw_count,
+                      COUNT(CASE WHEN parse_status = 'parsed' THEN 1 END) AS parsed_count
+               FROM metric_values m JOIN records r ON r.record_id = m.record_id
+               WHERE r.batch_id = ?""",
+            (batch_id,),
+        ).fetchone()
+        comment_count = int(
+            conn.execute(
+                "SELECT COUNT(*) FROM comment_snapshots WHERE batch_id = ?", (batch_id,)
+            ).fetchone()[0]
+        )
+        creator_count = int(
+            conn.execute(
+                """SELECT COUNT(DISTINCT creator_id) FROM (
+                       SELECT creator_id FROM records WHERE batch_id=? AND creator_id IS NOT NULL
+                       UNION
+                       SELECT n.creator_id FROM comment_snapshots c JOIN notes n ON n.note_id=c.note_id
+                       WHERE c.batch_id=?
+                   )""",
+                (batch_id, batch_id),
+            ).fetchone()[0]
+        )
+        note_count = int(
+            conn.execute(
+                """SELECT COUNT(DISTINCT note_id) FROM (
+                       SELECT note_id FROM records WHERE batch_id=? AND note_id IS NOT NULL
+                       UNION
+                       SELECT note_id FROM comment_snapshots WHERE batch_id=?
+                   )""",
+                (batch_id, batch_id),
+            ).fetchone()[0]
+        )
+        observation_count = int(
+            conn.execute(
+                "SELECT COUNT(*) FROM collection_field_observations WHERE batch_id=?",
+                (batch_id,),
+            ).fetchone()[0]
+        )
+
+    try:
+        task_result = json.loads(batch["result_json"] or "{}")
+    except (json.JSONDecodeError, TypeError):
+        task_result = {}
+
+    records_by_type = {str(row["record_type"]): int(row["row_count"]) for row in record_rows}
+    grouped_fields: dict[tuple[str, str], dict[str, Any]] = {}
+    targets_by_type: dict[str, set[str]] = {}
+    targets_by_field: dict[tuple[str, str], dict[str, list[sqlite3.Row]]] = {}
+    for row in field_rows:
+        record_type = str(row["record_type"])
+        field_name = str(row["field_name"])
+        target_key = _coverage_target_key(row)
+        targets_by_type.setdefault(record_type, set()).add(target_key)
+        targets_by_field.setdefault((record_type, field_name), {}).setdefault(target_key, []).append(row)
+        item = grouped_fields.setdefault(
+            (record_type, field_name),
+            {"record_type": record_type, "field_name": field_name, "states": {}, "normalized_count": 0, "parse_success_count": 0},
+        )
+        item["normalized_count"] += int(row["normalized_value_json"] is not None)
+        item["parse_success_count"] += int(row["normalization_status"] == "parsed")
+
+    field_coverage = []
+    for item in grouped_fields.values():
+        key = (item["record_type"], item["field_name"])
+        for target_rows in targets_by_field[key].values():
+            statuses = [str(row["status"]) for row in target_rows]
+            if "captured" in statuses:
+                effective_status = "captured"
+            else:
+                latest = max(target_rows, key=lambda row: str(row["captured_at"] or ""))
+                effective_status = str(latest["status"])
+            item["states"][effective_status] = int(item["states"].get(effective_status, 0)) + 1
+        if item["record_type"] == "comment_snapshot":
+            denominator = comment_count
+        else:
+            denominator = len(targets_by_type.get(item["record_type"], set()))
+        captured = int(item["states"].get("captured", 0))
+        item["expected_records"] = denominator
+        item["captured_records"] = captured
+        item["coverage_pct"] = round(captured * 100 / denominator, 1) if denominator else None
+        field_coverage.append(item)
+    field_coverage.sort(key=lambda item: (item["record_type"], item["field_name"]))
+
+    raw_metric_count = int(metric_counts["raw_count"] or 0)
+    parsed_metric_count = int(metric_counts["parsed_count"] or 0)
+    metrics_total = int(metric_counts["total"] or 0)
+    return {
+        "batch_id": batch_id,
+        "source": str(batch["source"] or ""),
+        "status": str(batch["status"] or ""),
+        "task_status": str(batch["task_status"] or ""),
+        "started_at": batch["started_at"],
+        "completed_at": batch["completed_at"],
+        "elapsed_seconds": _elapsed_seconds(batch["started_at"], batch["completed_at"]),
+        "counts": {
+            "records": sum(records_by_type.values()),
+            "records_by_type": records_by_type,
+            "creators": creator_count,
+            "notes": note_count,
+            "comments": comment_count,
+            "field_observations": observation_count,
+            "duplicate_records": int(task_result.get("duplicate_records", task_result.get("duplicate_count", 0)) or 0),
+            "duplicate_comments": int(task_result.get("duplicate_comments", 0) or 0),
+            "failures": int(batch["error_count"] or 0),
+        },
+        "metrics": {
+            "stored_values": metrics_total,
+            "raw_values": raw_metric_count,
+            "parsed_values": parsed_metric_count,
+            "parse_success_pct": round(parsed_metric_count * 100 / raw_metric_count, 1) if raw_metric_count else None,
+        },
+        "field_coverage": field_coverage,
+        "failure_records": task_result.get("failures", [])[:100],
+        "notes": [
+            "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+            "没有明确字段观察状态的记录不会被推定为页面未展示。",
+            "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。",
+        ],
+    }

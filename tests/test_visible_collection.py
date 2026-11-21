@@ -10,6 +10,7 @@ from pathlib import Path
 from creatorscope.browser import PauseForUser, PgyVisibleBrowser
 from creatorscope.db import connection, initialize_database
 from creatorscope.ingest import normalize_value
+from creatorscope.quality import batch_quality_report
 from creatorscope.tasks import TaskManager
 
 
@@ -25,6 +26,8 @@ class RecordingBrowser:
         save_comments,
         report_progress,
         report_failure,
+        report_note_success,
+        report_field_status,
         existing_comment_count,
         comment_scope="",
     ):
@@ -81,6 +84,7 @@ class RecordingBrowser:
         duplicate = save_comments(creator_ref, note_ref, comments)
         save_checkpoint({"creator_index": 1, "note_index": 0, "comment_count": existing_comment_count + outcome["inserted"]})
         report_progress(80, "synthetic progress", 2)
+        report_note_success(1, 1)
         return {
             "creators_visited": 1,
             "notes_visited": 1,
@@ -108,6 +112,8 @@ class GateBrowser:
         save_comments,
         report_progress,
         report_failure,
+        report_note_success,
+        report_field_status,
         existing_comment_count,
         comment_scope="",
     ):
@@ -129,6 +135,45 @@ class GateBrowser:
 class OverlayBrowser:
     def collect_visible(self, *_args, **_kwargs):
         raise PauseForUser("蒲公英列表被页面弹层遮挡；请在可见浏览器中确认并关闭后恢复任务")
+
+
+class RetryBrowser:
+    def __init__(self):
+        self.calls = 0
+        self.last_settings = None
+
+    def collect_visible(
+        self,
+        settings,
+        checkpoint,
+        *,
+        check_control,
+        save_checkpoint,
+        save_records,
+        save_comments,
+        report_progress,
+        report_failure,
+        report_note_success,
+        report_field_status,
+        existing_comment_count,
+        comment_scope="",
+    ):
+        self.calls += 1
+        self.last_settings = settings
+        check_control()
+        if self.calls == 1:
+            report_failure(1, 2, "公开笔记加载超时")
+        else:
+            report_note_success(1, 2)
+        save_checkpoint({"creator_index": 1, "note_index": 0, "comment_count": existing_comment_count})
+        return {
+            "creators_visited": 1,
+            "notes_visited": 1,
+            "comment_count": existing_comment_count,
+            "dom_rows_added": 0,
+            "failure_count": 1 if self.calls == 1 else 0,
+            "message": "retry test",
+        }
 
 
 class VisibleCollectionTests(unittest.TestCase):
@@ -153,6 +198,10 @@ class VisibleCollectionTests(unittest.TestCase):
             self.assertEqual(payload["comment_count"], 2)
             self.assertEqual(payload["dom_rows_added"], 2)
             self.assertEqual(payload["message"], "inserted=2 duplicate=2")
+            quality = batch_quality_report(self.db_path, task["batch_id"])
+            self.assertEqual(quality["counts"]["records"], 3)
+            self.assertEqual(quality["counts"]["comments"], 2)
+            self.assertTrue(any(field["field_name"] == "笔记正文" for field in quality["field_coverage"]))
             with connection(self.db_path) as conn:
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM batches WHERE task_id=?", (task_id,)).fetchone()[0], 1)
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM records WHERE batch_id=?", (task["batch_id"],)).fetchone()[0], 3)
@@ -176,6 +225,12 @@ class VisibleCollectionTests(unittest.TestCase):
                 }
                 self.assertEqual(metric_sources, record_sources)
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM comment_snapshots WHERE batch_id=?", (task["batch_id"],)).fetchone()[0], 2)
+                fields = conn.execute(
+                    "SELECT field_name, raw_value, status FROM collection_field_observations WHERE batch_id=? AND record_type='xhs_public_note'",
+                    (task["batch_id"],),
+                ).fetchall()
+                observed = {row["field_name"]: (row["raw_value"], row["status"]) for row in fields}
+                self.assertEqual(observed["笔记正文"], ("Synthetic body", "captured"))
                 note = conn.execute(
                     "SELECT platform_note_id, platform_note_id_hash, title, body, topics_json FROM notes"
                 ).fetchone()
@@ -210,6 +265,35 @@ class VisibleCollectionTests(unittest.TestCase):
                 manager.submit_visible_collection({"comments_per_note": 21})
             with connection(self.db_path) as conn:
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0], 0)
+        finally:
+            manager.shutdown()
+            self._wait_for_manager(manager)
+
+    def test_collection_types_can_be_selected_independently(self) -> None:
+        settings = TaskManager._validate_collection_settings(
+            {"collect_creator": False, "collect_notes": False, "collect_comments": True}
+        )
+        self.assertFalse(settings["collect_creator"])
+        self.assertFalse(settings["collect_notes"])
+        self.assertTrue(settings["collect_comments"])
+
+    def test_failed_note_can_be_retried_without_repeating_other_batch_items(self) -> None:
+        browser = RetryBrowser()
+        manager = TaskManager(self.db_path, self.root / "unused-baseline.json", browser)
+        try:
+            task_id = manager.submit_visible_collection({"creator_count": 2, "collect_creator": False})
+            task = self._wait_for_status(task_id, {"completed", "failed"})
+            self.assertEqual(task["status"], "completed", task["message"])
+            first_result = json.loads(task["result_json"])
+            self.assertEqual(first_result["failures"][0]["note_index"], 2)
+
+            self.assertTrue(manager.retry_failed_task(task_id))
+            retried = self._wait_for_status(task_id, {"completed", "failed"})
+            self.assertEqual(retried["status"], "completed", retried["message"])
+            self.assertEqual(browser.calls, 2)
+            self.assertEqual(browser.last_settings["retry_notes"], [{"creator_index": 1, "note_index": 2}])
+            self.assertEqual(json.loads(retried["result_json"])["failures"], [])
+            self.assertFalse(manager.retry_failed_task(task_id))
         finally:
             manager.shutdown()
             self._wait_for_manager(manager)

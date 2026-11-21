@@ -13,10 +13,11 @@ from flask import Flask, jsonify, make_response, render_template, request
 from .analytics import analytics_data, compare_creators, compare_notes, creator_library, dashboard_data, note_compare_options, notes_data, overview_data, wordcloud_png
 from .ai import AIServiceError, build_preview, generated_at, list_analysis_reports, load_analysis_report, provider_status, run_analysis, save_analysis_report, test_connection
 from .browser import PgyVisibleBrowser
-from .db import connection, initialize_database
+from .db import connection, initialize_database, verify_database_readonly
 from .domain import field_dictionary
 from .ingest import MAX_UPLOAD_BYTES
 from .news import NEWS_FEEDS, append_news_items, correlate_news_notes, fetch_feed, load_news_items
+from .quality import batch_quality_report
 from .tasks import TaskManager
 from research.r4_3_comment_analysis.comments_web import comment_analysis_bp
 
@@ -46,6 +47,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         NEWS_DATA_PATH=instance_dir / "news_items.jsonl",
         BASELINE_PATH=project_root / "data" / "baseline" / "pgy_live_sample_2026-11-19.json",
         MAX_CONTENT_LENGTH=MAX_UPLOAD_BYTES + 64 * 1024,
+        DEMO_MODE=os.environ.get("CREATORSCOPE_DEMO_MODE", "0").strip().casefold() in {"1", "true", "yes"},
     )
     if test_config:
         app.config.update(test_config)
@@ -56,7 +58,10 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     # All CreatorScope modules share one local database, including comment analysis.
     app.config["COMMENT_ANALYSIS_DATABASE_PATH"] = app.config["DATABASE_PATH"]
     app.config["BASELINE_PATH"] = Path(app.config["BASELINE_PATH"])
-    initialize_database(app.config["DATABASE_PATH"])
+    if app.config["DEMO_MODE"]:
+        verify_database_readonly(app.config["DATABASE_PATH"])
+    else:
+        initialize_database(app.config["DATABASE_PATH"])
 
     local_data = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
     browser = PgyVisibleBrowser(local_data / "CreatorScope" / "pgy_browser_profile")
@@ -64,14 +69,21 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         app.config["DATABASE_PATH"],
         app.config["BASELINE_PATH"],
         browser,
+        restore_interrupted_collections=not app.config["DEMO_MODE"],
     )
     app.extensions["creatorscope_browser"] = browser
     app.extensions["creatorscope_tasks"] = tasks
     app.register_blueprint(comment_analysis_bp)
 
+    @app.before_request
+    def block_demo_writes():
+        if app.config["DEMO_MODE"] and request.method not in {"GET", "HEAD", "OPTIONS"}:
+            return jsonify({"error": "离线演示数据库只读；请使用筛选、分析和导出"}), 409
+        return None
+
     @app.get("/")
     def home():
-        return render_template("index.html")
+        return render_template("index.html", demo_mode=app.config["DEMO_MODE"])
 
     @app.get("/ai")
     def ai_page():
@@ -121,6 +133,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.post("/api/news/collect")
     def api_news_collect():
+        if app.config["DEMO_MODE"]:
+            return jsonify({"error": "离线演示模式不启用网络新闻采集"}), 409
         payload = request.get_json(silent=True) or {}
         source_key = str(payload.get("source_key") or "")
         try:
@@ -184,6 +198,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.post("/api/ai/test")
     def api_ai_test():
+        if app.config["DEMO_MODE"]:
+            return jsonify({"error": "离线演示模式不连接模型服务"}), 409
         payload = request.get_json(silent=True) or {}
         provider = str(payload.get("provider") or "openai_compatible")
         try:
@@ -207,6 +223,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.post("/api/ai/analyze")
     def api_ai_analyze():
+        if app.config["DEMO_MODE"]:
+            return jsonify({"error": "离线演示模式不连接模型服务"}), 409
         payload = request.get_json(silent=True) or {}
         if payload.get("confirm_upload") is not True:
             return jsonify({"error": "请先检查本机原始数据预览并明确确认数据外发"}), 400
@@ -540,6 +558,10 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                         "dom_rows_added": int(task_result.get("dom_rows_added", 0) or 0),
                         "creators_visited": int(task_result.get("creators_visited", 0) or 0),
                         "notes_visited": int(task_result.get("notes_visited", 0) or 0),
+                        "records_added": int(task_result.get("records_added", 0) or 0),
+                        "duplicate_records": int(task_result.get("duplicate_records", 0) or 0),
+                        "comments_added": int(task_result.get("comments_added", 0) or 0),
+                        "duplicate_comments": int(task_result.get("duplicate_comments", 0) or 0),
                     }
                 )
             else:
@@ -549,6 +571,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.get("/api/browser")
     def api_browser_status():
+        if app.config["DEMO_MODE"]:
+            return jsonify({"open": False, "domain": "", "page_kind": "", "mode": "demo"})
         try:
             return jsonify(browser.status())
         except Exception:
@@ -556,11 +580,15 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.post("/api/tasks/import-baseline")
     def api_import_baseline():
+        if app.config["DEMO_MODE"]:
+            return jsonify({"error": "离线演示数据为只读；请使用筛选与导出"}), 409
         task_id = tasks.submit_baseline_import()
         return jsonify({"task_id": task_id}), 202
 
     @app.post("/api/tasks/import-file")
     def api_import_file():
+        if app.config["DEMO_MODE"]:
+            return jsonify({"error": "离线演示数据为只读；请使用筛选与导出"}), 409
         uploaded = request.files.get("file")
         if uploaded is None:
             return jsonify({"error": "请选择 JSON 或 CSV 文件"}), 400
@@ -575,6 +603,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.post("/api/tasks/collect-visible")
     def api_collect_visible():
+        if app.config["DEMO_MODE"]:
+            return jsonify({"error": "离线演示模式不启动浏览器采集"}), 409
         settings = request.get_json(silent=True)
         if not isinstance(settings, dict):
             return jsonify({"error": "请以 JSON 对象提交采集设置"}), 400
@@ -590,13 +620,23 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             "pause": tasks.pause_task,
             "resume": tasks.resume_task,
             "stop": tasks.stop_task,
+            "retry-failed": tasks.retry_failed_task,
         }
+        if app.config["DEMO_MODE"]:
+            return jsonify({"error": "离线演示模式不运行采集任务"}), 409
         handler = handlers.get(action)
         if not handler:
             return jsonify({"error": "不支持的任务操作"}), 404
         if not handler(task_id):
             return jsonify({"error": "任务当前状态不支持此操作"}), 409
         return jsonify({"task_id": task_id, "action": action}), 202
+
+    @app.get("/api/batches/<batch_id>/quality")
+    def api_batch_quality(batch_id: str):
+        report = batch_quality_report(app.config["DATABASE_PATH"], batch_id)
+        if report is None:
+            return jsonify({"error": "采集批次不存在"}), 404
+        return jsonify(report)
 
     @app.get("/api/export/json")
     def api_export_json():
@@ -867,11 +907,15 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.post("/api/browser/open")
     def api_open_browser():
+        if app.config["DEMO_MODE"]:
+            return jsonify({"error": "离线演示模式不启动浏览器采集"}), 409
         task_id = tasks.submit_browser_open()
         return jsonify({"task_id": task_id}), 202
 
     @app.post("/api/browser/capture")
     def api_capture_current_page():
+        if app.config["DEMO_MODE"]:
+            return jsonify({"error": "离线演示模式不读取实时浏览器页面"}), 409
         payload = request.get_json(silent=True) or {}
         creator_id = str(payload.get("creator_id") or "").strip() or None
         task_id = tasks.submit_current_page_capture(creator_id)
@@ -879,11 +923,13 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.post("/api/browser/close")
     def api_close_browser():
+        if app.config["DEMO_MODE"]:
+            return jsonify({"error": "离线演示模式不控制浏览器"}), 409
         task_id = tasks.submit_browser_close()
         return jsonify({"task_id": task_id}), 202
 
     @app.get("/api/health")
     def api_health():
-        return jsonify({"status": "ok", "mode": "local"})
+        return jsonify({"status": "ok", "mode": "demo" if app.config["DEMO_MODE"] else "local"})
 
     return app

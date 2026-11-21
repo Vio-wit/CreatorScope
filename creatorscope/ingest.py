@@ -11,7 +11,7 @@ from uuid import uuid4
 
 import pandas as pd
 
-from .db import connection, ensure_creator_ref, ensure_note, ensure_note_ref, local_timestamp
+from .db import backfill_field_observations, connection, ensure_creator_ref, ensure_note, ensure_note_ref, local_timestamp
 
 
 COUNT_KEYS = {
@@ -523,6 +523,50 @@ def ingest_payload(
                     }
                 )
 
+            declared_statuses = item.get("field_statuses")
+            if isinstance(declared_statuses, dict):
+                entity_type = "creator" if "creator" in record_type or "blogger" in record_type else (
+                    "note" if "note" in record_type else "record"
+                )
+                entity_ref = str(creator_id or note_id or record_id)
+                allowed_statuses = {
+                    "captured", "not_displayed", "not_loaded", "access_denied",
+                    "parse_failed", "not_attempted", "not_applicable",
+                }
+                for field_name, field_status in declared_statuses.items():
+                    name = str(field_name)
+                    status_value = str(field_status)
+                    if _is_private_field(name) or status_value not in allowed_statuses:
+                        continue
+                    raw_value = clean_fields.get(name)
+                    metric = conn.execute(
+                        "SELECT numeric_value, unit, parse_status FROM metric_values WHERE record_id=? AND metric_key=?",
+                        (record_id, name),
+                    ).fetchone()
+                    normalized = None
+                    normalization_status = ""
+                    if metric:
+                        normalization_status = str(metric["parse_status"] or "")
+                        if metric["numeric_value"] is not None:
+                            normalized = json.dumps(
+                                {"value": metric["numeric_value"], "unit": metric["unit"]},
+                                ensure_ascii=False,
+                                sort_keys=True,
+                            )
+                    conn.execute(
+                        """INSERT OR IGNORE INTO collection_field_observations
+                           (batch_id, record_id, entity_type, entity_ref, record_type,
+                            field_name, raw_value, normalized_value_json,
+                            normalization_status, source, captured_at, task_id, status)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            batch_id, record_id, entity_type, entity_ref, record_type,
+                            name, None if raw_value is None else str(raw_value), normalized,
+                            normalization_status, record_source, record_captured_at,
+                            task_id, status_value,
+                        ),
+                    )
+
         metric_frame = pd.DataFrame(fields_for_frame)
         if not metric_frame.empty:
             metric_frame["numeric_value"] = pd.to_numeric(
@@ -552,6 +596,7 @@ def ingest_payload(
             (batch_id, task_id),
         )
 
+    backfill_field_observations(db_path, batch_id)
     return {
         "batch_id": batch_id,
         "record_count": inserted_records,
@@ -714,7 +759,8 @@ def ingest_comment_snapshots(
                 inserted += 1
             else:
                 duplicate += 1
-        return {"inserted": inserted, "duplicates": duplicate}
+    backfill_field_observations(db_path, batch_id)
+    return {"inserted": inserted, "duplicates": duplicate}
 
 
 def finish_collection_batch(db_path: Path, batch_id: str, status: str) -> None:
