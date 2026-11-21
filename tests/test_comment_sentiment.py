@@ -29,6 +29,23 @@ class CommentSentimentTests(unittest.TestCase):
         self.assertEqual({item["label"] for item in result["by_creator"]}, {"公开创作者", "另一公开创作者"})
         self.assertIn("不能确定个人真实情绪", result["summary"]["scope_notice"])
 
+    def test_tfidf_keywords_are_grouped_by_note_and_creator_without_changing_raw_comments(self) -> None:
+        rows = [
+            {"note_id": "n1", "note_title": "露营笔记", "creator_id": "c1", "creator_name": "公开名称甲", "comment_text": "露营装备 露营攻略"},
+            {"note_id": "n1", "note_title": "露营笔记", "creator_id": "c1", "creator_name": "公开名称甲", "comment_text": "露营攻略 装备清单"},
+            {"note_id": "n2", "note_title": "咖啡笔记", "creator_id": "c2", "creator_name": "公开名称乙", "comment_text": "手冲咖啡 咖啡器具"},
+        ]
+        result = analyze_comments(rows)
+        keywords = result["summary"]["tfidf_keywords"]
+        self.assertTrue(keywords)
+        self.assertTrue(all(item["score"] > 0 for item in keywords))
+        self.assertTrue(all(1 <= item["document_frequency"] <= item["document_count"] for item in keywords))
+        self.assertEqual(result["by_note"][0]["label"], "露营笔记")
+        self.assertTrue(result["by_note"][0]["tfidf_keywords"])
+        self.assertEqual(result["by_creator"][0]["label"], "公开名称甲")
+        self.assertTrue(result["by_creator"][0]["tfidf_keywords"])
+        self.assertEqual(result["comments"][0]["comment_text"], rows[0]["comment_text"])
+
     def test_manual_review_sample_is_deterministic_and_keeps_label_columns_blank(self) -> None:
         rows = [
             {"batch_id": "b1", "note_id": "n1", "comment_id": f"c{i}", "comment_text": f"原文{i} 很好用"}

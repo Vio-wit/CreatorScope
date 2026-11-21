@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import hashlib
-from collections import Counter, defaultdict
+import math
+from collections import Counter
 from typing import Any
 
 import jieba
+
+from .comment_analysis import load_stopwords, tokenize
 
 
 POSITIVE = {
@@ -93,12 +96,43 @@ def _sentiment(text: str) -> dict[str, Any]:
     }
 
 
+def _tfidf_keywords(rows: list[dict[str, Any]], limit: int = 12) -> list[dict[str, Any]]:
+    stopwords = load_stopwords()
+    documents = [Counter(tokenize(str(row.get("comment_text") or ""), stopwords)) for row in rows]
+    documents = [document for document in documents if document]
+    if not documents:
+        return []
+
+    document_frequency: Counter[str] = Counter()
+    for document in documents:
+        document_frequency.update(document.keys())
+
+    scores: Counter[str] = Counter()
+    for document in documents:
+        token_total = sum(document.values())
+        for word, frequency in document.items():
+            inverse_document_frequency = math.log((len(documents) + 1) / (document_frequency[word] + 1)) + 1
+            scores[word] += (frequency / token_total) * inverse_document_frequency
+
+    return [
+        {
+            "word": word,
+            "score": round(score, 6),
+            "document_frequency": document_frequency[word],
+            "document_count": len(documents),
+        }
+        for word, score in sorted(scores.items(), key=lambda item: (-item[1], item[0]))[:max(0, limit)]
+    ]
+
+
 def analyze_comments(rows: list[dict[str, Any]]) -> dict[str, Any]:
     analyzed = []
     sentiment_counts: Counter[str] = Counter()
     topic_counts: Counter[str] = Counter()
     by_note: dict[tuple[str, str], dict[str, Any]] = {}
     by_creator: dict[tuple[str, str], dict[str, Any]] = {}
+    note_rows: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    creator_rows: dict[tuple[str, str], list[dict[str, Any]]] = {}
 
     for row in rows:
         raw_text = str(row.get("comment_text") or "")
@@ -126,21 +160,26 @@ def analyze_comments(rows: list[dict[str, Any]]) -> dict[str, Any]:
         note_group["sample_count"] += 1
         note_group["topics"].update(result["themes"])
         note_group["sentiments"][result["label"]] += 1
+        note_rows.setdefault(note_key, []).append(row)
 
         creator_key = (str(row.get("creator_id") or ""), str(row.get("creator_name") or ""))
         creator_group = by_creator.setdefault(creator_key, {"creator_id": creator_key[0], "label": creator_key[1], "sample_count": 0, "topics": Counter(), "sentiments": Counter()})
         creator_group["sample_count"] += 1
         creator_group["topics"].update(result["themes"])
         creator_group["sentiments"][result["label"]] += 1
+        creator_rows.setdefault(creator_key, []).append(row)
 
     def groups(source: dict[tuple[str, str], dict[str, Any]]) -> list[dict[str, Any]]:
         output = []
-        for item in source.values():
+        for item_key, item in source.items():
             output.append({
                 key: value for key, value in item.items() if key not in {"topics", "sentiments"}
             } | {
                 "topics": [{"label": label, "count": count} for label, count in item["topics"].most_common()],
                 "sentiments": dict(item["sentiments"]),
+                "tfidf_keywords": _tfidf_keywords(
+                    note_rows[item_key] if source is by_note else creator_rows[item_key]
+                ),
             })
         return sorted(output, key=lambda item: (-item["sample_count"], item["label"]))
 
@@ -152,7 +191,8 @@ def analyze_comments(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "sentiment_counts": {label: sentiment_counts.get(label, 0) for label in ("正向倾向", "中性 / 未命中词典", "负向倾向", "混合倾向", "未分类（空文本）")},
             "topic_counts": [{"label": label, "count": value} for label, value in topic_counts.most_common()],
             "scope_notice": scope_notice,
-            "method": "jieba 分词 + 小型情感词典 + 前置否定词与程度副词规则 + 可解释主题关键词；词典匹配仅作为倾向线索。",
+            "method": "jieba 分词 + 小型情感词典 + 前置否定词与程度副词规则 + 可解释主题关键词 + 按评论计算并聚合的 TF-IDF 关键词；词典匹配仅作为倾向线索。",
+            "tfidf_keywords": _tfidf_keywords(rows),
         },
         "by_note": groups(by_note),
         "by_creator": groups(by_creator),
