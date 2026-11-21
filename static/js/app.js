@@ -1,5 +1,6 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
+  const demoMode = document.body.dataset.mode === 'demo';
   const elements = {
     batchSelect: $('#batchSelect'), sourceSelect: $('#sourceSelect'), typeSelect: $('#typeSelect'),
     importButton: $('#importButton'), openBrowserButton: $('#openBrowserButton'),
@@ -587,14 +588,17 @@
       const status = task.status || 'queued';
       const statusLabel = { queued: '排队中', running: `处理中 ${task.progress || 0}%`, paused: '已暂停', stopping: '正在停止', stopped: '已停止', completed: '已完成', failed: '失败' }[status] || status;
       const isCollection = task.task_type === 'visible_collection';
+      const hasFailedNotes = (task.failures || []).some((failure) => Number(failure.note_index) > 0);
       let actions = '';
-      if (isCollection && ['queued', 'running'].includes(status)) actions = `<button class="button button-secondary" data-task-action="pause" data-task-id="${escapeHtml(task.task_id)}">暂停</button><button class="button button-quiet" data-task-action="stop" data-task-id="${escapeHtml(task.task_id)}">停止</button>`;
-      else if (isCollection && status === 'paused') actions = `<button class="button button-secondary" data-task-action="resume" data-task-id="${escapeHtml(task.task_id)}">恢复</button><button class="button button-quiet" data-task-action="stop" data-task-id="${escapeHtml(task.task_id)}">停止</button>`;
-      else if (isCollection && ['stopped', 'failed'].includes(status)) actions = `<button class="button button-secondary" data-task-action="resume" data-task-id="${escapeHtml(task.task_id)}">从断点恢复</button>`;
-      const countText = isCollection ? `<div class="task-counts">创作者 ${task.creators_visited || 0} · 笔记 ${task.notes_visited || 0} · 评论 ${task.comment_count || 0} · DOM 新增 ${task.dom_rows_added || 0}</div>` : '';
-      const failures = (task.failures || []).length ? `<details class="task-failures"><summary>失败记录 ${task.failures.length} 项</summary><ul>${task.failures.map((failure) => `<li>创作者 ${failure.creator_index}${failure.note_index ? ` / 笔记 ${failure.note_index}` : ''}：${escapeHtml(failure.reason)}</li>`).join('')}</ul></details>` : '';
+      if (!demoMode && isCollection && ['queued', 'running'].includes(status)) actions = `<button class="button button-secondary" data-task-action="pause" data-task-id="${escapeHtml(task.task_id)}">暂停</button><button class="button button-quiet" data-task-action="stop" data-task-id="${escapeHtml(task.task_id)}">停止</button>`;
+      else if (!demoMode && isCollection && status === 'paused') actions = `<button class="button button-secondary" data-task-action="resume" data-task-id="${escapeHtml(task.task_id)}">恢复</button><button class="button button-quiet" data-task-action="stop" data-task-id="${escapeHtml(task.task_id)}">停止</button>`;
+      else if (!demoMode && isCollection && ['stopped', 'failed'].includes(status)) actions = `<button class="button button-secondary" data-task-action="resume" data-task-id="${escapeHtml(task.task_id)}">从断点恢复</button>${hasFailedNotes ? `<button class="button button-secondary" data-task-action="retry-failed" data-task-id="${escapeHtml(task.task_id)}">只重试失败笔记</button>` : ''}`;
+      else if (!demoMode && isCollection && status === 'completed' && hasFailedNotes) actions = `<button class="button button-secondary" data-task-action="retry-failed" data-task-id="${escapeHtml(task.task_id)}">只重试失败笔记</button>`;
+      const countText = isCollection ? `<div class="task-counts">创作者 ${task.creators_visited || 0} · 笔记 ${task.notes_visited || 0} · 评论 ${task.comment_count || 0} · 本批新增 ${task.records_added || 0} · 重复跳过 ${task.duplicate_records || 0} · DOM 新增 ${task.dom_rows_added || 0}</div>` : '';
+      const failures = (task.failures || []).length ? `<details class="task-failures"><summary>失败记录 ${task.failures.length} 项</summary><ul>${task.failures.map((failure) => `<li>创作者 ${failure.creator_index}${failure.note_index ? ` / 笔记 ${failure.note_index}` : ''}：${escapeHtml(failure.reason)}${failure.attempts > 1 ? `（尝试 ${failure.attempts} 次）` : ''}</li>`).join('')}</ul></details>` : '';
       const progress = isCollection ? `<div class="task-progress-track"><div class="task-progress-bar" style="width:${Math.max(0, Math.min(100, Number(task.progress) || 0))}%"></div></div>` : '';
-      return `<div class="task-row"><div class="task-name">${escapeHtml(labels[task.task_type] || task.task_type)}</div><div class="task-message">${escapeHtml(task.message || '')} · ${escapeHtml(task.created_at || '')}</div><span class="task-state ${escapeHtml(status)}">${escapeHtml(statusLabel)}</span>${progress}${countText}${actions ? `<div class="task-controls">${actions}</div>` : ''}${failures}</div>`;
+      const qualityLink = isCollection && task.batch_id ? `<a class="task-quality-link" href="/api/batches/${encodeURIComponent(task.batch_id)}/quality" target="_blank" rel="noopener">本批质量报告</a>` : '';
+      return `<div class="task-row"><div class="task-name">${escapeHtml(labels[task.task_type] || task.task_type)}</div><div class="task-message">${escapeHtml(task.message || '')} · ${escapeHtml(task.created_at || '')}</div><span class="task-state ${escapeHtml(status)}">${escapeHtml(statusLabel)}</span>${progress}${countText}${actions || qualityLink ? `<div class="task-controls">${actions}${qualityLink}</div>` : ''}${failures}</div>`;
     }).join('');
   }
 
@@ -756,6 +760,14 @@
   }
 
   async function refreshBrowserStatus() {
+    if (demoMode) {
+      browserIsOpen = false;
+      elements.captureButton.disabled = true;
+      elements.closeBrowserButton.disabled = true;
+      elements.openBrowserButton.disabled = true;
+      elements.browserHint.innerHTML = '<span class="status-dot muted"></span><span>离线演示不会打开浏览器或发起网络请求。</span>';
+      return;
+    }
     const status = await requestJson('/api/browser');
     browserIsOpen = Boolean(status.open && status.domain === 'pgy.xiaohongshu.com');
     elements.captureButton.disabled = pendingTask || !browserIsOpen;

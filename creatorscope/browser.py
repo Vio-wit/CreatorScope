@@ -15,6 +15,17 @@ from .db import local_timestamp
 
 PGY_HOST = "pgy.xiaohongshu.com"
 PGY_START_URL = "https://pgy.xiaohongshu.com/solar/pre-trade/note/kol"
+NOTE_PANEL_FIELDS = (
+    "笔记标题", "发布时间", "曝光量", "阅读量", "点赞量", "收藏量",
+    "评论量", "分享量", "新增关注", "视频时长",
+)
+PUBLIC_NOTE_FIELDS = (
+    "笔记标题", "笔记正文", "发布时间", "话题", "点赞量", "收藏量", "评论量", "分享量",
+)
+COMMENT_FIELDS = (
+    "comment_text", "displayed_time", "like_count_raw", "reply_count_raw",
+    "comment_level", "is_pinned",
+)
 
 
 class CaptureError(Exception):
@@ -311,7 +322,10 @@ class PgyVisibleBrowser:
         if category:
             fields["内容类目"] = category
         if fields:
-            return {"type": "creator_profile_sample", "fields": fields}
+            expected = ("粉丝数", "获赞与收藏", "图文笔记一口价", "视频笔记一口价", "发布笔记数", "内容类目")
+            field_statuses = {name: "captured" if name in fields else "not_displayed" for name in expected}
+            field_statuses.update({"地域": "not_attempted", "人设及标签": "not_attempted"})
+            return {"type": "creator_profile_sample", "fields": fields, "field_statuses": field_statuses}
         return None
 
     def _performance_record(self, lines: list[str]) -> dict[str, Any] | None:
@@ -335,11 +349,13 @@ class PgyVisibleBrowser:
                 fields[label] = value
         if not fields:
             return None
+        field_statuses = {name: "captured" if name in fields else "not_displayed" for name in labels}
         period = "近30日" if "近30日" in lines else ""
         return {
             "type": "creator_content_performance",
             "period_displayed": period,
             "fields": fields,
+            "field_statuses": field_statuses,
         }
 
     def _fans_record(self, lines: list[str]) -> dict[str, Any] | None:
@@ -357,11 +373,22 @@ class PgyVisibleBrowser:
                 fields[label] = value
         if not fields:
             return None
+        field_statuses = {name: "captured" if name in fields else "not_displayed" for name in labels}
+        field_statuses.update(
+            {
+                "粉丝性别分布": "not_attempted",
+                "粉丝年龄分布": "not_attempted",
+                "粉丝地域分布": "not_attempted",
+                "粉丝兴趣分布": "not_attempted",
+                "粉丝设备分布": "not_attempted",
+            }
+        )
         period = "近30日" if "近30日" in lines else ""
         return {
             "type": "fan_analysis",
             "period_selector_displayed": period,
             "fields": fields,
+            "field_statuses": field_statuses,
         }
 
     def _note_detail_record(self, lines: list[str]) -> dict[str, Any] | None:
@@ -387,7 +414,8 @@ class PgyVisibleBrowser:
             fields[label] = self._value_after(lines, label, start=start)
         if not any(value is not None for value in fields.values()):
             return None
-        return {"type": "note_detail", "fields": fields}
+        field_statuses = {name: "captured" if value is not None else "not_displayed" for name, value in fields.items()}
+        return {"type": "note_detail", "fields": fields, "field_statuses": field_statuses}
 
     def collect_visible(
         self,
@@ -400,6 +428,8 @@ class PgyVisibleBrowser:
         save_comments: Callable[[str, str, list[dict[str, Any]]], dict[str, int]],
         report_progress: Callable[[int, str, int], None],
         report_failure: Callable[[int, int, str], None],
+        report_note_success: Callable[[int, int], None],
+        report_field_status: Callable[[str, str, str, tuple[str, ...], str, str], None],
         existing_comment_count: int,
         comment_scope: str = "",
     ) -> dict[str, Any]:
@@ -414,6 +444,8 @@ class PgyVisibleBrowser:
                 save_comments=save_comments,
                 report_progress=report_progress,
                 report_failure=report_failure,
+                report_note_success=report_note_success,
+                report_field_status=report_field_status,
                 existing_comment_count=existing_comment_count,
                 comment_scope=comment_scope,
             ),
@@ -431,6 +463,8 @@ class PgyVisibleBrowser:
         save_comments: Callable[[str, str, list[dict[str, Any]]], dict[str, int]],
         report_progress: Callable[[int, str, int], None],
         report_failure: Callable[[int, int, str], None],
+        report_note_success: Callable[[int, int], None],
+        report_field_status: Callable[[str, str, str, tuple[str, ...], str, str], None],
         existing_comment_count: int,
         comment_scope: str = "",
     ) -> dict[str, Any]:
@@ -480,7 +514,14 @@ class PgyVisibleBrowser:
             raise PauseForUser(self._empty_list_message(page))
 
         target_end = min(total_rows, creator_limit + 1)
+        retry_targets = {
+            (int(item.get("creator_index", 0)), int(item.get("note_index", 0)))
+            for item in settings.get("retry_notes", [])
+            if isinstance(item, dict)
+        }
         for creator_index in range(creator_start, target_end - 1):
+            if retry_targets and not any(target_creator == creator_index + 1 for target_creator, _ in retry_targets):
+                continue
             check_control()
             report_progress(
                 min(90, 10 + int(75 * (creator_index / max(1, creator_limit)))),
@@ -499,21 +540,22 @@ class PgyVisibleBrowser:
                     raise CaptureError("列表行未打开可识别的蒲公英创作者详情页")
                 creator_ref = f"pgy:{route.path}"
                 creator_stage = "读取创作者资料和指标"
-                creator_records = self._capture_creator_records(detail_page, creator_ref)
-                if settings.get("collect_creator", True) and creator_records:
-                    save_records(
-                        {
-                            "source": "蒲公英可见页面",
-                            "records": creator_records,
-                        }
-                    )
+                if settings.get("collect_creator", True):
+                    creator_records = self._capture_creator_records(detail_page, creator_ref)
+                    if creator_records:
+                        save_records(
+                            {
+                                "source": "蒲公英可见页面",
+                                "records": creator_records,
+                            }
+                        )
                 creators_visited += 1
                 save_checkpoint(
                     {"creator_index": creator_index, "note_index": note_start if creator_index == creator_start else 0,
                      "comment_count": comment_total}
                 )
 
-                if settings.get("collect_notes", True):
+                if settings.get("collect_notes", True) or settings.get("collect_comments", False):
                     creator_stage = "打开笔记数据页签"
                     self._open_notes_tab(detail_page)
                     card_count = detail_page.locator(".note-card-wrapper:visible").count()
@@ -521,32 +563,36 @@ class PgyVisibleBrowser:
                     note_end = min(card_count, note_limit)
                     first_note = note_start if creator_index == creator_start else 0
                     for note_index in range(first_note, note_end):
+                        if retry_targets and (creator_index + 1, note_index + 1) not in retry_targets:
+                            continue
                         check_control()
                         if settings.get("collect_comments", True) and comment_total >= 300:
                             break
                         note_page = None
+                        note_ref = None
                         note_stage = "打开笔记详情并复制链接"
                         try:
                             detail_record, note_ref = self._open_and_copy_note(
                                 detail_page, note_index, creator_ref
                             )
-                            if detail_record:
+                            if settings.get("collect_notes", True) and detail_record:
                                 save_records(
                                     {"source": "蒲公英可见笔记详情", "records": [detail_record]}
                                 )
                             note_stage = "打开小红书公开笔记页"
                             note_page = self._open_copied_note(note_ref["copied_url"])
-                            note_stage = "读取小红书公开笔记正文和话题"
-                            public_record = self._capture_public_note(
-                                note_page,
-                                creator_ref,
-                                note_ref["canonical"],
-                                expected_title=note_ref.get("expected_title"),
-                            )
-                            if public_record:
-                                save_records(
-                                    {"source": "小红书公开笔记页", "records": [public_record]}
+                            if settings.get("collect_notes", True):
+                                note_stage = "读取小红书公开笔记正文和话题"
+                                public_record = self._capture_public_note(
+                                    note_page,
+                                    creator_ref,
+                                    note_ref["canonical"],
+                                    expected_title=note_ref.get("expected_title"),
                                 )
+                                if public_record:
+                                    save_records(
+                                        {"source": "小红书公开笔记页", "records": [public_record]}
+                                    )
                             notes_visited += 1
                             if settings.get("collect_comments", True):
                                 note_stage = "滚动并提取可见评论"
@@ -587,7 +633,23 @@ class PgyVisibleBrowser:
                                     "comment_count": comment_total,
                                 }
                             )
-                        except (PauseForUser, StopCollection):
+                            report_note_success(creator_index + 1, note_index + 1)
+                        except PauseForUser as exc:
+                            reason = str(exc)
+                            if any(token in reason for token in ("登录", "验证码", "安全验证", "权限", "访问受限")):
+                                status = "access_denied"
+                                attempt_ref = str((note_ref or {}).get("canonical") or f"{creator_ref}#note-index-{note_index + 1}")
+                                report_field_status(
+                                    "note", attempt_ref, "xhs_public_note", PUBLIC_NOTE_FIELDS,
+                                    status, "小红书公开笔记页",
+                                )
+                                if settings.get("collect_comments", True):
+                                    report_field_status(
+                                        "comment", attempt_ref, "comment_capture", COMMENT_FIELDS,
+                                        status, "小红书公开评论区",
+                                    )
+                            raise
+                        except StopCollection:
                             raise
                         except Exception as exc:
                             self._close_owned_page(note_page)
@@ -597,10 +659,44 @@ class PgyVisibleBrowser:
                                 note_index + 1,
                                 f"{note_stage}：{self._safe_failure_reason(exc)}",
                             )
-                            self._close_visible_note_panel(detail_page)
-                            raise PauseForUser(
-                                f"第 {creator_index + 1} 位创作者的第 {note_index + 1} 篇笔记采集失败；已保留断点，可查看失败记录后恢复重试"
-                            ) from None
+                            status = "parse_failed" if isinstance(exc, CaptureError) else "not_loaded"
+                            attempt_ref = str((note_ref or {}).get("canonical") or f"{creator_ref}#note-index-{note_index + 1}")
+                            if "评论" in note_stage:
+                                report_field_status(
+                                    "comment", attempt_ref, "comment_capture", COMMENT_FIELDS,
+                                    status, "小红书公开评论区",
+                                )
+                            elif "小红书" in note_stage:
+                                report_field_status(
+                                    "note", attempt_ref, "xhs_public_note", PUBLIC_NOTE_FIELDS,
+                                    status, "小红书公开笔记页",
+                                )
+                            else:
+                                report_field_status(
+                                    "note", attempt_ref, "note_detail", NOTE_PANEL_FIELDS,
+                                    status, "蒲公英笔记详情",
+                                )
+                            try:
+                                self._close_visible_note_panel(detail_page)
+                            except (PauseForUser, StopCollection):
+                                raise
+                            except Exception:
+                                raise PauseForUser(
+                                    "笔记失败后无法恢复创作者详情页；请检查可见窗口后恢复任务"
+                                ) from None
+                            note_start = note_index + 1
+                            save_checkpoint(
+                                {
+                                    "creator_index": creator_index,
+                                    "note_index": note_start,
+                                    "comment_count": comment_total,
+                                }
+                            )
+                            report_progress(
+                                min(95, 30 + (notes_visited + failures) * 4),
+                                f"笔记 {note_index + 1} 失败，继续处理后续笔记",
+                                0,
+                            )
                 if opened_new_page:
                     self._close_owned_page(detail_page)
                 else:
@@ -1051,6 +1147,20 @@ class PgyVisibleBrowser:
             if re.search(r"登录后查看|登录后浏览|登录后查看笔记|登录查看完整内容", visible_text):
                 raise PauseForUser("小红书笔记内容要求登录才能查看；受限内容未采集")
             raise CaptureError("公开笔记页未识别到可见字段；未保存整页文本")
+        expected_public_fields = ("笔记标题", "笔记正文", "发布时间", "话题", "点赞量", "收藏量", "评论量", "分享量")
+        field_statuses = {
+            name: "captured" if name in fields else "not_displayed"
+            for name in expected_public_fields
+        }
+        field_statuses.update(
+            {
+                "曝光量": "not_applicable",
+                "阅读量": "not_applicable",
+                "新增关注量": "not_applicable",
+                "视频时长": "not_attempted",
+                "笔记类型": "not_attempted",
+            }
+        )
         return {
             "type": "xhs_public_note",
             "source": "小红书公开笔记页",
@@ -1059,6 +1169,7 @@ class PgyVisibleBrowser:
             "note_ref": note_ref,
             "note_topics": topics,
             "fields": fields,
+            "field_statuses": field_statuses,
         }
 
     def _capture_visible_comments(

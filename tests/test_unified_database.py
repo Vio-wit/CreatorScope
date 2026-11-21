@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 from creatorscope.db import connection, initialize_database
+from creatorscope.ingest import ingest_payload
 from creatorscope.migrations import (
     backup_database,
     import_r42_comment_source,
@@ -40,9 +41,11 @@ class UnifiedDatabaseTests(unittest.TestCase):
                 {"collection_batches", "collection_tasks", "metric_snapshots"}.issubset(views)
             )
             self.assertEqual(
-                conn.execute("SELECT COUNT(*) FROM schema_migrations WHERE version=2").fetchone()[0],
+                conn.execute("SELECT COUNT(*) FROM schema_migrations WHERE version=3").fetchone()[0],
                 1,
             )
+            field_columns = {row[1] for row in conn.execute('PRAGMA table_info("collection_field_observations")')}
+            self.assertTrue({"raw_value", "normalized_value_json", "source", "captured_at", "status"}.issubset(field_columns))
             records = {row[1] for row in conn.execute('PRAGMA table_info("records")')}
             self.assertIn("source", records)
             view_sql = conn.execute(
@@ -67,6 +70,42 @@ class UnifiedDatabaseTests(unittest.TestCase):
                 "SELECT sql FROM sqlite_master WHERE type='view' AND name='metric_snapshots'"
             ).fetchone()[0]
             self.assertIn("COALESCE(r.source, b.source)", view_sql)
+
+    def test_v3_field_observation_migration_backfills_existing_raw_records(self) -> None:
+        db_path = self.root / "v2-copy.sqlite3"
+        initialize_database(db_path)
+        with connection(db_path) as conn:
+            conn.execute(
+                "INSERT INTO tasks(task_id,task_type,source,status,created_at) VALUES('old-task','import','test','completed','2026-01-01T00:00:00+08:00')"
+            )
+        ingest_payload(
+            db_path,
+            "old-task",
+            {
+                "source": "historical public sample",
+                "records": [{
+                    "type": "xhs_public_note",
+                    "creator_ref": "creator-ref-raw",
+                    "note_ref": "https://www.xiaohongshu.com/explore/note-raw-id",
+                    "fields": {"笔记标题": "原始标题保留", "点赞量": "10+"},
+                }],
+            },
+        )
+        with connection(db_path) as conn:
+            original_fields = conn.execute("SELECT fields_json FROM records").fetchone()[0]
+            conn.execute("DROP TABLE collection_field_observations")
+            conn.execute("DELETE FROM schema_migrations WHERE version=3")
+
+        initialize_database(db_path)
+        with connection(db_path) as conn:
+            self.assertEqual(conn.execute("SELECT fields_json FROM records").fetchone()[0], original_fields)
+            row = conn.execute(
+                "SELECT raw_value, status, source FROM collection_field_observations WHERE field_name='点赞量'"
+            ).fetchone()
+            self.assertEqual(tuple(row), ("10+", "captured", "historical public sample"))
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM records").fetchone()[0], 1)
+            self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")
+            self.assertEqual(conn.execute("PRAGMA foreign_key_check").fetchall(), [])
 
     def test_legacy_copy_is_idempotent_and_keeps_source_unchanged(self) -> None:
         source = self.root / "legacy.sqlite3"

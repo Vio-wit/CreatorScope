@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Callable
 from uuid import uuid4
 
 from .browser import CaptureError, PauseForUser, PgyVisibleBrowser, StopCollection
-from .db import connection, local_timestamp
+from .db import connection, local_timestamp, record_field_statuses
 from .ingest import (
-    finish_collection_batch,
     ingest_comment_snapshots,
     ingest_payload,
     load_baseline,
@@ -24,6 +24,8 @@ class TaskManager:
         db_path: Path,
         baseline_path: Path,
         browser: PgyVisibleBrowser,
+        *,
+        restore_interrupted_collections: bool = True,
     ):
         self.db_path = db_path
         self.baseline_path = baseline_path
@@ -33,7 +35,8 @@ class TaskManager:
         self._controls: dict[str, tuple[threading.Event, threading.Event]] = {}
         self._active: set[str] = set()
         self._scheduled: set[str] = set()
-        self._restore_interrupted_collections()
+        if restore_interrupted_collections:
+            self._restore_interrupted_collections()
 
     def submit_baseline_import(self) -> str:
         return self._submit(
@@ -136,7 +139,7 @@ class TaskManager:
         return {
             "source": "pgy_xhs_visible",
             "collect_creator": collect_creator,
-            "collect_notes": collect_notes or collect_comments,
+            "collect_notes": collect_notes,
             "collect_comments": collect_comments,
             "creator_count": bounded("creator_count", 10, 1, 10),
             "notes_per_creator": bounded("notes_per_creator", 3, 1, 3),
@@ -210,13 +213,74 @@ class TaskManager:
                     "UPDATE tasks SET status='stopped', message='已停止；已采集记录保留，可恢复任务', finished_at=? WHERE task_id=?",
                     (local_timestamp(), task_id),
                 )
-            self._set_collection_batch_status(task_id, "stopped")
+                self._finish_collection_batch_in_transaction(conn, task_id, "stopped")
             return True
         with connection(self.db_path) as conn:
             conn.execute(
                 "UPDATE tasks SET status='stopping', message='正在停止；已采集记录会保留' WHERE task_id=?",
                 (task_id,),
             )
+        return True
+
+    def retry_failed_task(self, task_id: str) -> bool:
+        row = self._collection_task(task_id)
+        if not row or row["status"] not in {"completed", "stopped", "failed"}:
+            return False
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            with self._lock:
+                active = task_id in self._active
+                scheduled = task_id in self._scheduled
+            if scheduled:
+                return False
+            if not active:
+                break
+            time.sleep(0.01)
+        with self._lock:
+            if task_id in self._active or task_id in self._scheduled:
+                return False
+        row = self._collection_task(task_id)
+        if not row or row["status"] not in {"completed", "stopped", "failed"}:
+            return False
+        try:
+            result = json.loads(row["result_json"] or "{}")
+            parameters = json.loads(row["parameters_json"] or "{}")
+        except (json.JSONDecodeError, TypeError):
+            return False
+        targets = sorted(
+            {
+                (int(item.get("creator_index", 0)), int(item.get("note_index", 0)))
+                for item in result.get("failures", [])
+                if isinstance(item, dict) and int(item.get("creator_index", 0)) > 0 and int(item.get("note_index", 0)) > 0
+            }
+        )
+        if not targets:
+            return False
+        parameters["retry_notes"] = [
+            {"creator_index": creator_index, "note_index": note_index}
+            for creator_index, note_index in targets
+        ]
+        checkpoint = parameters.get("checkpoint") or {}
+        parameters["checkpoint"] = {
+            "creator_index": 0,
+            "note_index": 0,
+            "comment_count": max(0, min(300, int(checkpoint.get("comment_count", 0) or 0))),
+        }
+        with connection(self.db_path) as conn:
+            conn.execute(
+                "UPDATE tasks SET parameters_json=?, status='queued', progress=0, message='失败笔记重新排队', error=NULL, error_message=NULL, finished_at=NULL WHERE task_id=?",
+                (json.dumps(parameters, ensure_ascii=False), task_id),
+            )
+            conn.execute(
+                "UPDATE batches SET status='queued', completed_at=NULL WHERE task_id=?",
+                (task_id,),
+            )
+        resume_event, stop_event = self._control(task_id)
+        stop_event.clear()
+        resume_event.set()
+        with self._lock:
+            self._scheduled.add(task_id)
+        self._executor.submit(self._run, task_id, self._run_visible_collection)
         return True
 
     def _collection_task(self, task_id: str):
@@ -309,8 +373,8 @@ class TaskManager:
                         task_id,
                     ),
                 )
-            if result.get("collection_batch"):
-                finish_collection_batch(self.db_path, str(batch_id), "completed")
+                if result.get("collection_batch") and batch_id:
+                    self._finish_collection_batch_in_transaction(conn, task_id, "completed")
         except PauseForUser as exc:
             with connection(self.db_path) as conn:
                 conn.execute(
@@ -318,14 +382,14 @@ class TaskManager:
                        finished_at=NULL WHERE task_id=?""",
                     (str(exc)[:240], task_id),
                 )
-            self._set_collection_batch_status(task_id, "paused")
+                self._finish_collection_batch_in_transaction(conn, task_id, "paused")
         except StopCollection:
             with connection(self.db_path) as conn:
                 conn.execute(
                     "UPDATE tasks SET status='stopped', message='已停止；已采集记录保留，可恢复任务', finished_at=? WHERE task_id=?",
                     (local_timestamp(), task_id),
                 )
-            self._set_collection_batch_status(task_id, "stopped")
+                self._finish_collection_batch_in_transaction(conn, task_id, "stopped")
         except Exception as exc:
             if isinstance(exc, CaptureError):
                 message = exc.public_message
@@ -341,20 +405,30 @@ class TaskManager:
                     """,
                     (message, message, local_timestamp(), task_id),
                 )
-            self._set_collection_batch_status(task_id, "failed")
+                self._finish_collection_batch_in_transaction(conn, task_id, "failed")
         finally:
             with self._lock:
                 self._active.discard(task_id)
                 self._scheduled.discard(task_id)
 
-    def _set_collection_batch_status(self, task_id: str, status: str) -> None:
-        with connection(self.db_path) as conn:
-            row = conn.execute(
-                "SELECT batch_id FROM tasks WHERE task_id=? AND task_type='visible_collection'",
-                (task_id,),
-            ).fetchone()
+    @staticmethod
+    def _finish_collection_batch_in_transaction(conn, task_id: str, status: str) -> None:
+        row = conn.execute(
+            "SELECT batch_id FROM tasks WHERE task_id=? AND task_type='visible_collection'",
+            (task_id,),
+        ).fetchone()
         if row and row[0]:
-            finish_collection_batch(self.db_path, str(row[0]), status)
+            conn.execute(
+                """UPDATE batches SET status=?, completed_at=?, record_count=(
+                       SELECT COUNT(*) FROM records WHERE batch_id=?
+                   ) WHERE batch_id=?""",
+                (
+                    status,
+                    local_timestamp() if status != "paused" else None,
+                    row[0],
+                    row[0],
+                ),
+            )
 
     def _run_visible_collection(self, task_id: str) -> dict[str, Any]:
         row = self._collection_task(task_id)
@@ -396,16 +470,22 @@ class TaskManager:
             )
 
         def save_records(payload: dict[str, Any]) -> None:
-            ingest_payload(
+            outcome = ingest_payload(
                 self.db_path,
                 task_id,
                 payload,
                 source_override="蒲公英与小红书可见页面",
                 batch_id_override=batch_id,
             )
+            self._append_result(
+                task_id,
+                records_added=int(outcome.get("record_count", 0)),
+                duplicate_records=int(outcome.get("duplicate_count", 0)),
+                metric_values_added=int(outcome.get("metric_count", 0)),
+            )
 
         def save_comments(creator_ref: str, note_ref: str, comments: list[dict[str, Any]]) -> dict[str, int]:
-            return ingest_comment_snapshots(
+            outcome = ingest_comment_snapshots(
                 self.db_path,
                 task_id=task_id,
                 batch_id=batch_id,
@@ -413,6 +493,12 @@ class TaskManager:
                 note_ref=note_ref,
                 comments=comments[:20],
             )
+            self._append_result(
+                task_id,
+                comments_added=int(outcome.get("inserted", 0)),
+                duplicate_comments=int(outcome.get("duplicates", 0)),
+            )
+            return outcome
 
         def report_progress(progress: int, message: str, dom_delta: int) -> None:
             with connection(self.db_path) as conn:
@@ -430,6 +516,29 @@ class TaskManager:
                     (batch_id,),
                 )
 
+        def report_note_success(creator_index: int, note_index: int) -> None:
+            self._clear_failure(task_id, creator_index, note_index)
+
+        def report_field_status(
+            entity_type: str,
+            entity_ref: str,
+            record_type: str,
+            field_names: tuple[str, ...],
+            status: str,
+            source: str,
+        ) -> None:
+            record_field_statuses(
+                self.db_path,
+                batch_id=batch_id,
+                task_id=task_id,
+                entity_type=entity_type,
+                entity_ref=entity_ref,
+                record_type=record_type,
+                field_names=field_names,
+                status=status,
+                source=source,
+            )
+
         with connection(self.db_path) as conn:
             existing_comment_count = int(
                 conn.execute(
@@ -437,8 +546,14 @@ class TaskManager:
                 ).fetchone()[0]
             )
         check_control()
+        retry_notes = parameters.get("retry_notes", [])
+        collection_settings = {
+            **settings,
+            "collect_creator": False if retry_notes else settings.get("collect_creator", True),
+            "retry_notes": retry_notes,
+        }
         result = self.browser.collect_visible(
-            settings,
+            collection_settings,
             checkpoint,
             check_control=check_control,
             save_checkpoint=save_checkpoint,
@@ -446,6 +561,8 @@ class TaskManager:
             save_comments=save_comments,
             report_progress=report_progress,
             report_failure=report_failure,
+            report_note_success=report_note_success,
+            report_field_status=report_field_status,
             existing_comment_count=existing_comment_count,
             comment_scope=batch_id,
         )
@@ -466,7 +583,10 @@ class TaskManager:
         except (json.JSONDecodeError, TypeError):
             result = {}
         for key, value in updates.items():
-            if key == "dom_rows_added":
+            if key in {
+                "dom_rows_added", "records_added", "duplicate_records",
+                "metric_values_added", "comments_added", "duplicate_comments",
+            }:
                 result[key] = int(result.get(key, 0)) + int(value)
             else:
                 result[key] = value
@@ -483,14 +603,33 @@ class TaskManager:
         except (json.JSONDecodeError, TypeError):
             result = {}
         failures = result.setdefault("failures", [])
-        if len(failures) < 100:
-            failures.append(
-                {
-                    "creator_index": max(1, int(creator_index)),
-                    "note_index": max(0, int(note_index)),
-                    "reason": str(reason)[:180],
-                }
+        identity = (max(1, int(creator_index)), max(0, int(note_index)))
+        existing = next(
+            (item for item in failures if (item.get("creator_index"), item.get("note_index")) == identity),
+            None,
+        )
+        if existing:
+            existing["reason"] = str(reason)[:180]
+            existing["attempts"] = int(existing.get("attempts", 1)) + 1
+        elif len(failures) < 100:
+            failures.append({"creator_index": identity[0], "note_index": identity[1], "reason": str(reason)[:180], "attempts": 1})
+        with connection(self.db_path) as conn:
+            conn.execute(
+                "UPDATE tasks SET result_json=? WHERE task_id=?",
+                (json.dumps(result, ensure_ascii=False), task_id),
             )
+
+    def _clear_failure(self, task_id: str, creator_index: int, note_index: int) -> None:
+        row = self._collection_task(task_id)
+        try:
+            result = json.loads(row["result_json"] or "{}") if row else {}
+        except (json.JSONDecodeError, TypeError):
+            result = {}
+        identity = (int(creator_index), int(note_index))
+        result["failures"] = [
+            item for item in result.get("failures", [])
+            if (int(item.get("creator_index", 0)), int(item.get("note_index", 0))) != identity
+        ]
         with connection(self.db_path) as conn:
             conn.execute(
                 "UPDATE tasks SET result_json=? WHERE task_id=?",
