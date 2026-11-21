@@ -1,0 +1,6728 @@
+{
+  "generated_at": "2026-11-21T10:34:57+08:00",
+  "dataset": "data/demo/creatorscope_demo.sqlite3",
+  "measurement": "每种记录类型按本批次已保存的对应记录数计算；仅有实际观测或明确采集状态的字段计入。",
+  "field_coverage": [
+    {
+      "record_type": "blogger_list_sample",
+      "field_name": "互动中位数（日常）",
+      "expected_records": 3,
+      "captured_records": 3,
+      "normalized_values": 3,
+      "parse_success_count": 3,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 3
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）",
+        "蒲公英当前可见页面"
+      ],
+      "batches": [
+        "182dc9a1e5314d1b8fd3644560fd0bc1",
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "blogger_list_sample",
+      "field_name": "全部报价",
+      "expected_records": 3,
+      "captured_records": 3,
+      "normalized_values": 3,
+      "parse_success_count": 3,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 3
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）",
+        "蒲公英当前可见页面"
+      ],
+      "batches": [
+        "182dc9a1e5314d1b8fd3644560fd0bc1",
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "blogger_list_sample",
+      "field_name": "粉丝数",
+      "expected_records": 3,
+      "captured_records": 3,
+      "normalized_values": 3,
+      "parse_success_count": 3,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 3
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）",
+        "蒲公英当前可见页面"
+      ],
+      "batches": [
+        "182dc9a1e5314d1b8fd3644560fd0bc1",
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "blogger_list_sample",
+      "field_name": "阅读中位数（日常）",
+      "expected_records": 3,
+      "captured_records": 3,
+      "normalized_values": 3,
+      "parse_success_count": 3,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 3
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）",
+        "蒲公英当前可见页面"
+      ],
+      "batches": [
+        "182dc9a1e5314d1b8fd3644560fd0bc1",
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "comment_excerpt_sample",
+      "field_name": "_source_file",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-ef71606cc998a2e1399c70d5"
+      ]
+    },
+    {
+      "record_type": "comment_excerpt_sample",
+      "field_name": "_source_row",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-ef71606cc998a2e1399c70d5"
+      ]
+    },
+    {
+      "record_type": "comment_excerpt_sample",
+      "field_name": "comment_text_excerpt",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-ef71606cc998a2e1399c70d5"
+      ]
+    },
+    {
+      "record_type": "comment_excerpt_sample",
+      "field_name": "content_scope",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-ef71606cc998a2e1399c70d5"
+      ]
+    },
+    {
+      "record_type": "comment_excerpt_sample",
+      "field_name": "display_time_raw",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-ef71606cc998a2e1399c70d5"
+      ]
+    },
+    {
+      "record_type": "comment_excerpt_sample",
+      "field_name": "evidence_file",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-ef71606cc998a2e1399c70d5"
+      ]
+    },
+    {
+      "record_type": "comment_excerpt_sample",
+      "field_name": "identity_fields_omitted",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-ef71606cc998a2e1399c70d5"
+      ]
+    },
+    {
+      "record_type": "comment_excerpt_sample",
+      "field_name": "likes_count",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-ef71606cc998a2e1399c70d5"
+      ]
+    },
+    {
+      "record_type": "comment_excerpt_sample",
+      "field_name": "likes_raw",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-ef71606cc998a2e1399c70d5"
+      ]
+    },
+    {
+      "record_type": "comment_excerpt_sample",
+      "field_name": "note_key",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-ef71606cc998a2e1399c70d5"
+      ]
+    },
+    {
+      "record_type": "comment_excerpt_sample",
+      "field_name": "source",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-ef71606cc998a2e1399c70d5"
+      ]
+    },
+    {
+      "record_type": "comment_snapshot",
+      "field_name": "comment_level",
+      "expected_records": 33,
+      "captured_records": 33,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 33
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120",
+        "historical:xhs_public_access_probe",
+        "xiaohongshu"
+      ],
+      "batches": [
+        "R42-20261120T215215+0800",
+        "hist-3098318f510146dce83efc71",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "comment_snapshot",
+      "field_name": "comment_text",
+      "expected_records": 33,
+      "captured_records": 33,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 33
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120",
+        "historical:xhs_public_access_probe",
+        "xiaohongshu"
+      ],
+      "batches": [
+        "R42-20261120T215215+0800",
+        "hist-3098318f510146dce83efc71",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "comment_snapshot",
+      "field_name": "displayed_time",
+      "expected_records": 33,
+      "captured_records": 33,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 33
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120",
+        "historical:xhs_public_access_probe",
+        "xiaohongshu"
+      ],
+      "batches": [
+        "R42-20261120T215215+0800",
+        "hist-3098318f510146dce83efc71",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "comment_snapshot",
+      "field_name": "is_pinned",
+      "expected_records": 33,
+      "captured_records": 31,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 93.9,
+      "state_counts": {
+        "captured": 31,
+        "not_displayed": 2
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120",
+        "historical:xhs_public_access_probe",
+        "xiaohongshu"
+      ],
+      "batches": [
+        "R42-20261120T215215+0800",
+        "hist-3098318f510146dce83efc71",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "comment_snapshot",
+      "field_name": "like_count_raw",
+      "expected_records": 33,
+      "captured_records": 17,
+      "normalized_values": 8,
+      "parse_success_count": 8,
+      "coverage_pct": 51.5,
+      "state_counts": {
+        "captured": 17,
+        "not_displayed": 16
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120",
+        "historical:xhs_public_access_probe",
+        "xiaohongshu"
+      ],
+      "batches": [
+        "R42-20261120T215215+0800",
+        "hist-3098318f510146dce83efc71",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "comment_snapshot",
+      "field_name": "reply_count_raw",
+      "expected_records": 33,
+      "captured_records": 26,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 78.8,
+      "state_counts": {
+        "captured": 26,
+        "not_displayed": 7
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120",
+        "historical:xhs_public_access_probe",
+        "xiaohongshu"
+      ],
+      "batches": [
+        "R42-20261120T215215+0800",
+        "hist-3098318f510146dce83efc71",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "_source_file",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "_source_row",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "exposure_median",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "growth",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "interaction_median",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "medians",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "peer_percentile_positions",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "period_displayed",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "read_median",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "service",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "中位关注量",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "中位分享量",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "中位收藏量",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "中位点赞量",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "中位评论量",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "互动中位数",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "互动率",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "图文3秒阅读率",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "曝光中位数",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "视频完播率",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_content_performance",
+      "field_name": "阅读中位数",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "_source_file",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "_source_row",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "captured_on",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "category_tags",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "city_displayed",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "city_raw",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "collaboration_industries",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "content_categories",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "creator_id",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "creator_name",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "data_updated_at_raw",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "data_updated_date",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "evidence_file",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "fan_snapshot",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "followers",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "followers_count",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "followers_raw",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "image_quote_cny",
+      "expected_records": 5,
+      "captured_records": 4,
+      "normalized_values": 4,
+      "parse_success_count": 4,
+      "coverage_pct": 80.0,
+      "state_counts": {
+        "captured": 4,
+        "not_displayed": 1
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "image_quote_raw",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "likes_and_favorites_count",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "likes_and_favorites_raw",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "likes_and_saves_total",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "nickname",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "performance_medians",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "profile_url",
+      "expected_records": 6,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 16.7,
+      "state_counts": {
+        "captured": 1,
+        "not_displayed": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "profile_url_status",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "published_notes_displayed",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "quotes_rmb",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "source",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "video_quote_cny",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "video_quote_raw",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "内容类目",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "发布笔记数",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "图文笔记一口价",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "粉丝数",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "获赞与收藏",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "creator_profile_sample",
+      "field_name": "视频笔记一口价",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "_source_file",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "_source_row",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "active_follower_share",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "active_share_percent",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "active_share_raw",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "age_share",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "age_top",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "apple_device_share_percent",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "change_percent",
+      "expected_records": 5,
+      "captured_records": 3,
+      "normalized_values": 3,
+      "parse_success_count": 3,
+      "coverage_pct": 60.0,
+      "state_counts": {
+        "captured": 3,
+        "not_displayed": 2
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "change_percent_raw",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 3,
+      "parse_success_count": 3,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "device_brand_share_examples",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "follower_change_amplitude",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "follower_increase",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "gender_share",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "gender_top",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "growth_count",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "growth_raw",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "interacting_follower_share",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "interaction_share_percent",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "interaction_share_raw",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "interest_share_examples",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "order_follower_share",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "period",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "purchase_share_percent",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "purchase_share_raw",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "read_share_percent",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "read_share_raw",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 5,
+      "parse_success_count": 5,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "reader_follower_share",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "top_cities",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "top_interests",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "top_provinces",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "top_regions",
+      "expected_records": 5,
+      "captured_records": 5,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 5
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-5c8d2592834f2fa90e2dfafe"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "trend_period_displayed",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "下单粉丝占比",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "互动粉丝占比",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "活跃粉丝占比",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "粉丝量变化幅度",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "fan_analysis",
+      "field_name": "阅读粉丝占比",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 1,
+      "parse_success_count": 1,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "_source_file",
+      "expected_records": 17,
+      "captured_records": 17,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 17
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120",
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf",
+        "hist-3aa43a162ea757b4826f238f",
+        "hist-90df77824ae6396a0d82f021",
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "_source_row",
+      "expected_records": 17,
+      "captured_records": 17,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 17
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120",
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf",
+        "hist-3aa43a162ea757b4826f238f",
+        "hist-90df77824ae6396a0d82f021",
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "author_name",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-3aa43a162ea757b4826f238f"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "author_nickname",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "author_profile_url",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "body",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "body_text",
+      "expected_records": 6,
+      "captured_records": 3,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 50.0,
+      "state_counts": {
+        "captured": 3,
+        "not_displayed": 3
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "capture_date",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "capture_ordinal",
+      "expected_records": 6,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 16.7,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "capture_scope",
+      "expected_records": 6,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 16.7,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "capture_status",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-3aa43a162ea757b4826f238f"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "captured_on",
+      "expected_records": 10,
+      "captured_records": 10,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 10
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf",
+        "hist-3aa43a162ea757b4826f238f"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "captures",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "comment_area_total_raw",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "comment_author_identifiers_stored",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "comment_samples",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "comment_samples_saved",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "comment_sort_or_pagination_seen",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "comments_raw",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-3aa43a162ea757b4826f238f"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "comments_total_displayed",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "component_click_rate",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "content_text_raw",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "content_type",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "creator_id",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "creator_name",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "evidence_file",
+      "expected_records": 10,
+      "captured_records": 10,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 10
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf",
+        "hist-3aa43a162ea757b4826f238f"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "evidence_level",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-3aa43a162ea757b4826f238f"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "favorites_raw",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-3aa43a162ea757b4826f238f"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "hashtags",
+      "expected_records": 16,
+      "captured_records": 16,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 16
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120",
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf",
+        "hist-90df77824ae6396a0d82f021",
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "likes_raw",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-3aa43a162ea757b4826f238f"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "location_displayed",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "media_downloaded",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "media_load_status",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "mentions",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "metrics",
+      "expected_records": 16,
+      "captured_records": 16,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 16
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120",
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf",
+        "hist-90df77824ae6396a0d82f021",
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "normalized_values",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-3aa43a162ea757b4826f238f"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "note_id",
+      "expected_records": 16,
+      "captured_records": 8,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 50.0,
+      "state_counts": {
+        "captured": 8,
+        "not_displayed": 8
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf",
+        "hist-3aa43a162ea757b4826f238f",
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "note_key",
+      "expected_records": 10,
+      "captured_records": 10,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 10
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf",
+        "hist-3aa43a162ea757b4826f238f"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "note_type",
+      "expected_records": 15,
+      "captured_records": 14,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 93.3,
+      "state_counts": {
+        "captured": 14,
+        "not_displayed": 1
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf",
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "note_type_basis",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "note_type_evidence",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "note_url",
+      "expected_records": 10,
+      "captured_records": 2,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 20.0,
+      "state_counts": {
+        "captured": 2,
+        "not_displayed": 8
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf",
+        "hist-3aa43a162ea757b4826f238f"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "page_title",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "period",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "pgy_reference",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "publish_time_display_raw",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "published_at",
+      "expected_records": 9,
+      "captured_records": 8,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 88.9,
+      "state_counts": {
+        "captured": 8,
+        "not_displayed": 1
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "published_at_pgy_display",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "published_at_xhs_display",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "published_raw",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "query_values_retained",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "reply_expand_clicked",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "share_url_base",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "shares_raw",
+      "expected_records": 1,
+      "captured_records": 0,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 0.0,
+      "state_counts": {
+        "not_displayed": 1
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-3aa43a162ea757b4826f238f"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "source",
+      "expected_records": 11,
+      "captured_records": 11,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 11
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf",
+        "hist-3aa43a162ea757b4826f238f",
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "source_link_obtained_by",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "source_link_query_keys",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "source_link_query_present",
+      "expected_records": 6,
+      "captured_records": 6,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 6
+      },
+      "sources": [
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "title",
+      "expected_records": 17,
+      "captured_records": 17,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 17
+      },
+      "sources": [
+        "historical:continuous_collection_validation",
+        "historical:pgy_note_detail_investigation_20261120",
+        "historical:xhs_public_access_probe"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf",
+        "hist-3aa43a162ea757b4826f238f",
+        "hist-90df77824ae6396a0d82f021",
+        "hist-e8eac38e7154f6a09aef0005"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "video_duration_displayed",
+      "expected_records": 1,
+      "captured_records": 1,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 1
+      },
+      "sources": [
+        "historical:pgy_note_detail_investigation_20261120"
+      ],
+      "batches": [
+        "hist-90df77824ae6396a0d82f021"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "video_duration_raw",
+      "expected_records": 9,
+      "captured_records": 9,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 9
+      },
+      "sources": [
+        "historical:continuous_collection_validation"
+      ],
+      "batches": [
+        "hist-2319a905bedf882d6f3759bf"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "分享量",
+      "expected_records": 2,
+      "captured_records": 0,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 0.0,
+      "state_counts": {
+        "not_displayed": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "发布时间",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "收藏量",
+      "expected_records": 2,
+      "captured_records": 0,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 0.0,
+      "state_counts": {
+        "not_displayed": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "曝光量",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "点赞量",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "评论量",
+      "expected_records": 2,
+      "captured_records": 0,
+      "normalized_values": 0,
+      "parse_success_count": 0,
+      "coverage_pct": 0.0,
+      "state_counts": {
+        "not_displayed": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    },
+    {
+      "record_type": "note_detail",
+      "field_name": "阅读量",
+      "expected_records": 2,
+      "captured_records": 2,
+      "normalized_values": 2,
+      "parse_success_count": 2,
+      "coverage_pct": 100.0,
+      "state_counts": {
+        "captured": 2
+      },
+      "sources": [
+        "蒲公英历史样本基线（原始身份字段不全）"
+      ],
+      "batches": [
+        "2ee0dabd7f8f4b308236a743b200d47e",
+        "f000c66f19ce4be5b4358bbae5900076"
+      ]
+    }
+  ],
+  "batches": [
+    {
+      "batch_id": "2ee0dabd7f8f4b308236a743b200d47e",
+      "source": "蒲公英历史样本基线（原始身份字段不全）",
+      "status": "completed",
+      "field_coverage": [
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "互动中位数（日常）",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "全部报价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "粉丝数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "阅读中位数（日常）",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位关注量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位分享量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位收藏量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位点赞量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位评论量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "互动中位数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "互动率",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "图文3秒阅读率",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "曝光中位数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "视频完播率",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "阅读中位数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "内容类目",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "发布笔记数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "图文笔记一口价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "粉丝数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "获赞与收藏",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "视频笔记一口价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "下单粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "互动粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "活跃粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "粉丝量变化幅度",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "阅读粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "分享量",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "发布时间",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "收藏量",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "曝光量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "点赞量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "评论量",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "阅读量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        }
+      ]
+    },
+    {
+      "batch_id": "f000c66f19ce4be5b4358bbae5900076",
+      "source": "蒲公英历史样本基线（原始身份字段不全）",
+      "status": "completed",
+      "field_coverage": [
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "互动中位数（日常）",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "全部报价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "粉丝数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "阅读中位数（日常）",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位关注量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位分享量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位收藏量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位点赞量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位评论量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "互动中位数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "互动率",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "图文3秒阅读率",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "曝光中位数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "视频完播率",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "阅读中位数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "内容类目",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "发布笔记数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "图文笔记一口价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "粉丝数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "获赞与收藏",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "视频笔记一口价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "下单粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "互动粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "活跃粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "粉丝量变化幅度",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "阅读粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "分享量",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "发布时间",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "收藏量",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "曝光量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "点赞量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "评论量",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "阅读量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        }
+      ]
+    },
+    {
+      "batch_id": "hist-5c8d2592834f2fa90e2dfafe",
+      "source": "historical:continuous_collection_validation",
+      "status": "completed",
+      "field_coverage": [
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "exposure_median",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "interaction_median",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "read_median",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "captured_on",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "category_tags",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "city_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "creator_id",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "creator_name",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "data_updated_at_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "evidence_file",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "fan_snapshot",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "followers_count",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "followers_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "image_quote_cny",
+          "states": {
+            "captured": 4,
+            "not_displayed": 1
+          },
+          "normalized_count": 4,
+          "parse_success_count": 4,
+          "expected_records": 5,
+          "captured_records": 4,
+          "coverage_pct": 80.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "image_quote_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "likes_and_favorites_count",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "likes_and_favorites_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "performance_medians",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "profile_url",
+          "states": {
+            "not_displayed": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "profile_url_status",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "source",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "video_quote_cny",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "video_quote_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "active_share_percent",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "active_share_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "age_top",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "apple_device_share_percent",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "change_percent",
+          "states": {
+            "captured": 3,
+            "not_displayed": 2
+          },
+          "normalized_count": 3,
+          "parse_success_count": 3,
+          "expected_records": 5,
+          "captured_records": 3,
+          "coverage_pct": 60.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "change_percent_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 3,
+          "parse_success_count": 3,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "gender_top",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "growth_count",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "growth_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "interaction_share_percent",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "interaction_share_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "period",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "purchase_share_percent",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "purchase_share_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "read_share_percent",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "read_share_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "top_interests",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "top_regions",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        }
+      ]
+    },
+    {
+      "batch_id": "hist-2319a905bedf882d6f3759bf",
+      "source": "historical:continuous_collection_validation",
+      "status": "completed",
+      "field_coverage": [
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "captured_on",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "content_text_raw",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "creator_id",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "evidence_file",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "hashtags",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "metrics",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_id",
+          "states": {
+            "captured": 1,
+            "not_displayed": 8
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 1,
+          "coverage_pct": 11.1
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_key",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_type",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_type_basis",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_url",
+          "states": {
+            "captured": 1,
+            "not_displayed": 8
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 1,
+          "coverage_pct": 11.1
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "period",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "published_at",
+          "states": {
+            "captured": 8,
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 8,
+          "coverage_pct": 88.9
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "published_raw",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "source",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "title",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "video_duration_raw",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        }
+      ]
+    },
+    {
+      "batch_id": "hist-3aa43a162ea757b4826f238f",
+      "source": "historical:continuous_collection_validation",
+      "status": "completed",
+      "field_coverage": [
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "author_name",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "capture_status",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "captured_on",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comments_raw",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "evidence_file",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "evidence_level",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "favorites_raw",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "likes_raw",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "normalized_values",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_id",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_key",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_url",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "shares_raw",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "source",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "title",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        }
+      ]
+    },
+    {
+      "batch_id": "hist-ef71606cc998a2e1399c70d5",
+      "source": "historical:continuous_collection_validation",
+      "status": "completed",
+      "field_coverage": [
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "comment_text_excerpt",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "content_scope",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "display_time_raw",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "evidence_file",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "identity_fields_omitted",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "likes_count",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "likes_raw",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "note_key",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "source",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        }
+      ]
+    },
+    {
+      "batch_id": "hist-90df77824ae6396a0d82f021",
+      "source": "historical:pgy_note_detail_investigation_20261120",
+      "status": "completed",
+      "field_coverage": [
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "comment_level",
+          "states": {
+            "captured": 3
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 3,
+          "captured_records": 3,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "comment_text",
+          "states": {
+            "captured": 3
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 3,
+          "captured_records": 3,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "displayed_time",
+          "states": {
+            "captured": 3
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 3,
+          "captured_records": 3,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "is_pinned",
+          "states": {
+            "captured": 1,
+            "not_displayed": 2
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 3,
+          "captured_records": 1,
+          "coverage_pct": 33.3
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "like_count_raw",
+          "states": {
+            "captured": 3
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 3,
+          "captured_records": 3,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "reply_count_raw",
+          "states": {
+            "captured": 1,
+            "not_displayed": 2
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 3,
+          "captured_records": 1,
+          "coverage_pct": 33.3
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "growth",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "medians",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "peer_percentile_positions",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "period_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "service",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "category_tags",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "city_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "collaboration_industries",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "content_categories",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "data_updated_date",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "followers",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "likes_and_saves_total",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "nickname",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "profile_url",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "published_notes_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "quotes_rmb",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "active_follower_share",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "age_share",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "device_brand_share_examples",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "follower_change_amplitude",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "follower_increase",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "gender_share",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "interacting_follower_share",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "interest_share_examples",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "order_follower_share",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "reader_follower_share",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "top_cities",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "top_provinces",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "trend_period_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "author_nickname",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "author_profile_url",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "body",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "capture_date",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comment_author_identifiers_stored",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comment_samples",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comment_sort_or_pagination_seen",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comments_total_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "component_click_rate",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "content_type",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "hashtags",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "location_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "media_downloaded",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "mentions",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "metrics",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "published_at_pgy_display",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "published_at_xhs_display",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "reply_expand_clicked",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "source",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "title",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "video_duration_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        }
+      ]
+    },
+    {
+      "batch_id": "hist-3098318f510146dce83efc71",
+      "source": "historical:xhs_public_access_probe",
+      "status": "completed",
+      "field_coverage": [
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "comment_level",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "comment_text",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "displayed_time",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "is_pinned",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "like_count_raw",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "reply_count_raw",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        }
+      ]
+    },
+    {
+      "batch_id": "R42-20261120T215215+0800",
+      "source": "xiaohongshu",
+      "status": "completed",
+      "field_coverage": [
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "comment_level",
+          "states": {
+            "captured": 29
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 29,
+          "captured_records": 29,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "comment_text",
+          "states": {
+            "captured": 29
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 29,
+          "captured_records": 29,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "displayed_time",
+          "states": {
+            "captured": 29
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 29,
+          "captured_records": 29,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "is_pinned",
+          "states": {
+            "captured": 29
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 29,
+          "captured_records": 29,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "like_count_raw",
+          "states": {
+            "not_displayed": 16,
+            "captured": 13
+          },
+          "normalized_count": 8,
+          "parse_success_count": 8,
+          "expected_records": 29,
+          "captured_records": 13,
+          "coverage_pct": 44.8
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "reply_count_raw",
+          "states": {
+            "captured": 24,
+            "not_displayed": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 29,
+          "captured_records": 24,
+          "coverage_pct": 82.8
+        }
+      ]
+    },
+    {
+      "batch_id": "hist-e8eac38e7154f6a09aef0005",
+      "source": "historical:xhs_public_access_probe",
+      "status": "completed",
+      "field_coverage": [
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "body_text",
+          "states": {
+            "captured": 3,
+            "not_displayed": 3
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 3,
+          "coverage_pct": 50.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "capture_ordinal",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 1,
+          "coverage_pct": 16.7
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "capture_scope",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 1,
+          "coverage_pct": 16.7
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "captures",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comment_area_total_raw",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comment_samples_saved",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "creator_name",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "hashtags",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "media_load_status",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "metrics",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_id",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_type",
+          "states": {
+            "captured": 5,
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 5,
+          "coverage_pct": 83.3
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_type_evidence",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "page_title",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "pgy_reference",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "publish_time_display_raw",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "query_values_retained",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "share_url_base",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "source_link_obtained_by",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "source_link_query_keys",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "source_link_query_present",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "title",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        }
+      ]
+    },
+    {
+      "batch_id": "a0054612a0c4447eaadd6a55f6841a36",
+      "source": "蒲公英与小红书公开可见页面",
+      "status": "stopped",
+      "field_coverage": []
+    },
+    {
+      "batch_id": "182dc9a1e5314d1b8fd3644560fd0bc1",
+      "source": "蒲公英当前可见页面",
+      "status": "completed",
+      "field_coverage": [
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "互动中位数（日常）",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "全部报价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "粉丝数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "阅读中位数（日常）",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        }
+      ]
+    }
+  ]
+}

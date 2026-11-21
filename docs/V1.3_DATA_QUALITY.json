@@ -1,0 +1,3686 @@
+{
+  "generated_at": "2026-11-21T10:34:57+08:00",
+  "dataset": "data/demo/creatorscope_demo.sqlite3",
+  "integrity": {
+    "integrity": "ok",
+    "foreign_key_errors": 0,
+    "schema_version": 3
+  },
+  "row_counts": {
+    "tasks": 18,
+    "batches": 12,
+    "creators": 17,
+    "notes": 16,
+    "records": 92,
+    "metric_values": 472,
+    "comment_snapshots": 33
+  },
+  "raw_public_payload_sha256": "2e072965eea627d035a3d70b338a2fd6ca30a27395401e663631ba8944ed4398",
+  "field_states": {
+    "captured": 921,
+    "not_displayed": 61
+  },
+  "metrics": {
+    "stored_values": 472,
+    "raw_values": 453,
+    "parsed_values": 405,
+    "parse_success_pct": 89.4
+  },
+  "batch_statuses": {
+    "completed": 11,
+    "stopped": 1
+  },
+  "totals_from_batch_reports": {
+    "records": 92,
+    "comments": 33,
+    "field_observation_rows": 1402,
+    "failure_attempts": 4,
+    "duplicate_rows": 0
+  },
+  "batch_reports": [
+    {
+      "batch_id": "2ee0dabd7f8f4b308236a743b200d47e",
+      "source": "蒲公英历史样本基线（原始身份字段不全）",
+      "status": "completed",
+      "task_status": "completed",
+      "started_at": "2026-11-19",
+      "completed_at": "2026-11-19",
+      "elapsed_seconds": 0.0,
+      "counts": {
+        "records": 5,
+        "records_by_type": {
+          "blogger_list_sample": 1,
+          "creator_content_performance": 1,
+          "creator_profile_sample": 1,
+          "fan_analysis": 1,
+          "note_detail": 1
+        },
+        "creators": 1,
+        "notes": 1,
+        "comments": 0,
+        "field_observations": 33,
+        "duplicate_records": 0,
+        "duplicate_comments": 0,
+        "failures": 0
+      },
+      "metrics": {
+        "stored_values": 33,
+        "raw_values": 30,
+        "parsed_values": 20,
+        "parse_success_pct": 66.7
+      },
+      "field_coverage": [
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "互动中位数（日常）",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "全部报价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "粉丝数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "阅读中位数（日常）",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位关注量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位分享量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位收藏量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位点赞量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位评论量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "互动中位数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "互动率",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "图文3秒阅读率",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "曝光中位数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "视频完播率",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "阅读中位数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "内容类目",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "发布笔记数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "图文笔记一口价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "粉丝数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "获赞与收藏",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "视频笔记一口价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "下单粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "互动粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "活跃粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "粉丝量变化幅度",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "阅读粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "分享量",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "发布时间",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "收藏量",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "曝光量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "点赞量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "评论量",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "阅读量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        }
+      ],
+      "failure_records": [],
+      "notes": [
+        "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+        "没有明确字段观察状态的记录不会被推定为页面未展示。",
+        "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。"
+      ]
+    },
+    {
+      "batch_id": "f000c66f19ce4be5b4358bbae5900076",
+      "source": "蒲公英历史样本基线（原始身份字段不全）",
+      "status": "completed",
+      "task_status": "completed",
+      "started_at": "2026-11-19",
+      "completed_at": "2026-11-19",
+      "elapsed_seconds": 0.0,
+      "counts": {
+        "records": 5,
+        "records_by_type": {
+          "blogger_list_sample": 1,
+          "creator_content_performance": 1,
+          "creator_profile_sample": 1,
+          "fan_analysis": 1,
+          "note_detail": 1
+        },
+        "creators": 1,
+        "notes": 1,
+        "comments": 0,
+        "field_observations": 33,
+        "duplicate_records": 0,
+        "duplicate_comments": 0,
+        "failures": 0
+      },
+      "metrics": {
+        "stored_values": 33,
+        "raw_values": 30,
+        "parsed_values": 27,
+        "parse_success_pct": 90.0
+      },
+      "field_coverage": [
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "互动中位数（日常）",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "全部报价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "粉丝数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "阅读中位数（日常）",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位关注量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位分享量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位收藏量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位点赞量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "中位评论量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "互动中位数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "互动率",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "图文3秒阅读率",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "曝光中位数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "视频完播率",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "阅读中位数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "内容类目",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "发布笔记数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "图文笔记一口价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "粉丝数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "获赞与收藏",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "视频笔记一口价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "下单粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "互动粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "活跃粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "粉丝量变化幅度",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "阅读粉丝占比",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "分享量",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "发布时间",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "收藏量",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "曝光量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "点赞量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "评论量",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "阅读量",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        }
+      ],
+      "failure_records": [],
+      "notes": [
+        "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+        "没有明确字段观察状态的记录不会被推定为页面未展示。",
+        "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。"
+      ]
+    },
+    {
+      "batch_id": "hist-5c8d2592834f2fa90e2dfafe",
+      "source": "historical:continuous_collection_validation",
+      "status": "completed",
+      "task_status": "completed",
+      "started_at": "2026-11-20T00:00:00",
+      "completed_at": "2026-11-20T00:00:00",
+      "elapsed_seconds": 0.0,
+      "counts": {
+        "records": 15,
+        "records_by_type": {
+          "creator_content_performance": 5,
+          "creator_profile_sample": 5,
+          "fan_analysis": 5
+        },
+        "creators": 5,
+        "notes": 0,
+        "comments": 0,
+        "field_observations": 235,
+        "duplicate_records": 0,
+        "duplicate_comments": 0,
+        "failures": 0
+      },
+      "metrics": {
+        "stored_values": 220,
+        "raw_values": 215,
+        "parsed_values": 191,
+        "parse_success_pct": 88.8
+      },
+      "field_coverage": [
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "exposure_median",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "interaction_median",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "read_median",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "captured_on",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "category_tags",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "city_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "creator_id",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "creator_name",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "data_updated_at_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "evidence_file",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "fan_snapshot",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "followers_count",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "followers_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "image_quote_cny",
+          "states": {
+            "captured": 4,
+            "not_displayed": 1
+          },
+          "normalized_count": 4,
+          "parse_success_count": 4,
+          "expected_records": 5,
+          "captured_records": 4,
+          "coverage_pct": 80.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "image_quote_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "likes_and_favorites_count",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "likes_and_favorites_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "performance_medians",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "profile_url",
+          "states": {
+            "not_displayed": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "profile_url_status",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "source",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "video_quote_cny",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "video_quote_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "active_share_percent",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "active_share_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "age_top",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "apple_device_share_percent",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "change_percent",
+          "states": {
+            "captured": 3,
+            "not_displayed": 2
+          },
+          "normalized_count": 3,
+          "parse_success_count": 3,
+          "expected_records": 5,
+          "captured_records": 3,
+          "coverage_pct": 60.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "change_percent_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 3,
+          "parse_success_count": 3,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "gender_top",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "growth_count",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "growth_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "interaction_share_percent",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "interaction_share_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "period",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "purchase_share_percent",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "purchase_share_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "read_share_percent",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "read_share_raw",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 5,
+          "parse_success_count": 5,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "top_interests",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "top_regions",
+          "states": {
+            "captured": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 5,
+          "captured_records": 5,
+          "coverage_pct": 100.0
+        }
+      ],
+      "failure_records": [],
+      "notes": [
+        "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+        "没有明确字段观察状态的记录不会被推定为页面未展示。",
+        "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。"
+      ]
+    },
+    {
+      "batch_id": "hist-2319a905bedf882d6f3759bf",
+      "source": "historical:continuous_collection_validation",
+      "status": "completed",
+      "task_status": "completed",
+      "started_at": "2026-11-20T00:00:00",
+      "completed_at": "2026-11-20T00:00:00",
+      "elapsed_seconds": 0.0,
+      "counts": {
+        "records": 9,
+        "records_by_type": {
+          "note_detail": 9
+        },
+        "creators": 5,
+        "notes": 9,
+        "comments": 0,
+        "field_observations": 171,
+        "duplicate_records": 0,
+        "duplicate_comments": 0,
+        "failures": 0
+      },
+      "metrics": {
+        "stored_values": 63,
+        "raw_values": 63,
+        "parsed_values": 58,
+        "parse_success_pct": 92.1
+      },
+      "field_coverage": [
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "captured_on",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "content_text_raw",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "creator_id",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "evidence_file",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "hashtags",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "metrics",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_id",
+          "states": {
+            "captured": 1,
+            "not_displayed": 8
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 1,
+          "coverage_pct": 11.1
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_key",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_type",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_type_basis",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_url",
+          "states": {
+            "captured": 1,
+            "not_displayed": 8
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 1,
+          "coverage_pct": 11.1
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "period",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "published_at",
+          "states": {
+            "captured": 8,
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 8,
+          "coverage_pct": 88.9
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "published_raw",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "source",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "title",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "video_duration_raw",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        }
+      ],
+      "failure_records": [],
+      "notes": [
+        "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+        "没有明确字段观察状态的记录不会被推定为页面未展示。",
+        "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。"
+      ]
+    },
+    {
+      "batch_id": "hist-3aa43a162ea757b4826f238f",
+      "source": "historical:continuous_collection_validation",
+      "status": "completed",
+      "task_status": "completed",
+      "started_at": "2026-11-20T00:00:00",
+      "completed_at": "2026-11-20T00:00:00",
+      "elapsed_seconds": 0.0,
+      "counts": {
+        "records": 1,
+        "records_by_type": {
+          "note_detail": 1
+        },
+        "creators": 1,
+        "notes": 1,
+        "comments": 0,
+        "field_observations": 17,
+        "duplicate_records": 0,
+        "duplicate_comments": 0,
+        "failures": 0
+      },
+      "metrics": {
+        "stored_values": 4,
+        "raw_values": 3,
+        "parsed_values": 3,
+        "parse_success_pct": 100.0
+      },
+      "field_coverage": [
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "author_name",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "capture_status",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "captured_on",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comments_raw",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "evidence_file",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "evidence_level",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "favorites_raw",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "likes_raw",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "normalized_values",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_id",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_key",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_url",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "shares_raw",
+          "states": {
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 0,
+          "coverage_pct": 0.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "source",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "title",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        }
+      ],
+      "failure_records": [],
+      "notes": [
+        "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+        "没有明确字段观察状态的记录不会被推定为页面未展示。",
+        "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。"
+      ]
+    },
+    {
+      "batch_id": "hist-ef71606cc998a2e1399c70d5",
+      "source": "historical:continuous_collection_validation",
+      "status": "completed",
+      "task_status": "completed",
+      "started_at": "2026-11-20T00:00:00",
+      "completed_at": "2026-11-20T00:00:00",
+      "elapsed_seconds": 0.0,
+      "counts": {
+        "records": 45,
+        "records_by_type": {
+          "comment_excerpt_sample": 45
+        },
+        "creators": 5,
+        "notes": 9,
+        "comments": 0,
+        "field_observations": 495,
+        "duplicate_records": 0,
+        "duplicate_comments": 0,
+        "failures": 0
+      },
+      "metrics": {
+        "stored_values": 45,
+        "raw_values": 45,
+        "parsed_values": 45,
+        "parse_success_pct": 100.0
+      },
+      "field_coverage": [
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "comment_text_excerpt",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "content_scope",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "display_time_raw",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "evidence_file",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "identity_fields_omitted",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "likes_count",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "likes_raw",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "note_key",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_excerpt_sample",
+          "field_name": "source",
+          "states": {
+            "captured": 9
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 9,
+          "captured_records": 9,
+          "coverage_pct": 100.0
+        }
+      ],
+      "failure_records": [],
+      "notes": [
+        "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+        "没有明确字段观察状态的记录不会被推定为页面未展示。",
+        "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。"
+      ]
+    },
+    {
+      "batch_id": "hist-90df77824ae6396a0d82f021",
+      "source": "historical:pgy_note_detail_investigation_20261120",
+      "status": "completed",
+      "task_status": "completed",
+      "started_at": "2026-11-20T00:00:00",
+      "completed_at": "2026-11-20T00:00:00",
+      "elapsed_seconds": 0.0,
+      "counts": {
+        "records": 4,
+        "records_by_type": {
+          "creator_content_performance": 1,
+          "creator_profile_sample": 1,
+          "fan_analysis": 1,
+          "note_detail": 1
+        },
+        "creators": 2,
+        "notes": 1,
+        "comments": 3,
+        "field_observations": 76,
+        "duplicate_records": 0,
+        "duplicate_comments": 0,
+        "failures": 0
+      },
+      "metrics": {
+        "stored_values": 42,
+        "raw_values": 42,
+        "parsed_values": 36,
+        "parse_success_pct": 85.7
+      },
+      "field_coverage": [
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "comment_level",
+          "states": {
+            "captured": 3
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 3,
+          "captured_records": 3,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "comment_text",
+          "states": {
+            "captured": 3
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 3,
+          "captured_records": 3,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "displayed_time",
+          "states": {
+            "captured": 3
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 3,
+          "captured_records": 3,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "is_pinned",
+          "states": {
+            "captured": 1,
+            "not_displayed": 2
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 3,
+          "captured_records": 1,
+          "coverage_pct": 33.3
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "like_count_raw",
+          "states": {
+            "captured": 3
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 3,
+          "captured_records": 3,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "reply_count_raw",
+          "states": {
+            "captured": 1,
+            "not_displayed": 2
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 3,
+          "captured_records": 1,
+          "coverage_pct": 33.3
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "growth",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "medians",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "peer_percentile_positions",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "period_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_content_performance",
+          "field_name": "service",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "category_tags",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "city_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "collaboration_industries",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "content_categories",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "data_updated_date",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "followers",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "likes_and_saves_total",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "nickname",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "profile_url",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "published_notes_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "creator_profile_sample",
+          "field_name": "quotes_rmb",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "active_follower_share",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "age_share",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "device_brand_share_examples",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "follower_change_amplitude",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "follower_increase",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "gender_share",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "interacting_follower_share",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "interest_share_examples",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "order_follower_share",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "reader_follower_share",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "top_cities",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "top_provinces",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "fan_analysis",
+          "field_name": "trend_period_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "author_nickname",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "author_profile_url",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "body",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "capture_date",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comment_author_identifiers_stored",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comment_samples",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comment_sort_or_pagination_seen",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comments_total_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "component_click_rate",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "content_type",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "hashtags",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "location_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "media_downloaded",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "mentions",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "metrics",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "published_at_pgy_display",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "published_at_xhs_display",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "reply_expand_clicked",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "source",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "title",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "video_duration_displayed",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        }
+      ],
+      "failure_records": [],
+      "notes": [
+        "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+        "没有明确字段观察状态的记录不会被推定为页面未展示。",
+        "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。"
+      ]
+    },
+    {
+      "batch_id": "hist-3098318f510146dce83efc71",
+      "source": "historical:xhs_public_access_probe",
+      "status": "completed",
+      "task_status": "completed",
+      "started_at": "2026-11-20T19:48:42+08:00",
+      "completed_at": "2026-11-20T19:48:42+08:00",
+      "elapsed_seconds": 0.0,
+      "counts": {
+        "records": 0,
+        "records_by_type": {},
+        "creators": 1,
+        "notes": 1,
+        "comments": 1,
+        "field_observations": 6,
+        "duplicate_records": 0,
+        "duplicate_comments": 0,
+        "failures": 0
+      },
+      "metrics": {
+        "stored_values": 0,
+        "raw_values": 0,
+        "parsed_values": 0,
+        "parse_success_pct": null
+      },
+      "field_coverage": [
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "comment_level",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "comment_text",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "displayed_time",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "is_pinned",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "like_count_raw",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "reply_count_raw",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        }
+      ],
+      "failure_records": [],
+      "notes": [
+        "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+        "没有明确字段观察状态的记录不会被推定为页面未展示。",
+        "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。"
+      ]
+    },
+    {
+      "batch_id": "R42-20261120T215215+0800",
+      "source": "xiaohongshu",
+      "status": "completed",
+      "task_status": "completed",
+      "started_at": "2026-11-20T21:52:15+08:00",
+      "completed_at": "2026-11-20T21:53:04+08:00",
+      "elapsed_seconds": 49.0,
+      "counts": {
+        "records": 0,
+        "records_by_type": {},
+        "creators": 3,
+        "notes": 3,
+        "comments": 29,
+        "field_observations": 174,
+        "duplicate_records": 0,
+        "duplicate_comments": 0,
+        "failures": 0
+      },
+      "metrics": {
+        "stored_values": 0,
+        "raw_values": 0,
+        "parsed_values": 0,
+        "parse_success_pct": null
+      },
+      "field_coverage": [
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "comment_level",
+          "states": {
+            "captured": 29
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 29,
+          "captured_records": 29,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "comment_text",
+          "states": {
+            "captured": 29
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 29,
+          "captured_records": 29,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "displayed_time",
+          "states": {
+            "captured": 29
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 29,
+          "captured_records": 29,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "is_pinned",
+          "states": {
+            "captured": 29
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 29,
+          "captured_records": 29,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "like_count_raw",
+          "states": {
+            "not_displayed": 16,
+            "captured": 13
+          },
+          "normalized_count": 8,
+          "parse_success_count": 8,
+          "expected_records": 29,
+          "captured_records": 13,
+          "coverage_pct": 44.8
+        },
+        {
+          "record_type": "comment_snapshot",
+          "field_name": "reply_count_raw",
+          "states": {
+            "captured": 24,
+            "not_displayed": 5
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 29,
+          "captured_records": 24,
+          "coverage_pct": 82.8
+        }
+      ],
+      "failure_records": [],
+      "notes": [
+        "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+        "没有明确字段观察状态的记录不会被推定为页面未展示。",
+        "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。"
+      ]
+    },
+    {
+      "batch_id": "hist-e8eac38e7154f6a09aef0005",
+      "source": "historical:xhs_public_access_probe",
+      "status": "completed",
+      "task_status": "completed",
+      "started_at": "2026-11-21T01:34:11+08:00",
+      "completed_at": "2026-11-21T01:34:11+08:00",
+      "elapsed_seconds": 0.0,
+      "counts": {
+        "records": 7,
+        "records_by_type": {
+          "note_detail": 7
+        },
+        "creators": 6,
+        "notes": 6,
+        "comments": 0,
+        "field_observations": 158,
+        "duplicate_records": 0,
+        "duplicate_comments": 0,
+        "failures": 0
+      },
+      "metrics": {
+        "stored_values": 28,
+        "raw_values": 21,
+        "parsed_values": 21,
+        "parse_success_pct": 100.0
+      },
+      "field_coverage": [
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_file",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "_source_row",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "body_text",
+          "states": {
+            "captured": 3,
+            "not_displayed": 3
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 3,
+          "coverage_pct": 50.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "capture_ordinal",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 1,
+          "coverage_pct": 16.7
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "capture_scope",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 1,
+          "coverage_pct": 16.7
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "captures",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comment_area_total_raw",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "comment_samples_saved",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "creator_name",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "hashtags",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "media_load_status",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "metrics",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_id",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_type",
+          "states": {
+            "captured": 5,
+            "not_displayed": 1
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 5,
+          "coverage_pct": 83.3
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "note_type_evidence",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "page_title",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "pgy_reference",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "publish_time_display_raw",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "query_values_retained",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "share_url_base",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "source_link_obtained_by",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "source_link_query_keys",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "source_link_query_present",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "note_detail",
+          "field_name": "title",
+          "states": {
+            "captured": 6
+          },
+          "normalized_count": 0,
+          "parse_success_count": 0,
+          "expected_records": 6,
+          "captured_records": 6,
+          "coverage_pct": 100.0
+        }
+      ],
+      "failure_records": [],
+      "notes": [
+        "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+        "没有明确字段观察状态的记录不会被推定为页面未展示。",
+        "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。"
+      ]
+    },
+    {
+      "batch_id": "a0054612a0c4447eaadd6a55f6841a36",
+      "source": "蒲公英与小红书公开可见页面",
+      "status": "stopped",
+      "task_status": "stopped",
+      "started_at": "2026-11-21T04:42:02+08:00",
+      "completed_at": "2026-11-21T05:00:17+08:00",
+      "elapsed_seconds": 1095.0,
+      "counts": {
+        "records": 0,
+        "records_by_type": {},
+        "creators": 0,
+        "notes": 0,
+        "comments": 0,
+        "field_observations": 0,
+        "duplicate_records": 0,
+        "duplicate_comments": 0,
+        "failures": 4
+      },
+      "metrics": {
+        "stored_values": 0,
+        "raw_values": 0,
+        "parsed_values": 0,
+        "parse_success_pct": null
+      },
+      "field_coverage": [],
+      "failure_records": [
+        {
+          "creator_index": 1,
+          "note_index": 0,
+          "reason": "打开创作者详情：点击创作者头像、链接或列表项失败"
+        },
+        {
+          "creator_index": 1,
+          "note_index": 0,
+          "reason": "打开创作者详情：创作者行可见点击未成功（头像容器:TimeoutError、首个可见单元格:TimeoutError、创作者行:TimeoutError）"
+        },
+        {
+          "creator_index": 1,
+          "note_index": 0,
+          "reason": "打开创作者详情：创作者行可见点击未成功（头像容器:TimeoutError[target_summary_unavailable]、首个可见单元格:TimeoutError[td.d-table__cell--fixed-left.d-table-cell--fixed-left-last:330x145:auto/visible:hit=div.d-mod"
+        },
+        {
+          "creator_index": 1,
+          "note_index": 0,
+          "reason": "打开创作者详情：创作者行可见点击未成功（头像容器:TimeoutError[target_summary_unavailable]、首个可见单元格:TimeoutError[td.d-table__cell--fixed-left.d-table-cell--fixed-left-last:330x145:auto/visible:hit=div.d-mod"
+        }
+      ],
+      "notes": [
+        "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+        "没有明确字段观察状态的记录不会被推定为页面未展示。",
+        "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。"
+      ]
+    },
+    {
+      "batch_id": "182dc9a1e5314d1b8fd3644560fd0bc1",
+      "source": "蒲公英当前可见页面",
+      "status": "completed",
+      "task_status": "completed",
+      "started_at": "2026-11-21T04:46:10+08:00",
+      "completed_at": "2026-11-21T04:46:10+08:00",
+      "elapsed_seconds": 0.0,
+      "counts": {
+        "records": 1,
+        "records_by_type": {
+          "blogger_list_sample": 1
+        },
+        "creators": 1,
+        "notes": 0,
+        "comments": 0,
+        "field_observations": 4,
+        "duplicate_records": 0,
+        "duplicate_comments": 0,
+        "failures": 0
+      },
+      "metrics": {
+        "stored_values": 4,
+        "raw_values": 4,
+        "parsed_values": 4,
+        "parse_success_pct": 100.0
+      },
+      "field_coverage": [
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "互动中位数（日常）",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "全部报价",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "粉丝数",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        },
+        {
+          "record_type": "blogger_list_sample",
+          "field_name": "阅读中位数（日常）",
+          "states": {
+            "captured": 1
+          },
+          "normalized_count": 1,
+          "parse_success_count": 1,
+          "expected_records": 1,
+          "captured_records": 1,
+          "coverage_pct": 100.0
+        }
+      ],
+      "failure_records": [],
+      "notes": [
+        "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
+        "没有明确字段观察状态的记录不会被推定为页面未展示。",
+        "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。"
+      ]
+    }
+  ],
+  "limits": [
+    "field_states 按批次、对象和字段去重统计；原始字段观察行数另列，重复尝试可能使原始行数更高。",
+    "not_displayed 表示解析器明确检查该字段但页面未提供非空值。",
+    "旧字段未建采集状态档案时，缺失值不被推断成 0 或页面未展示。",
+    "评论数仅是实际保存的可见评论，不表示平台全量评论。"
+  ]
+}
