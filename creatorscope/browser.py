@@ -26,6 +26,11 @@ COMMENT_FIELDS = (
     "comment_text", "displayed_time", "like_count_raw", "reply_count_raw",
     "comment_level", "is_pinned",
 )
+CREATOR_LIST_FIELDS = (
+    "创作者名称", "平台公开ID", "粉丝数", "阅读中位数（日常）",
+    "互动中位数（日常）", "全部报价", "合作报价", "图文报价", "视频报价",
+    "内容领域", "地域", "人设", "标签",
+)
 
 
 class CaptureError(Exception):
@@ -206,9 +211,7 @@ class PgyVisibleBrowser:
         lines = [line.strip() for line in body.splitlines() if line.strip()]
         records: list[dict[str, Any]] = []
         if parsed.path.endswith("/solar/pre-trade/note/kol"):
-            record = self._capture_list_row()
-            if record:
-                records.append(record)
+            records.extend(self._capture_list_rows(self._page))
         else:
             profile = self._profile_record(lines)
             if profile:
@@ -235,23 +238,142 @@ class PgyVisibleBrowser:
             "records": records,
         }
 
-    def _capture_list_row(self) -> dict[str, Any] | None:
+    def _capture_list_rows(self, page) -> list[dict[str, Any]]:
+        """Read visible creator rows by their rendered column headers."""
         try:
-            rows = self._page.get_by_role("row").all()
-            for row in rows[1:]:
+            headers = page.get_by_role("columnheader").all_inner_texts()
+            if not headers:
+                headers = page.locator("thead th").all_inner_texts()
+            headers = [str(header or "").strip() for header in headers]
+            if not headers:
+                raise CaptureError("未找到创作者列表表头；为避免列错位，已停止读取")
+            rows = page.get_by_role("row").all()
+            parsed: list[dict[str, Any]] = []
+            for visible_row_index, row in enumerate(rows):
                 cells = row.get_by_role("cell").all_inner_texts()
-                if len(cells) >= 6:
-                    fields = {
-                        "粉丝数": cells[2].strip(),
-                        "阅读中位数（日常）": cells[3].strip(),
-                        "互动中位数（日常）": cells[4].strip(),
-                        "全部报价": cells[5].strip(),
-                    }
-                    if any(fields.values()):
-                        return {"type": "blogger_list_sample", "fields": fields}
+                if not cells:
+                    cells = row.get_by_role("gridcell").all_inner_texts()
+                if not cells:
+                    cells = row.locator("td").all_inner_texts()
+                if not cells:
+                    continue
+                metadata = row.evaluate(
+                    """el => ({
+                      links: Array.from(el.querySelectorAll('a[href]')).map(a => ({
+                        text: (a.innerText || a.textContent || '').trim(), href: a.href
+                      })),
+                      rowKey: el.getAttribute('data-row-key') || el.getAttribute('data-key') || ''
+                    })"""
+                )
+                record = self._parse_creator_list_row(headers, cells, metadata)
+                if record:
+                    record["visible_row_index"] = visible_row_index
+                    parsed.append(record)
+            return parsed
+        except CaptureError:
+            raise
         except Exception:
+            raise CaptureError("读取创作者列表失败；请确认列表已加载后重试") from None
+
+    @staticmethod
+    def _creator_list_field_for_header(header: str) -> str | None:
+        normalized = re.sub(r"[\s\u3000:：()（）·/_-]+", "", str(header)).casefold()
+        if not normalized:
             return None
+        if normalized in {"博主信息", "达人信息", "创作者信息", "博主名称", "达人名称", "创作者名称"}:
+            return "creator_display"
+        if any(token in normalized for token in ("小红书号", "平台公开id", "公开平台id", "用户id", "达人id", "博主id", "创作者id", "账号id", "uid")):
+            return "平台公开ID"
+        if "粉丝" in normalized and any(token in normalized for token in ("数", "量", "人数")):
+            return "粉丝数"
+        if "阅读" in normalized and "中位数" in normalized:
+            return "阅读中位数（日常）" if "日常" in normalized else "阅读中位数"
+        if "互动" in normalized and "中位数" in normalized:
+            return "互动中位数（日常）" if "日常" in normalized else "互动中位数"
+        if "图文" in normalized and any(token in normalized for token in ("报价", "一口价")):
+            return "图文报价"
+        if "视频" in normalized and any(token in normalized for token in ("报价", "一口价")):
+            return "视频报价"
+        if "全部报价" in normalized:
+            return "全部报价"
+        if "报价" in normalized:
+            return "合作报价"
+        if any(token in normalized for token in ("内容领域", "内容类目", "博主类目", "领域")):
+            return "内容领域"
+        if any(token in normalized for token in ("地域", "地区", "所在地")):
+            return "地域"
+        if "人设" in normalized:
+            return "人设"
+        if "标签" in normalized:
+            return "标签"
         return None
+
+    @staticmethod
+    def _parse_creator_list_row(
+        headers: list[str], cells: list[str], metadata: dict[str, Any] | None = None
+    ) -> dict[str, Any] | None:
+        """Map a rendered creator row without depending on table column order."""
+        fields: dict[str, Any] = {}
+        metadata = metadata if isinstance(metadata, dict) else {}
+        for header, raw_value in zip(headers, cells):
+            value = re.sub(r"\s+", " ", str(raw_value or "")).strip()
+            field_name = PgyVisibleBrowser._creator_list_field_for_header(header)
+            if not value or not field_name:
+                continue
+            if field_name == "creator_display":
+                display_lines = [line.strip() for line in str(raw_value).splitlines() if line.strip()]
+                if display_lines:
+                    fields.setdefault("创作者名称", display_lines[0])
+                    fields["博主信息原始显示"] = str(raw_value).strip()
+                    for line in display_lines:
+                        id_match = re.match(
+                            r"^(?:小红书号|公开ID|平台公开ID|公开平台ID|平台ID|用户ID|UID)\s*[:：]\s*(\S+)$",
+                            line,
+                            flags=re.IGNORECASE,
+                        )
+                        if id_match:
+                            fields.setdefault("平台公开ID", id_match.group(1))
+            else:
+                fields[field_name] = value
+        if not fields:
+            return None
+
+        detail_href = ""
+        for link in metadata.get("links", []):
+            if not isinstance(link, dict):
+                continue
+            parsed_link = urlparse(str(link.get("href") or ""))
+            if parsed_link.hostname == PGY_HOST and "/solar/pre-trade/blogger-detail/" in parsed_link.path:
+                detail_href = parsed_link.path
+                break
+        creator_ref = f"pgy:{detail_href}" if detail_href else ""
+        if not creator_ref and fields.get("平台公开ID"):
+            creator_ref = f"pgy:id:{fields['平台公开ID']}"
+        if not creator_ref and metadata.get("rowKey"):
+            creator_ref = f"pgy:row:{metadata['rowKey']}"
+        if not creator_ref and fields.get("创作者名称"):
+            creator_ref = f"pgy:name:{fields['创作者名称']}"
+
+        field_statuses = {
+            name: "captured" if fields.get(name) else "not_displayed"
+            for name in CREATOR_LIST_FIELDS
+        }
+        record = {
+            "type": "blogger_list_sample",
+            "source": "蒲公英创作者列表",
+            "fields": fields,
+            "field_statuses": field_statuses,
+        }
+        if creator_ref:
+            record["creator_ref"] = creator_ref
+        if detail_href:
+            record["creator_detail_path"] = detail_href
+        return record
+
+    def _capture_list_row(self) -> dict[str, Any] | None:
+        """Compatibility helper for callers expecting one visible list row."""
+        rows = self._capture_list_rows(self._page)
+        return rows[0] if rows else None
 
     @staticmethod
     def _value_after(lines: list[str], label: str, start: int = 0) -> str | None:
@@ -502,6 +624,10 @@ class PgyVisibleBrowser:
             page.wait_for_timeout(500)
             total_rows = row_locator.count()
         creator_limit = max(1, min(10, int(settings.get("creator_count", 1))))
+        creator_list_records = self._capture_list_rows(page)
+        if not creator_list_records:
+            raise CaptureError("当前列表没有可按表头识别的创作者记录；未启动批量采集")
+        creator_limit = min(creator_limit, len(creator_list_records))
         creator_start = max(0, min(creator_limit, int(checkpoint.get("creator_index", 0))))
         note_start = max(0, int(checkpoint.get("note_index", 0)))
         comment_total = existing_comment_count
@@ -509,11 +635,11 @@ class PgyVisibleBrowser:
         creators_visited = 0
         notes_visited = 0
         failures = 0
-        if total_rows <= 1:
+        if total_rows <= 1 or creator_limit <= 0:
             self._check_page_blocker(page, pgy=True, force=True)
             raise PauseForUser(self._empty_list_message(page))
 
-        target_end = min(total_rows, creator_limit + 1)
+        target_end = creator_limit
         retry_targets = {
             (int(item.get("creator_index", 0)), int(item.get("note_index", 0)))
             for item in settings.get("retry_notes", [])
@@ -532,13 +658,25 @@ class PgyVisibleBrowser:
             opened_new_page = False
             creator_stage = "打开创作者详情"
             try:
-                detail_page, opened_new_page = self._open_creator_row(page, creator_index + 1)
+                list_record = creator_list_records[creator_index]
+                list_row_index = int(list_record.get("visible_row_index", creator_index + 1))
+                detail_page, opened_new_page = self._open_creator_row(
+                    page, list_row_index, expected_record=list_record
+                )
                 creator_stage = "确认创作者详情页"
                 self._check_page_blocker(detail_page, pgy=True)
                 route = urlparse(detail_page.url)
                 if route.hostname != PGY_HOST or "/solar/pre-trade/blogger-detail/" not in route.path:
                     raise CaptureError("列表行未打开可识别的蒲公英创作者详情页")
                 creator_ref = f"pgy:{route.path}"
+                list_record["creator_ref"] = creator_ref
+                list_record.pop("visible_row_index", None)
+                save_records(
+                    {
+                        "source": "蒲公英创作者列表",
+                        "records": [list_record],
+                    }
+                )
                 creator_stage = "读取创作者资料和指标"
                 if settings.get("collect_creator", True):
                     creator_records = self._capture_creator_records(detail_page, creator_ref)
@@ -741,9 +879,21 @@ class PgyVisibleBrowser:
             ),
         }
 
-    def _open_creator_row(self, page, row_index: int):
+    def _open_creator_row(self, page, row_index: int, *, expected_record: dict[str, Any] | None = None):
         before_pages = set(self._context.pages)
         row = page.get_by_role("row").nth(row_index)
+        if expected_record:
+            expected_fields = expected_record.get("fields", {})
+            expected_id = str(expected_fields.get("平台公开ID") or "").strip()
+            expected_name = str(expected_fields.get("创作者名称") or "").strip()
+            try:
+                row_text = re.sub(r"\s+", " ", row.inner_text(timeout=5000)).strip()
+            except Exception:
+                raise CaptureError("无法复核目标创作者列表行；未执行点击") from None
+            if expected_id and expected_id not in row_text:
+                raise CaptureError("目标创作者公开 ID 与列表行不匹配；为避免串位已停止")
+            if expected_name and expected_name not in row_text:
+                raise CaptureError("目标创作者名称与列表行不匹配；为避免串位已停止")
         links = row.locator("a:visible, [role='link']:visible")
         images = row.locator("img:visible")
         avatars = row.locator("[class*='avatar']:visible")

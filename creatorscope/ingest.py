@@ -78,6 +78,10 @@ EXPORT_META_KEYS = {
     "local_creator_id", "local_note_id",
 }
 RAW_ID_KEYS = {"creator_ref", "creator_key", "creator_id", "note_ref", "note_id"}
+NON_METRIC_FIELD_KEYS = {
+    "creator_name", "platform_creator_id", "creator_id", "nickname",
+    "创作者名称", "平台公开ID", "公开平台ID", "公开ID", "博主信息原始显示",
+}
 
 
 def normalize_value(key: str, raw_value: Any) -> tuple[float | None, str, str]:
@@ -371,7 +375,7 @@ def ingest_payload(
             )
             platform_creator_id = _first_present(
                 clean_fields,
-                ("platform_creator_id", "creator_id", "blogger_id", "达人ID", "博主ID", "创作者ID", "用户ID", "UID", "小红书号"),
+                ("platform_creator_id", "creator_id", "blogger_id", "达人ID", "博主ID", "创作者ID", "用户ID", "UID", "小红书号", "平台公开ID", "公开平台ID", "公开ID"),
             )
             if creator_id_override:
                 creator_row = conn.execute(
@@ -502,7 +506,7 @@ def ingest_payload(
             inserted_records += 1
             period = _period_for(item)
             for key, value in clean_fields.items():
-                if key in RAW_ID_KEYS or isinstance(value, (dict, list)):
+                if key in RAW_ID_KEYS or key in NON_METRIC_FIELD_KEYS or isinstance(value, (dict, list)):
                     continue
                 numeric_value, unit, status = normalize_value(key, value)
                 raw_value = None if value is None else str(value)

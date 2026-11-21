@@ -10,10 +10,57 @@ from pathlib import Path
 
 from flask import Flask
 
+from creatorscope.browser import PgyVisibleBrowser
 from creatorscope.db import initialize_database
 from creatorscope.ingest import ingest_comment_snapshots, ingest_payload
 from research.r4_3_comment_analysis.comment_analysis import fetch_comments
 from research.r4_3_comment_analysis.comments_web import comment_analysis_bp
+
+
+class _TextLocator:
+    def __init__(self, values=(), items=()):
+        self.values = list(values)
+        self.items = list(items)
+
+    def all_inner_texts(self):
+        return self.values
+
+    def all(self):
+        return self.items
+
+    def count(self):
+        return len(self.items)
+
+
+class _CreatorRow:
+    def __init__(self, cells=(), metadata=None):
+        self.cells = list(cells)
+        self.metadata = metadata or {}
+
+    def get_by_role(self, role):
+        return _TextLocator(self.cells if role in {"cell", "gridcell"} else ())
+
+    def locator(self, selector):
+        return _TextLocator()
+
+    def evaluate(self, _script):
+        return self.metadata
+
+
+class _CreatorListPage:
+    def __init__(self, headers, rows):
+        self.headers = headers
+        self.rows = rows
+
+    def get_by_role(self, role):
+        if role == "columnheader":
+            return _TextLocator(self.headers)
+        if role == "row":
+            return _TextLocator(items=self.rows)
+        return _TextLocator()
+
+    def locator(self, _selector):
+        return _TextLocator()
 
 
 class RawDataPreservationTests(unittest.TestCase):
@@ -37,6 +84,110 @@ class RawDataPreservationTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
+
+    def test_creator_list_header_mapping_preserves_name_id_and_raw_metrics(self) -> None:
+        headers = [
+            "操作",
+            "阅读中位数（日常）",
+            "博主信息",
+            "粉丝数",
+            "互动中位数（日常）",
+            "全部报价",
+        ]
+        cells = [
+            "查看",
+            "820",
+            "创作者甲\n小红书号：user-90210",
+            "5万",
+            "300",
+            "￥3,000",
+        ]
+        record = PgyVisibleBrowser._parse_creator_list_row(
+            headers,
+            cells,
+            {
+                "links": [{
+                    "text": "创作者甲",
+                    "href": "https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/detail-90210",
+                }],
+                "rowKey": "row-90210",
+            },
+        )
+        self.assertIsNotNone(record)
+        assert record is not None
+        self.assertEqual(record["fields"]["创作者名称"], "创作者甲")
+        self.assertEqual(record["fields"]["平台公开ID"], "user-90210")
+        self.assertEqual(record["fields"]["粉丝数"], "5万")
+        self.assertEqual(record["fields"]["全部报价"], "￥3,000")
+        self.assertEqual(record["creator_ref"], "pgy:/solar/pre-trade/blogger-detail/detail-90210")
+
+        result = ingest_payload(
+            self.db_path,
+            "task-raw",
+            {
+                "source": "蒲公英创作者列表",
+                "captured_at_local": "2026-11-21T10:05:00",
+                "records": [record],
+            },
+            batch_id_override="batch-raw",
+        )
+        self.assertEqual(result["record_count"], 1)
+
+        conn = sqlite3.connect(self.db_path)
+        try:
+            creator = conn.execute(
+                "SELECT creator_name, platform_creator_id FROM creators WHERE platform_creator_id=?",
+                ("user-90210",),
+            ).fetchone()
+            self.assertEqual(creator, ("创作者甲", "user-90210"))
+            fields_json = conn.execute(
+                "SELECT fields_json FROM records WHERE batch_id=?",
+                ("batch-raw",),
+            ).fetchone()[0]
+            saved_fields = json.loads(fields_json)
+            self.assertEqual(saved_fields["博主信息原始显示"], "创作者甲\n小红书号：user-90210")
+            metric_keys = {
+                row[0]
+                for row in conn.execute(
+                    "SELECT metric_key FROM metric_values WHERE record_id=(SELECT record_id FROM records WHERE batch_id=?)",
+                    ("batch-raw",),
+                )
+            }
+            self.assertIn("粉丝数", metric_keys)
+            self.assertNotIn("创作者名称", metric_keys)
+            self.assertNotIn("平台公开ID", metric_keys)
+            observations = {
+                row[0]: row[1]
+                for row in conn.execute(
+                    "SELECT field_name, raw_value FROM collection_field_observations WHERE batch_id=?",
+                    ("batch-raw",),
+                )
+            }
+            self.assertEqual(observations["创作者名称"], "创作者甲")
+            self.assertEqual(observations["平台公开ID"], "user-90210")
+        finally:
+            conn.close()
+
+    def test_creator_list_dom_rows_keep_their_visible_row_positions(self) -> None:
+        page = _CreatorListPage(
+            ["博主信息", "粉丝数", "全部报价"],
+            [
+                _CreatorRow(),  # rendered header row
+                _CreatorRow(
+                    ["创作者甲\n小红书号：user-1", "5万", "￥3,000"],
+                    {"links": [], "rowKey": "row-1"},
+                ),
+                _CreatorRow(
+                    ["创作者乙\n小红书号：user-2", "8万", "￥4,000"],
+                    {"links": [], "rowKey": "row-2"},
+                ),
+            ],
+        )
+        records = PgyVisibleBrowser.__new__(PgyVisibleBrowser)._capture_list_rows(page)
+        self.assertEqual(len(records), 2)
+        self.assertEqual([item["visible_row_index"] for item in records], [1, 2])
+        self.assertEqual([item["fields"]["创作者名称"] for item in records], ["创作者甲", "创作者乙"])
+        self.assertEqual([item["fields"]["平台公开ID"] for item in records], ["user-1", "user-2"])
 
     def test_collection_and_comment_ingest_keep_source_values_and_exclude_auth_secrets(self) -> None:
         note_url = "https://www.xiaohongshu.com/explore/public-note-id?source=course"
