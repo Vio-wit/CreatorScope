@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import tempfile
 import hashlib
+import sqlite3
 import unittest
 from pathlib import Path
 
 from creatorscope import create_app
-from creatorscope.db import connection, initialize_database, record_field_statuses
+from creatorscope.db import connection, initialize_database, record_field_statuses, schema_version_readonly
 from creatorscope.ingest import ingest_payload
 
 
@@ -148,6 +149,89 @@ class V13RuntimeTests(unittest.TestCase):
         )
         self.assertEqual(body_coverage["expected_records"], 3)
         self.assertEqual(body_coverage["states"], {"access_denied": 1, "not_loaded": 1})
+
+    def test_live_startup_verifies_backup_before_migrating_existing_database(self) -> None:
+        old_db = self.root / "existing-v2.sqlite3"
+        backup_dir = self.root / "backups"
+        initialize_database(old_db)
+        with connection(old_db) as conn:
+            conn.execute(
+                "INSERT INTO tasks(task_id,task_type,source,status,created_at) VALUES('keep-task','import','test','completed','2026-11-21T10:00:00+08:00')"
+            )
+            conn.execute("DROP TABLE collection_field_observations")
+            conn.execute("DELETE FROM schema_migrations WHERE version=3")
+            conn.execute(
+                "INSERT INTO schema_migrations(version,applied_at) VALUES(2,'2026-11-21T10:00:00+08:00')"
+            )
+        self.assertEqual(schema_version_readonly(old_db), 2)
+
+        migration_app = create_app(
+            {
+                "DATABASE_PATH": old_db,
+                "MIGRATION_BACKUP_DIR": backup_dir,
+                "BASELINE_PATH": self.root / "missing-baseline.json",
+                "AI_REPORTS_PATH": self.root / "ai-reports",
+                "NEWS_DATA_PATH": self.root / "news.jsonl",
+                "DEMO_MODE": False,
+                "TESTING": True,
+            }
+        )
+        try:
+            self.assertEqual(schema_version_readonly(old_db), 3)
+            backups = list(backup_dir.glob("existing-v2_pre_schema_v3_*.sqlite3"))
+            self.assertEqual(len(backups), 1)
+            self.assertEqual(schema_version_readonly(backups[0]), 2)
+            backup = sqlite3.connect(f"{backups[0].resolve().as_uri()}?mode=ro", uri=True)
+            try:
+                self.assertEqual(backup.execute("SELECT COUNT(*) FROM tasks WHERE task_id='keep-task'").fetchone()[0], 1)
+                self.assertEqual(
+                    backup.execute(
+                        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='collection_field_observations'"
+                    ).fetchone()[0],
+                    0,
+                )
+                self.assertEqual(backup.execute("PRAGMA integrity_check").fetchone()[0], "ok")
+            finally:
+                backup.close()
+        finally:
+            migration_app.extensions["creatorscope_tasks"].shutdown()
+
+    def test_live_startup_stops_without_mutating_when_migration_backup_fails(self) -> None:
+        old_db = self.root / "unprotected-v2.sqlite3"
+        blocked_backup_path = self.root / "not-a-backup-directory"
+        blocked_backup_path.write_text("preserve this file", encoding="utf-8")
+        initialize_database(old_db)
+        with connection(old_db) as conn:
+            conn.execute("DROP TABLE collection_field_observations")
+            conn.execute("DELETE FROM schema_migrations WHERE version=3")
+            conn.execute(
+                "INSERT INTO schema_migrations(version,applied_at) VALUES(2,'2026-11-21T10:00:00+08:00')"
+            )
+
+        with self.assertRaisesRegex(sqlite3.DatabaseError, "已阻止启动和迁移"):
+            create_app(
+                {
+                    "DATABASE_PATH": old_db,
+                    "MIGRATION_BACKUP_DIR": blocked_backup_path,
+                    "BASELINE_PATH": self.root / "missing-baseline.json",
+                    "AI_REPORTS_PATH": self.root / "ai-reports",
+                    "NEWS_DATA_PATH": self.root / "news.jsonl",
+                    "DEMO_MODE": False,
+                    "TESTING": True,
+                }
+            )
+        self.assertEqual(schema_version_readonly(old_db), 2)
+        self.assertEqual(blocked_backup_path.read_text(encoding="utf-8"), "preserve this file")
+        database = sqlite3.connect(f"{old_db.resolve().as_uri()}?mode=ro", uri=True)
+        try:
+            self.assertEqual(
+                database.execute(
+                    "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='collection_field_observations'"
+                ).fetchone()[0],
+                0,
+            )
+        finally:
+            database.close()
 
 
 if __name__ == "__main__":

@@ -5,6 +5,8 @@ import csv
 import io
 import json
 import math
+import sqlite3
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -13,12 +15,13 @@ from flask import Flask, jsonify, make_response, render_template, request
 from .analytics import analytics_data, compare_creators, compare_notes, creator_library, dashboard_data, note_compare_options, notes_data, overview_data, wordcloud_png
 from .ai import AIServiceError, build_preview, generated_at, list_analysis_reports, load_analysis_report, provider_status, run_analysis, save_analysis_report, test_connection
 from .browser import PgyVisibleBrowser
-from .db import connection, initialize_database, verify_database_readonly
+from .db import SCHEMA_VERSION, connection, initialize_database, schema_version_readonly, verify_database_readonly
 from .domain import field_dictionary
 from .ingest import MAX_UPLOAD_BYTES
 from .news import NEWS_FEEDS, append_news_items, correlate_news_notes, fetch_feed, load_news_items
 from .quality import batch_quality_report
 from .tasks import TaskManager
+from .migrations import backup_database
 from research.r4_3_comment_analysis.comments_web import comment_analysis_bp
 
 
@@ -45,6 +48,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         ),
         AI_REPORTS_PATH=instance_dir / "ai_reports",
         NEWS_DATA_PATH=instance_dir / "news_items.jsonl",
+        MIGRATION_BACKUP_DIR=project_root / "_backup",
         BASELINE_PATH=project_root / "data" / "baseline" / "pgy_live_sample_2026-11-19.json",
         MAX_CONTENT_LENGTH=MAX_UPLOAD_BYTES + 64 * 1024,
         DEMO_MODE=os.environ.get("CREATORSCOPE_DEMO_MODE", "0").strip().casefold() in {"1", "true", "yes"},
@@ -61,6 +65,23 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     if app.config["DEMO_MODE"]:
         verify_database_readonly(app.config["DATABASE_PATH"])
     else:
+        database_path = Path(app.config["DATABASE_PATH"])
+        current_version = schema_version_readonly(database_path)
+        if database_path.is_file() and current_version < SCHEMA_VERSION:
+            backup_dir = Path(app.config["MIGRATION_BACKUP_DIR"])
+            stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            backup_path = backup_dir / f"{database_path.stem}_pre_schema_v{SCHEMA_VERSION}_{stamp}.sqlite3"
+            try:
+                backup_result = backup_database(database_path, backup_path)
+            except Exception as exc:
+                raise sqlite3.DatabaseError(
+                    f"数据库 schema v{current_version} 迁移前备份失败；已阻止启动和迁移"
+                ) from exc
+            if backup_result.get("status") not in {"created_and_verified", "already_verified"}:
+                raise sqlite3.DatabaseError(
+                    f"数据库 schema v{current_version} 迁移前未能创建并验证备份；已阻止启动和迁移"
+                )
+            print(f"Verified SQLite migration backup: {backup_result['backup']}")
         initialize_database(app.config["DATABASE_PATH"])
 
     local_data = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
