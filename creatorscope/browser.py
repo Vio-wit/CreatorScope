@@ -58,6 +58,27 @@ class PauseForUser(Exception):
     """A visible page needs a normal user action before collection can continue."""
 
 
+class ManualDismissRequired(PauseForUser):
+    """A dismissible page overlay needs a user close action before auto-resume."""
+
+    def __init__(
+        self,
+        message: str,
+        page,
+        *,
+        kind: str,
+        pgy: bool,
+        selector: str | None = None,
+        prompt_text: str | None = None,
+    ):
+        super().__init__(message)
+        self.page = page
+        self.kind = kind
+        self.pgy = pgy
+        self.selector = selector
+        self.prompt_text = prompt_text
+
+
 class StopCollection(Exception):
     pass
 
@@ -743,6 +764,66 @@ class PgyVisibleBrowser:
             timeout=None,
         )
 
+    def wait_for_manual_dismissal(
+        self,
+        requirement: ManualDismissRequired,
+        *,
+        check_control: Callable[[], None],
+    ) -> None:
+        """Wait on the browser thread until the user closes the identified overlay."""
+        self._call(
+            lambda: self._wait_for_manual_dismissal(requirement, check_control=check_control),
+            timeout=None,
+        )
+
+    def _wait_for_manual_dismissal(
+        self,
+        requirement: ManualDismissRequired,
+        *,
+        check_control: Callable[[], None],
+    ) -> None:
+        page = requirement.page
+        while True:
+            check_control()
+            if page is None or page.is_closed():
+                raise PauseForUser("等待关闭弹窗期间可见浏览器已关闭；任务已暂停，请重新打开浏览器后恢复")
+            self._check_page_blocker(page, pgy=requirement.pgy)
+            if not self._manual_dismissal_is_visible(requirement):
+                return
+            page.wait_for_timeout(500)
+
+    @staticmethod
+    def _manual_dismissal_is_visible(requirement: ManualDismissRequired) -> bool:
+        page = requirement.page
+        if requirement.kind == "phone_login":
+            selectors = (requirement.prompt_text or "手机号登录",)
+            try:
+                for label in selectors:
+                    locator = page.get_by_text(label, exact=True)
+                    if locator.count() and locator.first.is_visible():
+                        return True
+                return False
+            except Exception:
+                return True
+        if requirement.kind == "note_panel":
+            try:
+                locator = page.get_by_text("复制小红书笔记链接", exact=True)
+                return locator.count() > 0 and locator.first.is_visible()
+            except Exception:
+                return True
+        selector = requirement.selector or (
+            "[role='dialog']:visible, [aria-modal='true']:visible, "
+            "[class*='modal']:visible, [class*='overlay']:visible, [class*='mask']:visible"
+        )
+        try:
+            locator = page.locator(selector)
+            for index in range(min(locator.count(), 30)):
+                if locator.nth(index).is_visible():
+                    return True
+            return False
+        except Exception:
+            return True
+
     def _collect_visible(
         self,
         settings: dict[str, Any],
@@ -1174,8 +1255,13 @@ class PgyVisibleBrowser:
                 continue
             target_summary = self._safe_click_target_summary(target)
             if self._is_modal_overlay_interception(target_summary):
-                raise PauseForUser(
-                    "蒲公英列表被页面弹层遮挡；请在可见浏览器中确认并关闭后恢复任务"
+                self._check_page_blocker(page, pgy=True)
+                raise ManualDismissRequired(
+                    "蒲公英页面弹窗遮挡了采集区域，请在可见浏览器中手动关闭；关闭后将自动继续采集",
+                    page,
+                    kind="overlay",
+                    pgy=True,
+                    selector=target_summary.get("hitSelector"),
                 )
             try:
                 target.click(timeout=8000, no_wait_after=True)
@@ -1224,10 +1310,11 @@ class PgyVisibleBrowser:
                   const x=Math.round(r.left+r.width/2), y=Math.round(r.top+r.height/2);
                   const hit=document.elementFromPoint(x,y);
                   const compact=n=>n?`${n.tagName.toLowerCase()}.${String(n.className||'').trim().split(/\\s+/).slice(0,2).join('.')}`:'none';
+                  const selector=n=>n?`${n.tagName.toLowerCase()}${Array.from(n.classList||[]).slice(0,3).map(c=>'.'+CSS.escape(c)).join('')}`:'';
                   const style=getComputedStyle(el);
                   return {tag:compact(el), width:Math.round(r.width), height:Math.round(r.height),
                     pointer:style.pointerEvents, visibility:style.visibility,
-                    hit:compact(hit), containsHit:!!(hit&&el.contains(hit))};
+                    hit:compact(hit), hitSelector:selector(hit), containsHit:!!(hit&&el.contains(hit))};
                 }"""
             )
             info["summary"] = (
@@ -1767,10 +1854,12 @@ class PgyVisibleBrowser:
     def _close_phone_login_prompt(self, page) -> None:
         self._check_page_blocker(page, pgy=False)
         prompt = page.get_by_text("手机号登录", exact=True)
+        prompt_text = "手机号登录"
         visible_prompt = False
         try:
             visible_prompt = prompt.count() > 0 and prompt.first.is_visible()
             if not visible_prompt:
+                prompt_text = "登录"
                 login_label = page.get_by_text("登录", exact=True)
                 visible_prompt = login_label.count() > 0 and login_label.first.is_visible()
         except Exception:
@@ -1801,7 +1890,13 @@ class PgyVisibleBrowser:
                 except Exception:
                     continue
         if len(candidates) != 1:
-            raise PauseForUser("小红书显示手机号登录提示，但没有唯一明确的关闭按钮；请人工处理后恢复")
+            raise ManualDismissRequired(
+                "小红书显示手机号登录提示，请在可见浏览器中手动关闭；关闭后将自动继续采集",
+                page,
+                kind="phone_login",
+                pgy=False,
+                prompt_text=prompt_text,
+            )
         candidates[0].click(timeout=5000)
         page.wait_for_timeout(300)
         self._check_page_blocker(page, pgy=False)
@@ -1846,6 +1941,7 @@ class PgyVisibleBrowser:
     def _close_visible_note_panel(self, page) -> None:
         if page is None or page.is_closed():
             return
+        self._check_page_blocker(page, pgy=True)
         copy_control = page.get_by_text("复制小红书笔记链接", exact=True)
         if copy_control.count() == 0 or not copy_control.first.is_visible():
             return
@@ -1870,7 +1966,13 @@ class PgyVisibleBrowser:
                     return
                 except Exception:
                     continue
-        raise PauseForUser("无法唯一确认笔记详情面板的关闭按钮；任务已暂停等待人工处理")
+        self._check_page_blocker(page, pgy=True)
+        raise ManualDismissRequired(
+            "蒲公英笔记详情面板无法安全自动关闭，请在可见浏览器中手动关闭；关闭后将自动继续采集",
+            page,
+            kind="note_panel",
+            pgy=True,
+        )
 
     def close(self) -> dict[str, Any]:
         return self._call(self._close)
