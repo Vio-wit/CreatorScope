@@ -1,0 +1,153 @@
+{
+  "database_file": "creatorscope_unified_readonly_audit.sqlite3",
+  "database_sha256": "D5B65B9DD6C8E4FAB34797B5AEA870355448DC6FB92751A0C2149F6345100EF5",
+  "database_integrity": "ok",
+  "foreign_key_violations": 0,
+  "counts": {
+    "creators": 17,
+    "creator_raw_names": 14,
+    "creator_raw_platform_ids": 5,
+    "creator_legacy_alias_fields": 3,
+    "notes": 16,
+    "note_titles": 14,
+    "note_bodies": 11,
+    "note_topic_tags": 125,
+    "comments": 33,
+    "comment_length_samples": 33,
+    "comment_exact_like_samples": 8,
+    "comment_length_like_scatter_samples": 8,
+    "comment_tfidf_keywords": 12,
+    "wordcloud_tokens": {
+      "note_title": 76,
+      "note_body": 335,
+      "comments": 228
+    }
+  },
+  "sentiment": {
+    "comment_count": 33,
+    "sentiment_counts": {
+      "正向倾向": 12,
+      "中性 / 未命中词典": 20,
+      "负向倾向": 1,
+      "混合倾向": 0,
+      "未分类（空文本）": 0
+    },
+    "topic_counts": [
+      {
+        "label": "内容与推荐",
+        "count": 8
+      },
+      {
+        "label": "个人体验反馈",
+        "count": 5
+      },
+      {
+        "label": "产品效果与使用",
+        "count": 1
+      },
+      {
+        "label": "价格与购买决策",
+        "count": 1
+      }
+    ],
+    "scope_notice": "小样本探索：词典规则不能确定个人真实情绪，需人工抽样复核。",
+    "method": "jieba 分词 + 小型情感词典 + 前置否定词与程度副词规则 + 可解释主题关键词 + 按评论计算并聚合的 TF-IDF 关键词；词典匹配仅作为倾向线索。",
+    "tfidf_keywords": [
+      {
+        "word": "链接",
+        "score": 4.271515,
+        "document_frequency": 7,
+        "document_count": 33
+      },
+      {
+        "word": "哇塞",
+        "score": 3.833213,
+        "document_frequency": 1,
+        "document_count": 33
+      },
+      {
+        "word": "更新",
+        "score": 3.833213,
+        "document_frequency": 1,
+        "document_count": 33
+      },
+      {
+        "word": "美",
+        "score": 3.833213,
+        "document_frequency": 1,
+        "document_count": 33
+      },
+      {
+        "word": "姐姐",
+        "score": 3.244735,
+        "document_frequency": 3,
+        "document_count": 33
+      },
+      {
+        "word": "妹宝",
+        "score": 2.856457,
+        "document_frequency": 2,
+        "document_count": 33
+      },
+      {
+        "word": "衣服",
+        "score": 2.418141,
+        "document_frequency": 4,
+        "document_count": 33
+      },
+      {
+        "word": "两件",
+        "score": 2.399424,
+        "document_frequency": 2,
+        "document_count": 33
+      },
+      {
+        "word": "点点",
+        "score": 2.285165,
+        "document_frequency": 2,
+        "document_count": 33
+      },
+      {
+        "word": "吊带",
+        "score": 1.916607,
+        "document_frequency": 1,
+        "document_count": 33
+      },
+      {
+        "word": "好美",
+        "score": 1.916607,
+        "document_frequency": 1,
+        "document_count": 33
+      },
+      {
+        "word": "第一件",
+        "score": 1.916607,
+        "document_frequency": 1,
+        "document_count": 33
+      }
+    ]
+  },
+  "news": {
+    "items": 300,
+    "date_methods": {
+      "source_url_path_date": 300
+    },
+    "earliest_date": "2022-12-08",
+    "latest_date": "2022-12-14"
+  },
+  "images": [
+    "comment_exact_likes_histogram.png",
+    "comment_length_boxplot.png",
+    "comment_length_histogram.png",
+    "comment_length_likes_scatter.png",
+    "comment_sentiment_distribution.png",
+    "comment_tfidf_keywords.png",
+    "comment_wordcloud.png",
+    "creator_identity_coverage.png",
+    "news_archive_daily_counts.png",
+    "note_body_wordcloud.png",
+    "note_field_coverage.png",
+    "note_title_wordcloud.png",
+    "note_topics_top20.png"
+  ]
+}
