@@ -166,7 +166,17 @@ class RetryBrowser:
             report_failure(1, 2, "公开笔记加载超时")
         else:
             report_note_success(1, 2)
-        save_checkpoint({"creator_index": 1, "note_index": 0, "comment_count": existing_comment_count})
+        save_checkpoint(
+            {
+                "creator_index": 1,
+                "note_index": 0,
+                "comment_count": existing_comment_count,
+                "creator_targets": [
+                    {"kind": "creator_ref", "value": "pgy:creator-1"},
+                    {"kind": "creator_ref", "value": "pgy:creator-2"},
+                ],
+            }
+        )
         return {
             "creators_visited": 1,
             "notes_visited": 1,
@@ -274,28 +284,36 @@ class VisibleCollectionTests(unittest.TestCase):
             def get_by_role(self, role):
                 return RowLocator(self.row_count) if role == "row" else RowLocator(0)
 
-        def run_case(creator_count, checkpoint_creator_index):
-            list_page = Page("https://pgy.xiaohongshu.com/solar/pre-trade/note/kol", creator_count + 1)
+        def run_case(creator_count, checkpoint_creator_index, *, row_order=None, creator_targets=None):
+            ordered_creators = row_order or list(range(1, creator_count + 1))
+            list_page = Page("https://pgy.xiaohongshu.com/solar/pre-trade/note/kol", len(ordered_creators) + 1)
             list_records = [
                 {
                     "type": "blogger_list_sample",
+                    "creator_ref": f"pgy:id:creator-{creator_number}",
                     "visible_row_index": index + 1,
-                    "fields": {"创作者名称": f"creator-{index + 1}"},
+                    "fields": {"创作者名称": f"creator-{creator_number}"},
                 }
-                for index in range(creator_count)
+                for index, creator_number in enumerate(ordered_creators)
             ]
             browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
             browser._context = SimpleNamespace(pages=[list_page])
             browser._page = list_page
             browser._check_page_blocker = lambda _page, **_kwargs: None
             browser._capture_list_rows = lambda _page: list_records
-            browser._open_creator_row = lambda _page, row_index, expected_record=None: (
-                Page(
-                    f"https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/detail-{row_index}",
-                    0,
-                ),
-                True,
-            )
+            opened_rows = []
+
+            def open_creator_row(_page, row_index, expected_record=None):
+                opened_rows.append(row_index)
+                return (
+                    Page(
+                        f"https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/detail-{row_index}",
+                        0,
+                    ),
+                    True,
+                )
+
+            browser._open_creator_row = open_creator_row
             browser._capture_creator_records = lambda _page, creator_ref: [
                 {
                     "type": "creator_profile_sample",
@@ -305,6 +323,7 @@ class VisibleCollectionTests(unittest.TestCase):
             ]
             browser._close_owned_page = lambda _page: None
             saved_records = []
+            saved_checkpoints = []
             result = browser._collect_visible(
                 {
                     "creator_count": creator_count,
@@ -312,9 +331,13 @@ class VisibleCollectionTests(unittest.TestCase):
                     "collect_notes": False,
                     "collect_comments": False,
                 },
-                {"creator_index": checkpoint_creator_index, "note_index": 0},
+                {
+                    "creator_index": checkpoint_creator_index,
+                    "note_index": 0,
+                    "creator_targets": creator_targets if creator_targets is not None else [],
+                },
                 check_control=lambda: None,
-                save_checkpoint=lambda _value: None,
+                save_checkpoint=lambda value: saved_checkpoints.append(value),
                 save_records=lambda payload: saved_records.extend(payload["records"]),
                 save_comments=lambda *_args: {"inserted": 0},
                 report_progress=lambda *_args: None,
@@ -323,17 +346,74 @@ class VisibleCollectionTests(unittest.TestCase):
                 report_field_status=lambda *_args: None,
                 existing_comment_count=0,
             )
-            return result, saved_records
+            return result, saved_records, opened_rows, saved_checkpoints
 
-        one, one_records = run_case(1, 0)
-        ten, ten_records = run_case(10, 0)
-        resumed, resumed_records = run_case(10, 4)
+        one, one_records, _, one_checkpoints = run_case(1, 0)
+        ten, ten_records, _, _ = run_case(10, 0)
+        resumed, resumed_records, _, _ = run_case(10, 4)
+        reordered, _, reordered_rows, _ = run_case(
+            1,
+            0,
+            row_order=[2, 1],
+            creator_targets=one_checkpoints[0]["creator_targets"],
+        )
         self.assertEqual(one["creators_visited"], 1)
         self.assertEqual(len(one_records), 2)
         self.assertEqual(ten["creators_visited"], 10)
         self.assertEqual(len(ten_records), 20)
         self.assertEqual(resumed["creators_visited"], 6)
         self.assertEqual(len(resumed_records), 12)
+        self.assertEqual(reordered["creators_visited"], 1)
+        self.assertEqual(reordered_rows, [2])
+
+    def test_creator_checkpoint_resolves_reordered_visible_rows_by_stable_identity(self) -> None:
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        original = {
+            "type": "blogger_list_sample",
+            "creator_ref": "pgy:/solar/pre-trade/blogger-detail/creator-123",
+            "visible_row_index": 1,
+            "fields": {"创作者名称": "原目标创作者"},
+        }
+        other = {
+            "type": "blogger_list_sample",
+            "creator_ref": "pgy:/solar/pre-trade/blogger-detail/creator-456",
+            "visible_row_index": 1,
+            "fields": {"创作者名称": "另一位创作者"},
+        }
+        moved_target = {**original, "visible_row_index": 6}
+        descriptor = browser._creator_target_descriptor(original)
+        self.assertIsNotNone(descriptor)
+
+        resolved = browser._resolve_creator_targets([other, moved_target], [descriptor])
+
+        self.assertEqual(resolved[0]["fields"]["创作者名称"], "原目标创作者")
+        self.assertEqual(resolved[0]["visible_row_index"], 6)
+
+    def test_creator_checkpoint_pauses_when_visible_identity_is_missing_or_ambiguous(self) -> None:
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        target_record = {
+            "creator_ref": "pgy:/solar/pre-trade/blogger-detail/creator-123",
+            "fields": {"创作者名称": "目标创作者"},
+        }
+        descriptor = browser._creator_target_descriptor(target_record)
+        self.assertIsNotNone(descriptor)
+        duplicate = {**target_record}
+
+        with self.assertRaisesRegex(PauseForUser, "无法唯一匹配"):
+            browser._resolve_creator_targets([target_record, duplicate], [descriptor])
+        with self.assertRaisesRegex(PauseForUser, "无法唯一匹配"):
+            browser._resolve_creator_targets([], [descriptor])
+
+    def test_legacy_checkpoint_with_saved_records_is_not_resumed_by_row_index(self) -> None:
+        checkpoint = {"creator_index": 0, "note_index": 0, "comment_count": 0}
+        normalized = TaskManager._ensure_stable_creator_checkpoint(checkpoint, 0)
+        self.assertEqual(normalized["creator_targets"], [])
+
+        with self.assertRaisesRegex(PauseForUser, "身份信息"):
+            TaskManager._ensure_stable_creator_checkpoint(
+                {"creator_index": 0, "note_index": 0, "comment_count": 0},
+                1,
+            )
 
     def test_limits_are_rejected_before_task_creation(self) -> None:
         manager = TaskManager(self.db_path, self.root / "unused-baseline.json", RecordingBrowser())
@@ -413,7 +493,12 @@ class VisibleCollectionTests(unittest.TestCase):
             parameters = json.loads(task["parameters_json"])
             self.assertEqual(
                 parameters["checkpoint"],
-                {"creator_index": 0, "note_index": 0, "comment_count": 0},
+                {
+                    "creator_index": 0,
+                    "note_index": 0,
+                    "comment_count": 0,
+                    "creator_targets": [],
+                },
             )
             with connection(self.db_path) as conn:
                 batch = conn.execute(
