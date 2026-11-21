@@ -1,0 +1,25 @@
+.venv/
+__pycache__/
+*.py[cod]
+instance/*.sqlite3
+instance/*.sqlite3-shm
+instance/*.sqlite3-wal
+instance/ai_reports/
+instance/news_items.jsonl
+*.log
+
+# Local credentials, datasets, databases, and runtime artifacts
+.env
+.env.*
+!.env.example
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.db
+instance/
+data/*
+!data/.gitkeep
+_backup/
+_preview/
+output/
+.playwright-cli/
