@@ -189,6 +189,54 @@ class RawDataPreservationTests(unittest.TestCase):
         self.assertEqual([item["fields"]["创作者名称"] for item in records], ["创作者甲", "创作者乙"])
         self.assertEqual([item["fields"]["平台公开ID"] for item in records], ["user-1", "user-2"])
 
+    def test_creator_detail_parser_keeps_visible_identity_metrics_and_audience_values(self) -> None:
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        lines = [
+            "笔记主页", "直播主页", "课堂样本博主", "小红书号：", "demo-public-123",
+            "杭州", "无机构", "生活记录", "vlog", "职场生活", "粉丝数", "50.1w",
+            "获赞与收藏", "431.3w", "加入清单", "邀约", "合作报价",
+            "图文笔记一口价", "¥120,000", "视频笔记一口价", "¥135,000",
+            "数据概览", "博主优势品效型博主发布笔记7篇内容类目生活记录、时尚合作行业服装配饰、美妆个护",
+            "曝光中位数", "713,874", "阅读中位数", "425,630", "互动中位数", "12,696",
+            "互动率", "2.9%", "视频完播率", "12.8%", "粉丝分析", "粉丝增量", "5,729",
+            "粉丝量变化幅度", "1.2%", "活跃粉丝占比", "82.5%", "阅读粉丝占比", "48.9%",
+            "互动粉丝占比", "7.8%", "下单粉丝占比", "35.4%", "粉丝画像", "性别分布",
+            "女性居多，占比93.0%", "年龄分布", "18-24居多，占比52.1%", "地域分布",
+            "国内最高的三个省份：广东（14.3%）、江苏（7.9%）、浙江（7.2%）", "按省份", "按城市",
+            "用户设备分布", "苹果用户占比54.95%，消费力较强", "apple inc.", "huawei",
+            "用户兴趣", "用户最感兴趣的内容类型为娱乐、生活记录、影视", "小红书官网",
+        ]
+
+        profile = browser._profile_record(lines)
+        performance = browser._performance_record(lines)
+        fans = browser._fans_record(lines)
+        self.assertIsNotNone(profile)
+        self.assertIsNotNone(performance)
+        self.assertIsNotNone(fans)
+        assert profile and performance and fans
+        self.assertEqual(profile["fields"]["创作者名称"], "课堂样本博主")
+        self.assertEqual(profile["fields"]["平台公开ID"], "demo-public-123")
+        self.assertEqual(profile["fields"]["地域"], "杭州")
+        self.assertEqual(profile["fields"]["标签"], "生活记录\nvlog\n职场生活")
+        self.assertEqual(profile["fields"]["人设"], "品效型博主")
+        self.assertEqual(profile["fields"]["内容类目"], "生活记录、时尚")
+        self.assertEqual(profile["fields"]["合作行业"], "服装配饰、美妆个护")
+        self.assertEqual(profile["fields"]["粉丝数"], "50.1w")
+        self.assertEqual(performance["fields"]["阅读中位数"], "425,630")
+        self.assertEqual(fans["fields"]["粉丝性别分布"], "女性居多，占比93.0%")
+        self.assertEqual(fans["fields"]["粉丝年龄分布"], "18-24居多，占比52.1%")
+        self.assertEqual(
+            fans["fields"]["粉丝地域分布"],
+            "国内最高的三个省份：广东（14.3%）、江苏（7.9%）、浙江（7.2%）",
+        )
+        self.assertEqual(
+            fans["fields"]["粉丝设备分布"],
+            "苹果用户占比54.95%，消费力较强\napple inc.\nhuawei",
+        )
+        self.assertEqual(fans["fields"]["粉丝兴趣分布"], "用户最感兴趣的内容类型为娱乐、生活记录、影视")
+        self.assertFalse(browser._creator_detail_data_ready(["粉丝数", "--", "曝光中位数", "加载中，请稍等"]))
+        self.assertTrue(browser._creator_detail_data_ready(["曝光中位数", "713,874"]))
+
     def test_collection_and_comment_ingest_keep_source_values_and_exclude_auth_secrets(self) -> None:
         note_url = "https://www.xiaohongshu.com/explore/public-note-id?source=course"
         payload = {
