@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter
+from datetime import date, timedelta
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -640,6 +641,162 @@ def _note_text_analysis(notes: list[dict[str, Any]]) -> dict[str, dict[str, Any]
     return result
 
 
+def _percent_detail(raw: Any) -> dict[str, Any]:
+    if raw is None:
+        return {"raw_value": None, "value": None}
+    value = raw
+    if isinstance(raw, str):
+        cleaned = raw.strip().replace(",", "")
+        if cleaned in {"", "-", "—", "--"}:
+            return {"raw_value": raw, "value": None}
+        if cleaned.endswith("%"):
+            cleaned = cleaned[:-1].strip()
+        try:
+            value = float(cleaned)
+        except ValueError:
+            return {"raw_value": raw, "value": None}
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return {"raw_value": raw, "value": None}
+    return {"raw_value": raw, "value": number}
+
+
+def _audience_distribution(fields: dict[str, Any], keys: tuple[str, ...]) -> list[dict[str, Any]]:
+    raw = next((fields.get(key) for key in keys if fields.get(key) is not None), None)
+    if not isinstance(raw, dict):
+        return []
+    return [
+        {"raw_label": str(label), "label": str(label).replace("_", "–"), **_percent_detail(value)}
+        for label, value in raw.items()
+        if _percent_detail(value)["value"] is not None
+    ]
+
+
+def _audience_profiles(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    latest: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in rows:
+        if row["record_type"] == "fan_analysis":
+            latest.setdefault((str(row["creator_id"]), str(row["batch_source"])), row)
+
+    profiles = []
+    label_map = {"female": "女性", "male": "男性", "woman": "女性", "man": "男性"}
+    for row in latest.values():
+        fields = row["fields"]
+        gender = _audience_distribution(fields, ("gender_share", "gender_distribution", "性别分布", "粉丝性别分布"))
+        for item in gender:
+            item["label"] = label_map.get(item["raw_label"].casefold(), item["label"])
+        age = _audience_distribution(fields, ("age_share", "age_distribution", "年龄分布", "粉丝年龄分布"))
+        gender_top = fields.get("gender_top") if isinstance(fields.get("gender_top"), dict) else {}
+        age_top = fields.get("age_top") if isinstance(fields.get("age_top"), dict) else {}
+        gender_leading = gender_top.get("leading_group") or gender_top.get("主要类别")
+        gender_leading_share = gender_top.get("share_percent") or gender_top.get("占比")
+        age_leading = age_top.get("leading_band") or age_top.get("主要年龄段")
+        age_leading_share = age_top.get("share_percent") or age_top.get("占比")
+        if not gender_leading and gender:
+            top = max(gender, key=lambda item: item["value"])
+            gender_leading, gender_leading_share = top["raw_label"], top["raw_value"]
+        if not age_leading and age:
+            top = max(age, key=lambda item: item["value"])
+            age_leading, age_leading_share = top["raw_label"], top["raw_value"]
+        gender_leading_detail = _percent_detail(gender_leading_share)
+        age_leading_detail = _percent_detail(age_leading_share)
+
+        def list_entries(keys: tuple[str, ...], label_keys: tuple[str, ...], value_keys: tuple[str, ...]) -> list[dict[str, Any]]:
+            raw = next((fields.get(key) for key in keys if fields.get(key) is not None), None)
+            if isinstance(raw, dict):
+                return [
+                    {"raw_label": str(label), "label": str(label), **_percent_detail(value)}
+                    for label, value in raw.items()
+                ]
+            if isinstance(raw, list):
+                result = []
+                for item in raw:
+                    if isinstance(item, dict):
+                        label = next((item.get(key) for key in label_keys if item.get(key) is not None), None)
+                        value = next((item.get(key) for key in value_keys if item.get(key) is not None), None)
+                    else:
+                        label, value = item, None
+                    if label is not None and str(label).strip():
+                        result.append({"raw_label": str(label), "label": str(label), **_percent_detail(value)})
+                return result
+            return []
+
+        regions = list_entries(
+            ("top_provinces", "top_regions", "粉丝地域", "粉丝省份"),
+            ("name", "region", "province", "地区", "省份"),
+            ("share", "share_percent", "占比", "percent"),
+        )
+        cities = list_entries(
+            ("top_cities", "粉丝城市"),
+            ("name", "city", "城市"),
+            ("share", "share_percent", "占比", "percent"),
+        )
+        interests = list_entries(
+            ("interest_share", "top_interests", "兴趣分布", "粉丝兴趣"),
+            ("name", "interest", "兴趣", "标签"),
+            ("share", "share_percent", "占比", "percent"),
+        )
+        devices = list_entries(
+            ("device_brand_share_examples", "device_share", "设备品牌占比", "设备分布"),
+            ("name", "brand", "device", "设备"),
+            ("share", "share_percent", "占比", "percent"),
+        )
+        apple_raw = fields.get("apple_device_share_raw")
+        if apple_raw is None:
+            apple_raw = fields.get("apple_device_share_percent")
+        if apple_raw is not None and not devices:
+            devices = [{"raw_label": "Apple（页面提供值）", "label": "Apple（页面提供值）", **_percent_detail(apple_raw)}]
+
+        shares = {}
+        for name, keys in {
+            "active": ("active_share_raw", "active_share_percent", "活跃粉丝占比"),
+            "read": ("read_share_raw", "read_share_percent", "阅读粉丝占比"),
+            "interaction": ("interaction_share_raw", "interaction_share_percent", "互动粉丝占比"),
+            "purchase": ("purchase_share_raw", "purchase_share_percent", "下单粉丝占比"),
+        }.items():
+            raw = next((fields.get(key) for key in keys if fields.get(key) is not None), None)
+            shares[name] = _percent_detail(raw)
+
+        profiles.append({
+            "creator_id": row["creator_id"],
+            "creator_name": row["pseudonym"],
+            "source": row["batch_source"],
+            "captured_at": row["captured_at"],
+            "period": str(fields.get("period") or fields.get("统计周期") or "未标明"),
+            "gender_distribution": gender,
+            "gender_leading": label_map.get(str(gender_leading).casefold(), str(gender_leading or "")),
+            "gender_leading_raw": str(gender_leading or ""),
+            "gender_leading_share": gender_leading_detail,
+            "age_distribution": age,
+            "age_leading": str(age_leading or ""),
+            "age_leading_share": age_leading_detail,
+            "regions": regions,
+            "cities": cities,
+            "interests": interests,
+            "devices": devices,
+            "shares": shares,
+        })
+    return sorted(profiles, key=lambda item: (item["source"], item["period"], item["creator_name"], item["creator_id"]))
+
+
+def _audience_groups(profiles: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for profile in profiles:
+        grouped.setdefault((profile["source"], profile["period"]), []).append(profile)
+    return [
+        {
+            "group_id": index,
+            "source": key[0],
+            "period": key[1],
+            "label": f"{key[0]} · {key[1]}（n={len(items)}）",
+            "creator_count": len(items),
+            "profiles": items,
+        }
+        for index, (key, items) in enumerate(sorted(grouped.items()), start=1)
+    ]
+
+
 def notes_data(
     db_path: Path,
     *,
@@ -844,8 +1001,8 @@ def notes_data(
         key = (str(hist["note_id"]), str(hist["metric_key"]), str(hist["source"]), str(hist["period"]))
         trend_groups.setdefault(key, {})[str(hist["captured_at"])] = float(hist["numeric_value"])
     metric_trends = [
-        {"label": f"{note_label[note_id]} · {metric} · {source} · {period}", "points": [{"captured_at": time, "value": value} for time, value in sorted(points.items())]}
-        for (note_id, metric, source, period), points in trend_groups.items() if len(points) >= 2
+        {"note_id": note_id, "label": f"{note_label[note_id]} · {metric} · {trend_source} · {period}", "source": trend_source, "metric_key": metric, "period": period, "points": [{"captured_at": time, "value": value} for time, value in sorted(points.items())]}
+        for (note_id, metric, trend_source, period), points in trend_groups.items() if len(points) >= 2
     ]
 
     metric_keys = {
@@ -866,7 +1023,7 @@ def notes_data(
 
     metric_distributions = []
     interaction_boxplot = []
-    for (source, metric), values in sorted(metric_values_by_source.items()):
+    for (metric_source, metric), values in sorted(metric_values_by_source.items()):
         ordered = sorted(values)
         if ordered[0] == ordered[-1]:
             bins = [{"label": f"{ordered[0]:g}", "count": len(ordered)}]
@@ -885,7 +1042,7 @@ def notes_data(
                 for index, count in enumerate(counts)
             ]
         metric_distributions.append({
-            "source": source,
+            "source": metric_source,
             "metric": metric,
             "sample_count": len(ordered),
             "bins": bins,
@@ -893,8 +1050,8 @@ def notes_data(
         if metric in {"点赞量", "收藏量", "评论量", "分享量"}:
             quantiles = pd.Series(ordered, dtype="float64").quantile([0, 0.25, 0.5, 0.75, 1]).tolist()
             interaction_boxplot.append({
-                "label": f"{source} · {metric}",
-                "source": source,
+                "label": f"{metric_source} · {metric}",
+                "source": metric_source,
                 "metric": metric,
                 "sample_count": len(ordered),
                 "values": [float(value) for value in quantiles],
@@ -935,6 +1092,139 @@ def notes_data(
             "interaction_boxplot": f"按来源与互动指标分别计算；共 {sum(item['sample_count'] for item in interaction_boxplot)} 个样本" if interaction_boxplot else "当前筛选没有可用互动数值",
         },
     }
+
+
+def _observed_publish_frequency(
+    db_path: Path,
+    creator_ids: list[str],
+    *,
+    batch_id: str,
+    source: str = "",
+) -> tuple[dict[str, int], str | None]:
+    if not creator_ids:
+        return {}, None
+    marks = ",".join("?" for _ in creator_ids)
+    with connection(db_path) as conn:
+        batch = conn.execute("SELECT captured_at FROM batches WHERE batch_id=?", (batch_id,)).fetchone()
+        batch_day = _note_day(batch["captured_at"] if batch else None)
+        rows = conn.execute(
+            f"""SELECT DISTINCT n.creator_id, n.note_id, n.published_at,
+                       COALESCE(NULLIF(r.source,''), b.source) AS source
+                FROM records r JOIN batches b ON b.batch_id=r.batch_id
+                JOIN notes n ON n.note_id=r.note_id
+                WHERE r.batch_id=? AND r.note_id IS NOT NULL
+                  AND r.record_type IN ('note_detail','xhs_public_note')
+                  AND n.creator_id IN ({marks})""",
+            [batch_id, *creator_ids],
+        ).fetchall()
+    if not batch_day:
+        return {}, None
+    end_day = date.fromisoformat(batch_day)
+    start_day = end_day - timedelta(days=29)
+    counts = {creator_id: 0 for creator_id in creator_ids}
+    for row in rows:
+        if source and row["source"] != source:
+            continue
+        published_day = _note_day(row["published_at"])
+        if published_day and start_day <= date.fromisoformat(published_day) <= end_day:
+            counts[str(row["creator_id"])] = counts.get(str(row["creator_id"]), 0) + 1
+    return counts, f"该批次记录中，{start_day.isoformat()} 至 {end_day.isoformat()} 已采笔记数；不代表完整发文总量"
+
+
+def compare_creators(
+    db_path: Path,
+    creator_ids: list[str],
+    *,
+    batch_id: str,
+    source: str = "",
+) -> dict[str, Any]:
+    unique_ids = list(dict.fromkeys(creator_ids))
+    result = creator_library(db_path, batch_id=batch_id, source=source, creator_ids=unique_ids, sort_by="pseudonym")
+    counts, frequency_scope = _observed_publish_frequency(db_path, unique_ids, batch_id=batch_id, source=source)
+    for creator in result["creators"]:
+        creator["publish_frequency_30d"] = counts.get(creator["creator_id"])
+        creator["publish_frequency_scope"] = frequency_scope or "批次时间不足，无法计算 30 日窗口"
+    result["availability"] = {
+        "publish_frequency": frequency_scope or "批次时间不足，无法计算 30 日窗口；缺失不当作 0",
+        "comparison_scope": "精确 creator_id；单一批次；来源按筛选值约束",
+    }
+    result["requested_creator_ids"] = unique_ids
+    result["missing_creator_ids"] = [creator_id for creator_id in unique_ids if creator_id not in {item["creator_id"] for item in result["creators"]}]
+    return result
+
+
+def compare_notes(
+    db_path: Path,
+    note_ids: list[str],
+    *,
+    batch_id: str,
+    source: str = "",
+) -> dict[str, Any]:
+    unique_ids = list(dict.fromkeys(note_ids))
+    if not 2 <= len(unique_ids) <= 4:
+        raise ValueError("请选择 2 至 4 篇笔记进行对比")
+    data = notes_data(db_path, batch_id=batch_id, source=source)
+    note_by_id = {item["note_id"]: item for item in data["notes"]}
+    selected = [note_by_id[note_id] for note_id in unique_ids if note_id in note_by_id]
+    if len(selected) < 2:
+        raise ValueError("所选批次和来源中至少需要 2 篇笔记有可比记录")
+    sources = {item["source"] for item in selected}
+    if len(sources) > 1:
+        raise ValueError("所选笔记来源不同，请先选择同一来源")
+    creator_ids = list(dict.fromkeys(item["creator_id"] for item in selected))
+    creators = creator_library(db_path, batch_id=batch_id, source=source, creator_ids=creator_ids)
+    creator_by_id = {item["creator_id"]: item for item in creators["creators"]}
+    frequency, frequency_scope = _observed_publish_frequency(db_path, creator_ids, batch_id=batch_id, source=source)
+    for item in selected:
+        creator = creator_by_id.get(item["creator_id"], {})
+        item["followers"] = creator.get("followers")
+        item["quote"] = creator.get("quote")
+        item["quote_fields"] = creator.get("quote_fields", [])
+        item["publish_frequency_30d"] = frequency.get(item["creator_id"])
+        components = [item.get(key) for key in ("like_count", "favorite_count", "interaction_comment_count", "share_count")]
+        denominator = item.get("read_count")
+        item["interaction_rate"] = (
+            round(sum(float(value) for value in components) / float(denominator) * 100, 4)
+            if denominator is not None and float(denominator) > 0 and all(value is not None for value in components)
+            else None
+        )
+        item["saved_comment_count"] = item.get("comment_count")
+        item["publish_frequency_scope"] = frequency_scope or "批次时间不足，无法计算 30 日窗口"
+    return {
+        "count": len(selected),
+        "batch_id": batch_id,
+        "source": next(iter(sources)),
+        "notes": selected,
+        "missing_note_ids": [note_id for note_id in unique_ids if note_id not in note_by_id],
+        "availability": {
+            "interaction_rate": "(点赞+收藏+评论+分享) / 阅读 × 100%；四项与阅读值均精确可用时计算",
+            "publish_frequency": frequency_scope or "批次时间不足，无法计算 30 日窗口；缺失不当作 0",
+            "saved_comments": "另列本地保存的评论行数，不与页面评论指标混为一项",
+        },
+    }
+
+
+def note_compare_options(db_path: Path, *, batch_id: str, source: str = "") -> list[dict[str, Any]]:
+    record_match = "r.note_id=n.note_id AND r.batch_id=? AND r.record_type IN ('note_detail','xhs_public_note')"
+    comment_match = "s.note_id=n.note_id AND s.batch_id=?"
+    params: list[Any] = [batch_id, batch_id]
+    if source:
+        record_match += " AND COALESCE(NULLIF(r.source,''),(SELECT rb.source FROM batches rb WHERE rb.batch_id=r.batch_id))=?"
+        comment_match += " AND COALESCE(NULLIF(s.source,''),(SELECT sb.source FROM batches sb WHERE sb.batch_id=s.batch_id))=?"
+        params = [batch_id, source, batch_id, source]
+    with connection(db_path) as conn:
+        rows = conn.execute(
+            f"""SELECT DISTINCT n.note_id,n.title,c.creator_name,c.platform_creator_id,c.pseudonym
+                FROM notes n JOIN creators c ON c.creator_id=n.creator_id
+                WHERE EXISTS (SELECT 1 FROM records r WHERE {record_match})
+                   OR EXISTS (SELECT 1 FROM comment_snapshots s WHERE {comment_match})
+                ORDER BY c.creator_name,n.title,n.note_id""",
+            params,
+        ).fetchall()
+    options = [dict(row) for row in rows]
+    for item in options:
+        item["creator_name"] = creator_display_name(item.get("creator_name"), item.get("platform_creator_id"), item.get("pseudonym"))
+    return options
 
 
 def analytics_data(
@@ -1003,8 +1293,8 @@ def analytics_data(
     ]
     category_counts: dict[str, int] = {}
     for creator in creators:
-        for category in creator["categories"]:
-            category_counts[category] = category_counts.get(category, 0) + 1
+        for category_label in creator["categories"]:
+            category_counts[category_label] = category_counts.get(category_label, 0) + 1
 
     location_counts = Counter(
         str(creator["location"]).strip() for creator in creators if str(creator.get("location") or "").strip()
@@ -1137,6 +1427,8 @@ def analytics_data(
     selected_kind = word_kind if word_kind in {"title", "body", "topics"} else "body"
     selected_text = note_analysis["text_analysis"][selected_kind]
     frequency = selected_text["frequencies"][:20 if selected_kind == "topics" else 30]
+    audience_profiles = _audience_profiles(rows)
+    audience_groups = _audience_groups(audience_profiles)
 
     return {
         "scope": "当前批次" if batch_id else "全部历史快照（创作者按各类型最新记录归并）",
@@ -1152,6 +1444,7 @@ def analytics_data(
             ),
             "word_frequency": f"按真实笔记 {selected_text['sample_count']} 条生成 {selected_kind} 词频" if selected_text["sample_count"] else f"当前筛选没有可用的 {selected_kind} 文本",
             "quote_types": f"精确 {quote_status_counts.get('parsed', 0)} 条；起价 {quote_status_counts.get('starting_price', 0)} 条；区间 {quote_status_counts.get('range_unresolved', 0)} 条；缺失 {quote_status_counts.get('missing', 0)} 条",
+            "audience": f"{len(audience_profiles)} 条真实画像快照；按来源与统计周期分组" if audience_profiles else "当前筛选没有已保存的受众画像字段",
         },
         "charts": {
             "follower_distribution": follower_distribution,
@@ -1174,6 +1467,8 @@ def analytics_data(
             "follower_price_sample_count": sum(item["followers"] is not None and item["quote"] is not None for item in creators),
             "reading_engagement_sample_count": len(reads),
             "quote_type_counts": dict(quote_status_counts),
+            "audience_profile_count": len(audience_profiles),
+            "audience_groups": audience_groups,
         },
         "text_analysis": note_analysis["text_analysis"],
     }

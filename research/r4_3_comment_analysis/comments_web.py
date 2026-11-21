@@ -48,6 +48,39 @@ def comments_analysis():
     return jsonify(result)
 
 
+@comment_analysis_bp.get("/api/comments/sentiment")
+def comments_sentiment():
+    db_path, fetch_fn, _, _, _ = _service()
+    from .sentiment import analyze_comments, manual_review_sample
+
+    rows = fetch_fn(db_path, _filters())
+    result = analyze_comments(rows)
+    result["review_sample_count"] = len(manual_review_sample(rows, limit=20))
+    return jsonify(result)
+
+
+@comment_analysis_bp.get("/api/comments/sentiment/review.csv")
+def comments_sentiment_review():
+    db_path, fetch_fn, _, _, _ = _service()
+    from .sentiment import manual_review_sample
+
+    rows = fetch_fn(db_path, _filters())
+    sample = manual_review_sample(rows, limit=20)
+    fields = [
+        "batch_id", "source", "note_id", "platform_note_id", "note_title", "comment_id",
+        "comment_text", "predicted_sentiment", "sentiment_evidence", "predicted_topics",
+        "manual_sentiment", "manual_topics", "manual_notes",
+    ]
+    stream = io.StringIO(newline="")
+    writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(sample)
+    response = make_response("\ufeff" + stream.getvalue())
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = 'attachment; filename="comment_sentiment_manual_review.csv"'
+    return response
+
+
 @comment_analysis_bp.get("/api/comments/word-change")
 def comments_word_change():
     db_path, fetch_fn, _, _, _ = _service()

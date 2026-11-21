@@ -187,6 +187,18 @@ class RawDataPreservationTests(unittest.TestCase):
         app.config["COMMENT_ANALYSIS_DATABASE_PATH"] = self.db_path
         app.register_blueprint(comment_analysis_bp)
         client = app.test_client()
+        sentiment = client.get("/api/comments/sentiment").get_json()
+        reviewed_comment = next(row for row in sentiment["comments"] if row["comment_id"] == "visible-comment-id-77")
+        self.assertEqual(reviewed_comment["comment_text"], comments[0]["comment_text"])
+        self.assertEqual(sentiment["summary"]["comment_count"], 2)
+        review_rows = list(
+            csv.DictReader(
+                io.StringIO(client.get("/api/comments/sentiment/review.csv").get_data(as_text=True).lstrip("\ufeff"))
+            )
+        )
+        review_comment = next(row for row in review_rows if row["comment_id"] == "visible-comment-id-77")
+        self.assertEqual(review_comment["comment_text"], comments[0]["comment_text"])
+        self.assertEqual(review_comment["manual_sentiment"], "")
         jsonl_rows = [
             json.loads(line)
             for line in client.get("/api/comments/export.jsonl").get_data(as_text=True).splitlines()
