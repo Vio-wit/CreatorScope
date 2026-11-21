@@ -86,7 +86,7 @@ class AIServiceTests(unittest.TestCase):
                 "UPDATE notes SET body=? WHERE note_id=?",
                 (body, "note-a"),
             )
-        preview = build_preview(self.db_path, analysis_type="note_summary", note_ids=["note-a"], batch_id="batch-a")
+        preview = build_preview(self.db_path, analysis_type="note_summary", note_ids=["note-a"], batch_id="batch-a", include_raw_text=True)
         serialized = json.dumps(preview["data"], ensure_ascii=False)
         note = preview["data"]["notes"][0]
         self.assertIn("me@example.com", serialized)
@@ -96,12 +96,27 @@ class AIServiceTests(unittest.TestCase):
         self.assertEqual(note["platform_note_id"], "platform-note-001")
         self.assertEqual(note["source_url"], "https://example.test/note-001")
 
+    def test_note_preview_excludes_body_by_default_without_changing_local_value(self) -> None:
+        body = "只在正文出现的完整原始内容 contact@example.test"
+        with connection(self.db_path) as conn:
+            conn.execute("UPDATE notes SET body=? WHERE note_id=?", (body, "note-a"))
+        preview = build_preview(self.db_path, analysis_type="note_summary", note_ids=["note-a"], batch_id="batch-a")
+        serialized = json.dumps(preview["data"], ensure_ascii=False)
+        self.assertNotIn(body, serialized)
+        self.assertIsNone(preview["data"]["notes"][0]["body"])
+        self.assertFalse(preview["data"]["notes"][0]["raw_text_included"])
+        self.assertFalse(preview["include_raw_text"])
+        self.assertIn("不会进入本次模型输入", preview["data_notice"])
+        with connection(self.db_path) as conn:
+            self.assertEqual(conn.execute("SELECT body FROM notes WHERE note_id='note-a'").fetchone()[0], body)
+
     def test_comment_preview_preserves_comment_text_and_source_fields(self) -> None:
         preview = build_preview(
             self.db_path,
             analysis_type="comment_topics",
             note_ids=["note-a"],
             batch_id="batch-a",
+            include_raw_text=True,
         )
         serialized = json.dumps(preview["data"], ensure_ascii=False)
         self.assertIn("comment_count_total", serialized)
@@ -111,6 +126,21 @@ class AIServiceTests(unittest.TestCase):
         self.assertIn("comment-user-002", serialized)
         self.assertIn("https://example.test/profile/2", serialized)
         self.assertIn("local_comment_id", serialized)
+
+    def test_comment_preview_excludes_raw_comment_and_identity_fields_by_default(self) -> None:
+        preview = build_preview(
+            self.db_path,
+            analysis_type="comment_topics",
+            note_ids=["note-a"],
+            batch_id="batch-a",
+        )
+        serialized = json.dumps(preview["data"], ensure_ascii=False)
+        self.assertEqual(preview["data"]["comment_count_total"], 1)
+        self.assertNotIn("comments", preview["data"])
+        self.assertNotIn("好用 温和 保湿", serialized)
+        self.assertNotIn("评论用户乙", serialized)
+        self.assertNotIn("comment-user-002", serialized)
+        self.assertFalse(preview["include_raw_text"])
 
     def test_provider_adapters_use_provider_auth_headers_without_leaking_key_to_url(self) -> None:
         keys = {
@@ -168,6 +198,7 @@ class AIServiceTests(unittest.TestCase):
                 "analysis_type": "creator_summary", "creator_ids": ["creator-a"], "batch_id": "batch-a",
             })
             self.assertEqual(preview.status_code, 200)
+            self.assertFalse(preview.get_json()["include_raw_text"])
             rejected = client.post("/api/ai/analyze", json={
                 "provider": "openai_compatible", "model": "model", "analysis_type": "creator_summary",
                 "creator_ids": ["creator-a"], "batch_id": "batch-a",
@@ -184,6 +215,61 @@ class AIServiceTests(unittest.TestCase):
             })
             self.assertEqual(no_key.status_code, 200)
             self.assertEqual(no_key.get_json()["status"], "not_configured")
+
+    def test_ai_preview_route_includes_full_note_body_only_when_requested(self) -> None:
+        body = "模型输入选项对应的完整笔记正文"
+        with connection(self.db_path) as conn:
+            conn.execute("UPDATE notes SET body=? WHERE note_id=?", (body, "note-a"))
+        app = create_app({"DATABASE_PATH": self.db_path, "BASELINE_PATH": self.db_path.parent / "missing.json", "TESTING": True})
+        client = app.test_client()
+        response = client.post("/api/ai/preview", json={
+            "analysis_type": "note_summary", "note_ids": ["note-a"], "batch_id": "batch-a",
+            "include_raw_text": True,
+        })
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        payload = response.get_json()
+        self.assertTrue(payload["include_raw_text"])
+        self.assertTrue(payload["data"]["notes"][0]["raw_text_included"])
+        self.assertEqual(payload["data"]["notes"][0]["body"], body)
+
+    def test_confirmed_mock_analysis_persists_local_report_metadata_and_raw_facts(self) -> None:
+        reports_dir = self.db_path.parent / "ai reports"
+        app = create_app({
+            "DATABASE_PATH": self.db_path,
+            "AI_REPORTS_PATH": reports_dir,
+            "BASELINE_PATH": self.db_path.parent / "missing.json",
+            "TESTING": True,
+        })
+        client = app.test_client()
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test-only-key"}), patch("creatorscope.run_analysis", return_value="基于本地样例的 Mock 输出") as model:
+            response = client.post("/api/ai/analyze", json={
+                "confirm_upload": True,
+                "provider": "openai_compatible",
+                "model": "test-model",
+                "analysis_type": "creator_summary",
+                "creator_ids": ["creator-a"],
+                "note_ids": [],
+                "batch_id": "batch-a",
+                "include_raw_text": False,
+            })
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        result = response.get_json()
+        self.assertTrue(result["report_saved"])
+        self.assertFalse(result["include_raw_text"])
+        self.assertEqual(result["input_batch_id"], "batch-a")
+        self.assertEqual(result["model"], "test-model")
+        self.assertIn("analysis_at", result)
+        self.assertEqual(result["model_output"], "基于本地样例的 Mock 输出")
+        self.assertEqual(model.call_count, 1)
+        stored = client.get(f"/api/ai/reports/{result['run_id']}")
+        self.assertEqual(stored.status_code, 200)
+        self.assertEqual(stored.get_json()["facts"], result["facts"])
+        self.assertNotIn("test-only-key", stored.get_data(as_text=True))
+        history = client.get("/api/ai/reports").get_json()["reports"]
+        self.assertEqual(history[0]["run_id"], result["run_id"])
+        self.assertEqual(history[0]["input_batch_id"], "batch-a")
+        self.assertFalse(history[0]["include_raw_text"])
+        self.assertEqual(client.get("/api/ai/reports/../secret").status_code, 404)
 
 
 if __name__ == "__main__":

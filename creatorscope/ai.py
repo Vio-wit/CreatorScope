@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import socket
 import urllib.error
 import urllib.parse
@@ -9,6 +10,7 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from .analytics import creator_library, notes_data
 from .db import connection
@@ -212,6 +214,7 @@ def build_preview(
     creator_ids: list[str] | None = None,
     note_ids: list[str] | None = None,
     batch_id: str = "",
+    include_raw_text: bool = False,
 ) -> dict[str, Any]:
     if analysis_type not in ANALYSES:
         raise AIServiceError("请选择有效的分析类型")
@@ -223,7 +226,11 @@ def build_preview(
         raise AIServiceError("创作者或笔记对比必须选择一个具体批次")
     raw_data: dict[str, Any]
     scope_summary: str
-    data_notice = "原始采集字段不脱敏、不截断。预览仅在本机生成；确认运行后，所选完整数据会发送给当前模型服务商。"
+    data_notice = (
+        "所选笔记正文和评论原文会原样纳入预览；确认运行后才发送给当前模型服务商。"
+        if include_raw_text
+        else "笔记正文和评论原文保留在本机，不会进入本次模型输入；其他所选字段和统计摘要会显示在预览中。"
+    )
 
     if analysis_type in {"creator_summary", "creator_note_compare", "anomaly", "operations_advice"} and creators:
         if len(creators) > 4:
@@ -275,7 +282,8 @@ def build_preview(
                     "platform_note_id": content_by_id[note_id]["platform_note_id"],
                     "source_url": content_by_id[note_id]["source_url"],
                     "title": content_by_id[note_id]["title"],
-                    "body": content_by_id[note_id]["body"],
+                    "body": content_by_id[note_id]["body"] if include_raw_text else None,
+                    "raw_text_included": include_raw_text,
                     "topics": selected[note_id]["topics"],
                     "published_at": selected[note_id]["published_at"],
                     "note_type": selected[note_id]["note_type"],
@@ -284,7 +292,8 @@ def build_preview(
                 for note_id in notes
             ]
         }
-        scope_summary = f"{len(notes)} 篇笔记的完整原文、来源链接、创作者标识和指标。"
+        raw_text_scope = "完整正文" if include_raw_text else "不含正文"
+        scope_summary = f"{len(notes)} 篇笔记的标题、话题、{raw_text_scope}、来源链接、创作者标识和指标。"
     elif analysis_type in {"comment_topics", "comment_sentiment"} and notes:
         if not selected_batch:
             raise AIServiceError("评论分析必须选择一个具体批次")
@@ -311,12 +320,15 @@ def build_preview(
             })
         if not note_summaries:
             raise AIServiceError("所选批次和笔记没有可分析的已保存评论")
-        raw_data = {"comment_summaries": note_summaries, "comment_count_total": total_comments, "comments": all_comments}
-        scope_summary = f"批次内 {total_comments} 条已保存评论；包含原文、已采集公开身份字段和来源字段。"
+        raw_data = {"comment_summaries": note_summaries, "comment_count_total": total_comments}
+        if include_raw_text:
+            raw_data["comments"] = all_comments
+        raw_scope = "评论原文和已采集公开身份字段" if include_raw_text else "评论聚合统计和词频摘要（不含评论原文）"
+        scope_summary = f"批次内 {total_comments} 条已保存评论；包含{raw_scope}及来源字段。"
     else:
         raise AIServiceError("当前分析类型需要选择对应的创作者或笔记")
 
-    payload = {"analysis_type": analysis_type, "analysis_label": label, "scope_summary": scope_summary, "data_notice": data_notice, "data": raw_data}
+    payload = {"analysis_type": analysis_type, "analysis_label": label, "scope_summary": scope_summary, "include_raw_text": include_raw_text, "data_notice": data_notice, "data": raw_data}
     serialized = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     if len(serialized) > MAX_PREVIEW_CHARS:
         raise AIServiceError("所选原始数据超过单次预览上限；请减少所选对象，系统不会截断采集内容")
@@ -345,6 +357,49 @@ def run_analysis(
         + json.dumps(preview["data"], ensure_ascii=False)
     )
     return _call_model(provider, model, base_url, system, prompt)
+
+
+def save_analysis_report(reports_dir: Path, report: dict[str, Any]) -> dict[str, Any]:
+    run_id = uuid4().hex
+    payload = {"run_id": run_id, **report}
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    (reports_dir / f"{run_id}.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return payload
+
+
+def list_analysis_reports(reports_dir: Path, *, limit: int = 20) -> list[dict[str, Any]]:
+    if not reports_dir.is_dir():
+        return []
+    bounded_limit = max(0, min(int(limit), 100))
+    if bounded_limit == 0:
+        return []
+    reports = []
+    for path in sorted(reports_dir.glob("[0-9a-f]" * 32 + ".json"), key=lambda item: item.stat().st_mtime, reverse=True):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        reports.append({key: payload.get(key) for key in (
+            "run_id", "analysis_type", "analysis_label", "provider", "provider_label",
+            "model", "input_batch_id", "analysis_at", "scope_summary", "include_raw_text", "report_saved",
+        )})
+        if len(reports) >= bounded_limit:
+            break
+    return reports
+
+
+def load_analysis_report(reports_dir: Path, run_id: str) -> dict[str, Any] | None:
+    if not re.fullmatch(r"[0-9a-f]{32}", run_id):
+        return None
+    path = reports_dir / f"{run_id}.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) and payload.get("run_id") == run_id else None
 
 
 def test_connection(*, provider: str, model: str, base_url: str) -> str:
