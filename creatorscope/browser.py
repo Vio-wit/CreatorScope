@@ -31,6 +31,21 @@ CREATOR_LIST_FIELDS = (
     "互动中位数（日常）", "全部报价", "合作报价", "图文报价", "视频报价",
     "内容领域", "地域", "人设", "标签",
 )
+CREATOR_PROFILE_FIELDS = (
+    "创作者名称", "平台公开ID", "地域", "人设", "标签", "合作行业",
+    "粉丝数", "获赞与收藏", "图文笔记一口价", "视频笔记一口价",
+    "发布笔记数", "内容类目",
+)
+CREATOR_PERFORMANCE_FIELDS = (
+    "曝光中位数", "阅读中位数", "互动中位数", "中位点赞量", "中位收藏量",
+    "中位评论量", "中位分享量", "中位关注量", "互动率", "视频完播率",
+    "图文3秒阅读率",
+)
+CREATOR_FAN_FIELDS = (
+    "粉丝增量", "粉丝量变化幅度", "活跃粉丝占比", "阅读粉丝占比",
+    "互动粉丝占比", "下单粉丝占比", "粉丝性别分布", "粉丝年龄分布",
+    "粉丝地域分布", "粉丝设备分布", "粉丝兴趣分布",
+)
 
 
 class CaptureError(Exception):
@@ -396,6 +411,7 @@ class PgyVisibleBrowser:
             "视频完播率",
             "图文3秒阅读率",
             "粉丝量变化幅度",
+            "粉丝增量",
             "活跃粉丝占比",
             "阅读粉丝占比",
             "互动粉丝占比",
@@ -432,7 +448,7 @@ class PgyVisibleBrowser:
         return match.group(1) if match else None
 
     def _profile_record(self, lines: list[str]) -> dict[str, Any] | None:
-        fields: dict[str, Any] = {}
+        fields = self._creator_identity_fields(lines)
         for label in ("粉丝数", "获赞与收藏", "图文笔记一口价", "视频笔记一口价"):
             value = self._value_after(lines, label)
             if value:
@@ -443,35 +459,111 @@ class PgyVisibleBrowser:
         category = self._value_after(lines, "内容类目")
         if category:
             fields["内容类目"] = category
+        for line in lines:
+            persona = re.search(r"博主优势\s*(.*?)\s*发布笔记\s*\d+\s*篇", line)
+            if persona and persona.group(1).strip():
+                fields.setdefault("人设", persona.group(1).strip())
+            if not published:
+                published_match = re.search(r"发布笔记\s*(\d+)\s*篇", line)
+                if published_match:
+                    fields["发布笔记数"] = int(published_match.group(1))
+            category_match = re.search(r"内容类目\s*(.*?)\s*合作行业", line)
+            if category_match and category_match.group(1).strip():
+                fields.setdefault("内容类目", category_match.group(1).strip())
+            industry_match = re.search(r"合作行业\s*(.*)$", line)
+            if industry_match and industry_match.group(1).strip():
+                fields.setdefault("合作行业", industry_match.group(1).strip())
         if fields:
-            expected = ("粉丝数", "获赞与收藏", "图文笔记一口价", "视频笔记一口价", "发布笔记数", "内容类目")
+            expected = CREATOR_PROFILE_FIELDS
             field_statuses = {name: "captured" if name in fields else "not_displayed" for name in expected}
-            field_statuses.update({"地域": "not_attempted", "人设及标签": "not_attempted"})
             return {"type": "creator_profile_sample", "fields": fields, "field_statuses": field_statuses}
         return None
 
+    @staticmethod
+    def _creator_identity_fields(lines: list[str]) -> dict[str, str]:
+        fields: dict[str, str] = {}
+        placeholders = {"", "--", "—", "–", "-", "加载中", "加载中，请稍等", "暂未入驻"}
+        navigation = {"笔记主页", "直播主页", "首页", "找博主", "学内容", "去投放"}
+        label_index = -1
+        inline_id = ""
+        for index, line in enumerate(lines):
+            match = re.match(r"^\s*小红书号\s*[:：]?\s*(.*?)\s*$", str(line))
+            if match:
+                label_index = index
+                inline_id = match.group(1).strip()
+                break
+        if label_index < 0:
+            return fields
+
+        id_index = label_index
+        public_id = inline_id
+        if not public_id and label_index + 1 < len(lines):
+            public_id = str(lines[label_index + 1]).strip()
+            id_index = label_index + 1
+        if public_id in placeholders or public_id in navigation:
+            return fields
+        fields["平台公开ID"] = public_id
+        if label_index > 0:
+            creator_name = str(lines[label_index - 1]).strip()
+            if creator_name and creator_name not in placeholders | navigation:
+                fields["创作者名称"] = creator_name
+
+        region_index = id_index + 1
+        if region_index < len(lines):
+            region = str(lines[region_index]).strip()
+            if region and region not in placeholders | navigation | {"无机构", "加入清单", "邀约"}:
+                fields["地域"] = region
+                institution_index = region_index + 1
+                if institution_index < len(lines):
+                    institution = str(lines[institution_index]).strip()
+                    if institution not in {"无机构", "加入清单", "邀约"} | placeholders:
+                        institution_index = region_index
+                else:
+                    institution_index = region_index
+                tags: list[str] = []
+                end_labels = {
+                    "粉丝数", "获赞与收藏", "加入清单", "邀约", "合作报价",
+                    "图文笔记一口价", "视频笔记一口价",
+                }
+                for value in lines[institution_index + 1 :]:
+                    value = str(value).strip()
+                    if value in end_labels:
+                        break
+                    if value and value not in placeholders:
+                        tags.append(value)
+                if tags:
+                    fields["标签"] = "\n".join(tags)
+        return fields
+
+    @staticmethod
+    def _creator_detail_data_ready(lines: list[str]) -> bool:
+        placeholder_values = {"--", "—", "–", "-", "加载中", "加载中，请稍等", "暂未入驻"}
+        profile = PgyVisibleBrowser._profile_record(PgyVisibleBrowser.__new__(PgyVisibleBrowser), lines)
+        performance = PgyVisibleBrowser._performance_record(PgyVisibleBrowser.__new__(PgyVisibleBrowser), lines)
+        ready_fields = {
+            "粉丝数", "获赞与收藏", "图文笔记一口价", "视频笔记一口价",
+            *CREATOR_PERFORMANCE_FIELDS,
+        }
+        for record in (profile, performance):
+            if not record:
+                continue
+            for key, value in record["fields"].items():
+                if key not in ready_fields:
+                    continue
+                raw = str(value or "").strip()
+                if raw not in placeholder_values and re.search(r"\d", raw):
+                    return True
+        return False
+
     def _performance_record(self, lines: list[str]) -> dict[str, Any] | None:
-        labels = (
-            "曝光中位数",
-            "阅读中位数",
-            "互动中位数",
-            "中位点赞量",
-            "中位收藏量",
-            "中位评论量",
-            "中位分享量",
-            "中位关注量",
-            "互动率",
-            "视频完播率",
-            "图文3秒阅读率",
-        )
         fields = {}
-        for label in labels:
+        for label in CREATOR_PERFORMANCE_FIELDS:
             value = self._value_after(lines, label)
             if value is not None:
                 fields[label] = value
         if not fields:
             return None
-        field_statuses = {name: "captured" if name in fields else "not_displayed" for name in labels}
+        field_statuses = {name: "captured" if name in fields else "not_displayed" for name in CREATOR_PERFORMANCE_FIELDS}
         period = "近30日" if "近30日" in lines else ""
         return {
             "type": "creator_content_performance",
@@ -481,7 +573,8 @@ class PgyVisibleBrowser:
         }
 
     def _fans_record(self, lines: list[str]) -> dict[str, Any] | None:
-        labels = (
+        rate_labels = (
+            "粉丝增量",
             "粉丝量变化幅度",
             "活跃粉丝占比",
             "阅读粉丝占比",
@@ -489,22 +582,40 @@ class PgyVisibleBrowser:
             "下单粉丝占比",
         )
         fields = {}
-        for label in labels:
+        for label in rate_labels:
             value = self._value_after(lines, label)
             if value is not None:
                 fields[label] = value
+
+        demographic_sections = (
+            ("性别分布", "粉丝性别分布"),
+            ("年龄分布", "粉丝年龄分布"),
+            ("地域分布", "粉丝地域分布"),
+            ("用户设备分布", "粉丝设备分布"),
+            ("用户兴趣", "粉丝兴趣分布"),
+        )
+        section_labels = {label for label, _name in demographic_sections}
+        footer_labels = {"小红书官网", "聚光平台", "专业号平台", "帮助中心", "廉洁举报", "反馈"}
+        for index, line in enumerate(lines):
+            for label, field_name in demographic_sections:
+                if line != label:
+                    continue
+                values: list[str] = []
+                for candidate in lines[index + 1 :]:
+                    candidate = str(candidate).strip()
+                    if candidate in section_labels | footer_labels:
+                        break
+                    if candidate not in {"按省份", "按城市"} and candidate:
+                        values.append(candidate)
+                if values:
+                    fields[field_name] = "\n".join(values)
+                break
         if not fields:
             return None
-        field_statuses = {name: "captured" if name in fields else "not_displayed" for name in labels}
-        field_statuses.update(
-            {
-                "粉丝性别分布": "not_attempted",
-                "粉丝年龄分布": "not_attempted",
-                "粉丝地域分布": "not_attempted",
-                "粉丝兴趣分布": "not_attempted",
-                "粉丝设备分布": "not_attempted",
-            }
-        )
+        field_statuses = {
+            name: "captured" if name in fields else "not_displayed"
+            for name in CREATOR_FAN_FIELDS
+        }
         period = "近30日" if "近30日" in lines else ""
         return {
             "type": "fan_analysis",
@@ -687,6 +798,30 @@ class PgyVisibleBrowser:
                                 "records": creator_records,
                             }
                         )
+                    else:
+                        failures += 1
+                        report_failure(
+                            creator_index + 1,
+                            0,
+                            "创作者详情在等待后仍未取得可解析字段",
+                        )
+                    captured_types = {str(record.get("type") or "") for record in creator_records}
+                    missing_detail_records = (
+                        ("creator_profile_sample", CREATOR_PROFILE_FIELDS),
+                        ("creator_content_performance", CREATOR_PERFORMANCE_FIELDS),
+                        ("fan_analysis", CREATOR_FAN_FIELDS),
+                    )
+                    missing_status = "not_displayed" if creator_records else "not_loaded"
+                    for record_type, field_names in missing_detail_records:
+                        if record_type not in captured_types:
+                            report_field_status(
+                                "creator",
+                                creator_ref,
+                                record_type,
+                                field_names,
+                                missing_status,
+                                "蒲公英创作者详情",
+                            )
                 creators_visited += 1
                 save_checkpoint(
                     {"creator_index": creator_index, "note_index": note_start if creator_index == creator_start else 0,
@@ -1044,20 +1179,35 @@ class PgyVisibleBrowser:
             except Exception:
                 pass
         lines = capture_visible()
+        deadline = time.monotonic() + 8
+        start_wait = time.monotonic()
+        while time.monotonic() < deadline:
+            identity_ready = bool(self._creator_identity_fields(lines).get("平台公开ID"))
+            data_ready = self._creator_detail_data_ready(lines)
+            if data_ready and (identity_ready or time.monotonic() - start_wait >= 3):
+                break
+            page.wait_for_timeout(250)
+            lines = capture_visible()
+        if not self._creator_detail_data_ready(lines) and any("加载中" in line for line in lines):
+            return records
         add(self._profile_record(lines))
         add(self._performance_record(lines))
 
-        fans_tab = page.get_by_text("粉丝分析", exact=True)
+        fans_tab = page.get_by_role("tab", name="粉丝分析", exact=True)
+        if fans_tab.count() != 1:
+            fans_tab = page.get_by_text("粉丝分析", exact=True)
+        fan_lines = lines
         if fans_tab.count() == 1 and fans_tab.first.is_visible():
             try:
                 fans_tab.first.click(timeout=8000)
                 page.wait_for_timeout(450)
-                add(self._fans_record(capture_visible()))
+                fan_lines = capture_visible()
             except CaptureError:
                 raise
             except Exception:
-                # Keep the already captured overview and let the task report missing fields.
+                # Keep the overview text and parse any fan section already rendered on the page.
                 pass
+        add(self._fans_record(fan_lines))
         return records
 
     def _open_notes_tab(self, page) -> None:
