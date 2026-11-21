@@ -11,7 +11,7 @@ from pathlib import Path
 from flask import Flask
 
 from creatorscope.browser import PgyVisibleBrowser
-from creatorscope.db import initialize_database
+from creatorscope.db import connection, ensure_creator_ref, initialize_database
 from creatorscope.ingest import ingest_comment_snapshots, ingest_payload
 from research.r4_3_comment_analysis.comment_analysis import fetch_comments
 from research.r4_3_comment_analysis.comments_web import comment_analysis_bp
@@ -236,6 +236,45 @@ class RawDataPreservationTests(unittest.TestCase):
         self.assertEqual(fans["fields"]["粉丝兴趣分布"], "用户最感兴趣的内容类型为娱乐、生活记录、影视")
         self.assertFalse(browser._creator_detail_data_ready(["粉丝数", "--", "曝光中位数", "加载中，请稍等"]))
         self.assertTrue(browser._creator_detail_data_ready(["曝光中位数", "713,874"]))
+
+    def test_creator_reference_reuses_source_and_platform_identity_without_cross_platform_merge(self) -> None:
+        with connection(self.db_path) as conn:
+            first = ensure_creator_ref(
+                conn,
+                "pgy:/solar/pre-trade/blogger-detail/first-route",
+                "2026-11-21T12:10:00",
+                creator_name="课堂样本博主",
+                platform_creator_id="public-creator-777",
+                platform="pgy",
+            )
+            same_reference = ensure_creator_ref(
+                conn,
+                "pgy:/solar/pre-trade/blogger-detail/first-route",
+                "2026-11-21T12:11:00",
+                creator_name="课堂样本博主",
+                platform_creator_id="public-creator-777",
+                platform="pgy",
+            )
+            alternate_reference = ensure_creator_ref(
+                conn,
+                "pgy:/solar/pre-trade/blogger-detail/alternate-route",
+                "2026-11-21T12:12:00",
+                creator_name="课堂样本博主",
+                platform_creator_id="public-creator-777",
+                platform="pgy",
+            )
+            other_platform = ensure_creator_ref(
+                conn,
+                "xhs:/explore/alternate-route",
+                "2026-11-21T12:13:00",
+                creator_name="课堂样本博主",
+                platform_creator_id="public-creator-777",
+                platform="xhs",
+            )
+            self.assertEqual(same_reference, first)
+            self.assertEqual(alternate_reference, first)
+            self.assertNotEqual(other_platform, first)
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM creators").fetchone()[0], 2)
 
     def test_collection_and_comment_ingest_keep_source_values_and_exclude_auth_secrets(self) -> None:
         note_url = "https://www.xiaohongshu.com/explore/public-note-id?source=course"

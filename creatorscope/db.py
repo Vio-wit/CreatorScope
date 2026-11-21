@@ -544,19 +544,36 @@ def ensure_creator_ref(
     platform_creator_id: str | None = None,
     platform: str | None = None,
 ) -> str:
-    """Resolve a creator reference and retain any collected public identity fields."""
+    """Resolve a stable source reference, then reuse a matching platform identity."""
     ref = str(creator_ref).strip()
     creator_id: str
     if ref:
         row = conn.execute(
-            "SELECT creator_id FROM creators WHERE creator_id = ?", (ref,)
+            "SELECT creator_id FROM creators WHERE source_key_hash = ?",
+            (_source_key_hash(ref),),
         ).fetchone()
         if row:
-            creator_id = ref
+            creator_id = str(row["creator_id"])
         else:
-            creator_id = _ensure_creator(conn, ref, captured_at)
+            row = None
+            if platform and platform_creator_id:
+                row = conn.execute(
+                    """SELECT creator_id FROM creators
+                       WHERE platform_creator_id = ? AND (platform = ? OR platform IS NULL)
+                       ORDER BY first_seen_at, creator_id LIMIT 1""",
+                    (str(platform_creator_id).strip(), platform),
+                ).fetchone()
+            creator_id = str(row["creator_id"]) if row else _ensure_creator(conn, ref, captured_at)
     else:
-        creator_id = _ensure_creator(conn, uuid4().hex, captured_at)
+        row = None
+        if platform and platform_creator_id:
+            row = conn.execute(
+                """SELECT creator_id FROM creators
+                   WHERE platform_creator_id = ? AND (platform = ? OR platform IS NULL)
+                   ORDER BY first_seen_at, creator_id LIMIT 1""",
+                (str(platform_creator_id).strip(), platform),
+            ).fetchone()
+        creator_id = str(row["creator_id"]) if row else _ensure_creator(conn, uuid4().hex, captured_at)
     conn.execute(
         """UPDATE creators SET
              creator_name = CASE WHEN ? <> '' THEN ? ELSE creator_name END,
