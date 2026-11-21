@@ -645,7 +645,7 @@ class PgyVisibleBrowser:
             for item in settings.get("retry_notes", [])
             if isinstance(item, dict)
         }
-        for creator_index in range(creator_start, target_end - 1):
+        for creator_index in range(creator_start, target_end):
             if retry_targets and not any(target_creator == creator_index + 1 for target_creator, _ in retry_targets):
                 continue
             check_control()
