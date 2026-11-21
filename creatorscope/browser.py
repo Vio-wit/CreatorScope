@@ -650,6 +650,64 @@ class PgyVisibleBrowser:
         field_statuses = {name: "captured" if value is not None else "not_displayed" for name, value in fields.items()}
         return {"type": "note_detail", "fields": fields, "field_statuses": field_statuses}
 
+    @staticmethod
+    def _creator_target_descriptor(record: dict[str, Any]) -> dict[str, str] | None:
+        fields = record.get("fields") if isinstance(record.get("fields"), dict) else {}
+        creator_ref = str(record.get("creator_ref") or "").strip()
+        platform_id = str(fields.get("平台公开ID") or fields.get("公开平台ID") or "").strip()
+        creator_name = str(fields.get("创作者名称") or fields.get("creator_name") or "").strip()
+        if creator_ref:
+            kind, value = "creator_ref", creator_ref
+        elif platform_id:
+            kind, value = "platform_id", platform_id
+        elif creator_name:
+            kind, value = "creator_name", creator_name
+        else:
+            return None
+        return {
+            "kind": kind,
+            "value": value,
+            "creator_name": creator_name,
+            "platform_creator_id": platform_id,
+        }
+
+    @staticmethod
+    def _creator_target_matches(record: dict[str, Any], target: dict[str, Any]) -> bool:
+        fields = record.get("fields") if isinstance(record.get("fields"), dict) else {}
+        kind = str(target.get("kind") or "")
+        value = str(target.get("value") or "").strip()
+        if not value:
+            return False
+        if kind == "creator_ref":
+            return str(record.get("creator_ref") or "").strip() == value
+        if kind == "platform_id":
+            return str(fields.get("平台公开ID") or fields.get("公开平台ID") or "").strip() == value
+        if kind == "creator_name":
+            return str(fields.get("创作者名称") or fields.get("creator_name") or "").strip() == value
+        return False
+
+    @classmethod
+    def _resolve_creator_targets(
+        cls, records: list[dict[str, Any]], targets: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        resolved: list[dict[str, Any]] = []
+        used_rows: set[int] = set()
+        for target in targets:
+            if not isinstance(target, dict) or not target.get("kind") or not target.get("value"):
+                raise PauseForUser("任务断点中的创作者身份格式无效；已有记录已保留，请重新确认批次")
+            matches = [
+                (index, record)
+                for index, record in enumerate(records)
+                if cls._creator_target_matches(record, target)
+            ]
+            if len(matches) != 1 or matches[0][0] in used_rows:
+                raise PauseForUser(
+                    "断点中的创作者身份在当前可见列表中无法唯一匹配；请确认筛选和列表后再恢复任务"
+                )
+            used_rows.add(matches[0][0])
+            resolved.append(matches[0][1])
+        return resolved
+
     def collect_visible(
         self,
         settings: dict[str, Any],
@@ -735,10 +793,43 @@ class PgyVisibleBrowser:
             page.wait_for_timeout(500)
             total_rows = row_locator.count()
         creator_limit = max(1, min(10, int(settings.get("creator_count", 1))))
-        creator_list_records = self._capture_list_rows(page)
-        if not creator_list_records:
+        visible_creator_records = self._capture_list_rows(page)
+        if not visible_creator_records:
             raise CaptureError("当前列表没有可按表头识别的创作者记录；未启动批量采集")
-        creator_limit = min(creator_limit, len(creator_list_records))
+        creator_limit = min(creator_limit, len(visible_creator_records))
+        planned_targets = checkpoint.get("creator_targets")
+        if not isinstance(planned_targets, list):
+            raise PauseForUser(
+                "此任务断点没有保存创作者身份；为避免列表重排后采错对象，请新建批次继续"
+            )
+        if planned_targets:
+            creator_targets = planned_targets
+            creator_list_records = self._resolve_creator_targets(
+                visible_creator_records, creator_targets
+            )
+            creator_limit = len(creator_list_records)
+        else:
+            initial_targets = [
+                self._creator_target_descriptor(record)
+                for record in visible_creator_records[:creator_limit]
+            ]
+            if any(target is None for target in initial_targets):
+                raise PauseForUser(
+                    "当前列表行没有可保存的创作者身份；请检查页面字段后再启动批量采集"
+                )
+            creator_targets = [target for target in initial_targets if target is not None]
+            creator_list_records = self._resolve_creator_targets(
+                visible_creator_records, creator_targets
+            )
+            save_checkpoint(
+                {
+                    "creator_index": max(0, int(checkpoint.get("creator_index", 0))),
+                    "note_index": max(0, int(checkpoint.get("note_index", 0))),
+                    "comment_count": max(0, min(300, int(checkpoint.get("comment_count", 0) or 0))),
+                    "creator_targets": creator_targets,
+                }
+            )
+        creator_limit = len(creator_list_records)
         creator_start = max(0, min(creator_limit, int(checkpoint.get("creator_index", 0))))
         note_start = max(0, int(checkpoint.get("note_index", 0)))
         comment_total = existing_comment_count
@@ -825,7 +916,7 @@ class PgyVisibleBrowser:
                 creators_visited += 1
                 save_checkpoint(
                     {"creator_index": creator_index, "note_index": note_start if creator_index == creator_start else 0,
-                     "comment_count": comment_total}
+                     "comment_count": comment_total, "creator_targets": creator_targets}
                 )
 
                 if settings.get("collect_notes", True) or settings.get("collect_comments", False):
@@ -904,6 +995,7 @@ class PgyVisibleBrowser:
                                     "creator_index": creator_index,
                                     "note_index": note_start,
                                     "comment_count": comment_total,
+                                    "creator_targets": creator_targets,
                                 }
                             )
                             report_note_success(creator_index + 1, note_index + 1)
@@ -963,6 +1055,7 @@ class PgyVisibleBrowser:
                                     "creator_index": creator_index,
                                     "note_index": note_start,
                                     "comment_count": comment_total,
+                                    "creator_targets": creator_targets,
                                 }
                             )
                             report_progress(
@@ -980,7 +1073,7 @@ class PgyVisibleBrowser:
                 note_start = 0
                 save_checkpoint(
                     {"creator_index": creator_index + 1, "note_index": 0,
-                     "comment_count": comment_total}
+                     "comment_count": comment_total, "creator_targets": creator_targets}
                 )
             except (PauseForUser, StopCollection):
                 raise

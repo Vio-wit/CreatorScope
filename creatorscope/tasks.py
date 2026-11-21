@@ -82,7 +82,15 @@ class TaskManager:
         task_id = uuid4().hex
         batch_id = uuid4().hex
         now = local_timestamp()
-        parameters = {"settings": normalized, "checkpoint": {"creator_index": 0, "note_index": 0, "comment_count": 0}}
+        parameters = {
+            "settings": normalized,
+            "checkpoint": {
+                "creator_index": 0,
+                "note_index": 0,
+                "comment_count": 0,
+                "creator_targets": [],
+            },
+        }
         with connection(self.db_path) as conn:
             conn.execute(
                 """INSERT INTO tasks
@@ -247,6 +255,9 @@ class TaskManager:
             parameters = json.loads(row["parameters_json"] or "{}")
         except (json.JSONDecodeError, TypeError):
             return False
+        checkpoint = parameters.get("checkpoint") or {}
+        if not isinstance(checkpoint.get("creator_targets"), list) or not checkpoint.get("creator_targets"):
+            return False
         targets = sorted(
             {
                 (int(item.get("creator_index", 0)), int(item.get("note_index", 0)))
@@ -260,11 +271,11 @@ class TaskManager:
             {"creator_index": creator_index, "note_index": note_index}
             for creator_index, note_index in targets
         ]
-        checkpoint = parameters.get("checkpoint") or {}
         parameters["checkpoint"] = {
             "creator_index": 0,
             "note_index": 0,
             "comment_count": max(0, min(300, int(checkpoint.get("comment_count", 0) or 0))),
+            "creator_targets": checkpoint.get("creator_targets", []),
         }
         with connection(self.db_path) as conn:
             conn.execute(
@@ -290,6 +301,20 @@ class TaskManager:
                 (task_id,),
             ).fetchone()
             return row
+
+    @staticmethod
+    def _ensure_stable_creator_checkpoint(
+        checkpoint: dict[str, Any], existing_record_count: int
+    ) -> dict[str, Any]:
+        if "creator_targets" not in checkpoint:
+            if existing_record_count:
+                raise PauseForUser(
+                    "此旧任务断点没有创作者身份信息；已保留已有记录，为避免列表重排后重复或错采，请新建批次继续"
+                )
+            checkpoint["creator_targets"] = []
+        if not isinstance(checkpoint.get("creator_targets"), list):
+            raise PauseForUser("任务断点中的创作者身份格式无效；已有记录已保留，请新建批次继续")
+        return checkpoint
 
     def _control(self, task_id: str) -> tuple[threading.Event, threading.Event]:
         with self._lock:
@@ -440,6 +465,11 @@ class TaskManager:
         batch_id = str(row["batch_id"] or "")
         if not batch_id:
             raise ValueError("采集任务批次缺失")
+        with connection(self.db_path) as conn:
+            existing_records = int(
+                conn.execute("SELECT COUNT(*) FROM records WHERE batch_id=?", (batch_id,)).fetchone()[0]
+            )
+        checkpoint = self._ensure_stable_creator_checkpoint(checkpoint, existing_records)
 
         def check_control() -> None:
             resume_event, stop_event = self._control(task_id)
@@ -454,10 +484,13 @@ class TaskManager:
         def save_checkpoint(value: dict[str, Any]) -> None:
             current = self._collection_task(task_id)
             data = json.loads(current["parameters_json"] or "{}")
+            previous_checkpoint = data.get("checkpoint") or {}
+            targets = value.get("creator_targets", previous_checkpoint.get("creator_targets", []))
             data["checkpoint"] = {
                 "creator_index": max(0, int(value.get("creator_index", 0))),
                 "note_index": max(0, int(value.get("note_index", 0))),
                 "comment_count": max(0, min(300, int(value.get("comment_count", 0)))),
+                "creator_targets": targets if isinstance(targets, list) else [],
             }
             with connection(self.db_path) as conn:
                 conn.execute(
