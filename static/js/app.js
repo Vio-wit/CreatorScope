@@ -586,11 +586,11 @@
     const labels = { baseline_import: '导入历史基线', file_import: '导入 JSON / CSV', browser_open: '打开蒲公英浏览器', pgy_visible_capture: '采集当前可见页面', browser_close: '关闭蒲公英浏览器', visible_collection: '蒲公英 → 小红书可见采集' };
     container.innerHTML = tasks.slice(0, 8).map((task) => {
       const status = task.status || 'queued';
-      const statusLabel = { queued: '排队中', running: `处理中 ${task.progress || 0}%`, paused: '已暂停', stopping: '正在停止', stopped: '已停止', completed: '已完成', failed: '失败' }[status] || status;
+      const statusLabel = { queued: '排队中', running: `处理中 ${task.progress || 0}%`, waiting_user: '等待你关闭弹窗', paused: '已暂停', stopping: '正在停止', stopped: '已停止', completed: '已完成', failed: '失败' }[status] || status;
       const isCollection = task.task_type === 'visible_collection';
       const hasFailedNotes = (task.failures || []).some((failure) => Number(failure.note_index) > 0);
       let actions = '';
-      if (!demoMode && isCollection && ['queued', 'running'].includes(status)) actions = `<button class="button button-secondary" data-task-action="pause" data-task-id="${escapeHtml(task.task_id)}">暂停</button><button class="button button-quiet" data-task-action="stop" data-task-id="${escapeHtml(task.task_id)}">停止</button>`;
+      if (!demoMode && isCollection && ['queued', 'running', 'waiting_user'].includes(status)) actions = `<button class="button button-secondary" data-task-action="pause" data-task-id="${escapeHtml(task.task_id)}">暂停</button><button class="button button-quiet" data-task-action="stop" data-task-id="${escapeHtml(task.task_id)}">停止</button>`;
       else if (!demoMode && isCollection && status === 'paused') actions = `<button class="button button-secondary" data-task-action="resume" data-task-id="${escapeHtml(task.task_id)}">恢复</button><button class="button button-quiet" data-task-action="stop" data-task-id="${escapeHtml(task.task_id)}">停止</button>`;
       else if (!demoMode && isCollection && ['stopped', 'failed'].includes(status)) actions = `<button class="button button-secondary" data-task-action="resume" data-task-id="${escapeHtml(task.task_id)}">从断点恢复</button>${hasFailedNotes ? `<button class="button button-secondary" data-task-action="retry-failed" data-task-id="${escapeHtml(task.task_id)}">只重试失败笔记</button>` : ''}`;
       else if (!demoMode && isCollection && status === 'completed' && hasFailedNotes) actions = `<button class="button button-secondary" data-task-action="retry-failed" data-task-id="${escapeHtml(task.task_id)}">只重试失败笔记</button>`;
@@ -737,7 +737,7 @@
   async function refreshTasks() {
     const tasks = await requestJson('/api/tasks');
     renderTasks(tasks);
-    pendingTask = tasks.some((task) => ['queued', 'running', 'paused', 'stopping'].includes(task.status));
+    pendingTask = tasks.some((task) => ['queued', 'running', 'waiting_user', 'paused', 'stopping'].includes(task.status));
     elements.importButton.disabled = pendingTask;
     elements.uploadButton.disabled = pendingTask;
     elements.openBrowserButton.disabled = pendingTask;

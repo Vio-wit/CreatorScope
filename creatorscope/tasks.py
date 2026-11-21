@@ -8,7 +8,13 @@ from pathlib import Path
 from typing import Any, Callable
 from uuid import uuid4
 
-from .browser import CaptureError, PauseForUser, PgyVisibleBrowser, StopCollection
+from .browser import (
+    CaptureError,
+    ManualDismissRequired,
+    PauseForUser,
+    PgyVisibleBrowser,
+    StopCollection,
+)
 from .db import connection, local_timestamp, record_field_statuses
 from .ingest import (
     ingest_comment_snapshots,
@@ -157,7 +163,7 @@ class TaskManager:
 
     def pause_task(self, task_id: str) -> bool:
         row = self._collection_task(task_id)
-        if not row or row["status"] not in {"queued", "running"}:
+        if not row or row["status"] not in {"queued", "running", "waiting_user"}:
             return False
         resume_event, stop_event = self._control(task_id)
         resume_event.clear()
@@ -207,7 +213,7 @@ class TaskManager:
 
     def stop_task(self, task_id: str) -> bool:
         row = self._collection_task(task_id)
-        if not row or row["status"] not in {"queued", "running", "paused"}:
+        if not row or row["status"] not in {"queued", "running", "waiting_user", "paused"}:
             return False
         resume_event, stop_event = self._control(task_id)
         stop_event.set()
@@ -329,7 +335,7 @@ class TaskManager:
     def _restore_interrupted_collections(self) -> None:
         with connection(self.db_path) as conn:
             rows = conn.execute(
-                "SELECT task_id FROM tasks WHERE task_type='visible_collection' AND status IN ('running','stopping')"
+                "SELECT task_id FROM tasks WHERE task_type='visible_collection' AND status IN ('running','stopping','waiting_user')"
             ).fetchall()
             for row in rows:
                 conn.execute(
@@ -585,20 +591,47 @@ class TaskManager:
             "collect_creator": False if retry_notes else settings.get("collect_creator", True),
             "retry_notes": retry_notes,
         }
-        result = self.browser.collect_visible(
-            collection_settings,
-            checkpoint,
-            check_control=check_control,
-            save_checkpoint=save_checkpoint,
-            save_records=save_records,
-            save_comments=save_comments,
-            report_progress=report_progress,
-            report_failure=report_failure,
-            report_note_success=report_note_success,
-            report_field_status=report_field_status,
-            existing_comment_count=existing_comment_count,
-            comment_scope=batch_id,
-        )
+        while True:
+            try:
+                result = self.browser.collect_visible(
+                    collection_settings,
+                    checkpoint,
+                    check_control=check_control,
+                    save_checkpoint=save_checkpoint,
+                    save_records=save_records,
+                    save_comments=save_comments,
+                    report_progress=report_progress,
+                    report_failure=report_failure,
+                    report_note_success=report_note_success,
+                    report_field_status=report_field_status,
+                    existing_comment_count=existing_comment_count,
+                    comment_scope=batch_id,
+                )
+                break
+            except ManualDismissRequired as exc:
+                with connection(self.db_path) as conn:
+                    conn.execute(
+                        "UPDATE tasks SET status='waiting_user', message=?, error_message=NULL, finished_at=NULL WHERE task_id=?",
+                        (str(exc)[:240], task_id),
+                    )
+                self.browser.wait_for_manual_dismissal(exc, check_control=check_control)
+                with connection(self.db_path) as conn:
+                    conn.execute(
+                        "UPDATE tasks SET status='running', message='页面弹窗已关闭，正在从已保存断点继续采集' WHERE task_id=?",
+                        (task_id,),
+                    )
+                    latest = conn.execute(
+                        "SELECT parameters_json FROM tasks WHERE task_id=?",
+                        (task_id,),
+                    ).fetchone()
+                    latest_parameters = json.loads(latest[0] or "{}") if latest else {}
+                    checkpoint = latest_parameters.get("checkpoint") or checkpoint
+                    existing_comment_count = int(
+                        conn.execute(
+                            "SELECT COUNT(*) FROM comment_snapshots WHERE batch_id=?",
+                            (batch_id,),
+                        ).fetchone()[0]
+                    )
         self._append_result(
             task_id,
             comment_count=int(result.get("comment_count", 0)),

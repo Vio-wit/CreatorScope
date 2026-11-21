@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from creatorscope.browser import PauseForUser, PgyVisibleBrowser
+from creatorscope.browser import ManualDismissRequired, PauseForUser, PgyVisibleBrowser
 from creatorscope.db import connection, initialize_database
 from creatorscope.ingest import normalize_value
 from creatorscope.quality import batch_quality_report
@@ -135,7 +135,37 @@ class GateBrowser:
 
 class OverlayBrowser:
     def collect_visible(self, *_args, **_kwargs):
-        raise PauseForUser("蒲公英列表被页面弹层遮挡；请在可见浏览器中确认并关闭后恢复任务")
+        raise PauseForUser("页面要求验证码或安全验证，任务已暂停；请在可见浏览器中按正常流程处理")
+
+
+class ManualDismissBrowser:
+    def __init__(self):
+        self.calls = 0
+        self.waiting = threading.Event()
+        self.dismissed = threading.Event()
+
+    def collect_visible(self, *_args, **kwargs):
+        self.calls += 1
+        kwargs["check_control"]()
+        if self.calls == 1:
+            raise ManualDismissRequired(
+                "普通页面弹窗需要手动关闭；关闭后将自动继续采集",
+                None,
+                kind="test", pgy=True,
+            )
+        return {
+            "creators_visited": 1,
+            "notes_visited": 1,
+            "comment_count": 0,
+            "dom_rows_added": 0,
+            "failure_count": 0,
+            "message": "resumed after manual close",
+        }
+
+    def wait_for_manual_dismissal(self, _requirement, *, check_control):
+        self.waiting.set()
+        while not self.dismissed.wait(0.01):
+            check_control()
 
 
 class RetryBrowser:
@@ -489,7 +519,7 @@ class VisibleCollectionTests(unittest.TestCase):
             task_id = manager.submit_visible_collection({"creator_count": 1})
             task = self._wait_for_status(task_id, {"paused", "failed"})
             self.assertEqual(task["status"], "paused", task["message"])
-            self.assertIn("弹层遮挡", task["message"])
+            self.assertIn("验证码或安全验证", task["message"])
             parameters = json.loads(task["parameters_json"])
             self.assertEqual(
                 parameters["checkpoint"],
@@ -505,6 +535,103 @@ class VisibleCollectionTests(unittest.TestCase):
                     "SELECT status, record_count FROM batches WHERE task_id=?", (task_id,)
                 ).fetchone()
                 self.assertEqual(tuple(batch), ("paused", 0))
+        finally:
+            manager.shutdown()
+            self._wait_for_manager(manager)
+
+    def test_manual_dismiss_prompt_auto_resumes_from_saved_checkpoint(self) -> None:
+        browser = ManualDismissBrowser()
+        manager = TaskManager(self.db_path, self.root / "unused-baseline.json", browser)
+        try:
+            task_id = manager.submit_visible_collection({"creator_count": 1})
+            self.assertTrue(browser.waiting.wait(3))
+            waiting = self._wait_for_status(task_id, {"waiting_user", "failed", "paused"})
+            self.assertEqual(waiting["status"], "waiting_user", waiting["message"])
+            self.assertIn("手动关闭", waiting["message"])
+            self.assertEqual(browser.calls, 1)
+
+            browser.dismissed.set()
+            completed = self._wait_for_status(task_id, {"completed", "failed", "paused"})
+            self.assertEqual(completed["status"], "completed", completed["message"])
+            self.assertEqual(browser.calls, 2)
+            self.assertIn("resumed after manual close", completed["message"])
+        finally:
+            manager.shutdown()
+            self._wait_for_manager(manager)
+
+    def test_manual_dismiss_wait_checks_the_overlay_until_it_is_hidden(self) -> None:
+        class Locator:
+            def __init__(self, page):
+                self.page = page
+
+            def count(self):
+                return 1
+
+            def nth(self, _index):
+                return self
+
+            def is_visible(self):
+                return self.page.overlay_visible
+
+        class Page:
+            def __init__(self):
+                self.overlay_visible = True
+                self.selector = None
+
+            def is_closed(self):
+                return False
+
+            def locator(self, selector):
+                self.selector = selector
+                return Locator(self)
+
+            def wait_for_timeout(self, timeout):
+                self.assert_wait = timeout
+                self.overlay_visible = False
+
+        page = Page()
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        browser._check_page_blocker = lambda _page, **_kwargs: None
+        requirement = ManualDismissRequired(
+            "close the popup", page, kind="overlay", pgy=True, selector="div.notice-mask"
+        )
+        control_checks = []
+
+        browser._wait_for_manual_dismissal(requirement, check_control=lambda: control_checks.append(True))
+
+        self.assertFalse(page.overlay_visible)
+        self.assertEqual(page.selector, "div.notice-mask")
+        self.assertEqual(page.assert_wait, 500)
+        self.assertGreaterEqual(len(control_checks), 2)
+
+    def test_captcha_page_blocker_remains_a_hard_pause(self) -> None:
+        class BodyLocator:
+            def inner_text(self, timeout):
+                assert timeout == 5000
+                return "请完成安全验证"
+
+        class Page:
+            def locator(self, selector):
+                assert selector == "body"
+                return BodyLocator()
+
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        with self.assertRaisesRegex(PauseForUser, "验证码或安全验证"):
+            browser._check_page_blocker(Page(), pgy=True)
+
+    def test_waiting_for_manual_close_can_be_stopped(self) -> None:
+        browser = ManualDismissBrowser()
+        manager = TaskManager(self.db_path, self.root / "unused-baseline.json", browser)
+        try:
+            task_id = manager.submit_visible_collection({"creator_count": 1})
+            self.assertTrue(browser.waiting.wait(3))
+            waiting = self._wait_for_status(task_id, {"waiting_user", "failed", "paused"})
+            self.assertEqual(waiting["status"], "waiting_user", waiting["message"])
+
+            self.assertTrue(manager.stop_task(task_id))
+            stopped = self._wait_for_status(task_id, {"stopped", "failed", "completed"})
+            self.assertEqual(stopped["status"], "stopped", stopped["message"])
+            self.assertEqual(browser.calls, 1)
         finally:
             manager.shutdown()
             self._wait_for_manager(manager)
