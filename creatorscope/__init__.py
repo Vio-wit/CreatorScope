@@ -11,7 +11,7 @@ from typing import Any
 from flask import Flask, jsonify, make_response, render_template, request
 
 from .analytics import analytics_data, compare_creators, compare_notes, creator_library, dashboard_data, note_compare_options, notes_data, overview_data, wordcloud_png
-from .ai import AIServiceError, build_preview, generated_at, provider_status, run_analysis, test_connection
+from .ai import AIServiceError, build_preview, generated_at, list_analysis_reports, load_analysis_report, provider_status, run_analysis, save_analysis_report, test_connection
 from .browser import PgyVisibleBrowser
 from .db import connection, initialize_database
 from .domain import field_dictionary
@@ -41,6 +41,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         DATABASE_PATH=Path(
             os.environ.get("CREATORSCOPE_DB", str(instance_dir / "creatorscope_unified.sqlite3"))
         ),
+        AI_REPORTS_PATH=instance_dir / "ai_reports",
         BASELINE_PATH=project_root / "data" / "baseline" / "pgy_live_sample_2026-11-19.json",
         MAX_CONTENT_LENGTH=MAX_UPLOAD_BYTES + 64 * 1024,
     )
@@ -48,6 +49,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         app.config.update(test_config)
 
     app.config["DATABASE_PATH"] = Path(app.config["DATABASE_PATH"])
+    app.config["AI_REPORTS_PATH"] = Path(app.config["AI_REPORTS_PATH"])
     # All CreatorScope modules share one local database, including comment analysis.
     app.config["COMMENT_ANALYSIS_DATABASE_PATH"] = app.config["DATABASE_PATH"]
     app.config["BASELINE_PATH"] = Path(app.config["BASELINE_PATH"])
@@ -114,6 +116,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 creator_ids=payload.get("creator_ids") if isinstance(payload.get("creator_ids"), list) else [],
                 note_ids=payload.get("note_ids") if isinstance(payload.get("note_ids"), list) else [],
                 batch_id=str(payload.get("batch_id") or ""),
+                include_raw_text=payload.get("include_raw_text") is True,
             )
         except AIServiceError as exc:
             return jsonify({"error": str(exc)}), 400
@@ -168,21 +171,48 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 creator_ids=payload.get("creator_ids") if isinstance(payload.get("creator_ids"), list) else [],
                 note_ids=payload.get("note_ids") if isinstance(payload.get("note_ids"), list) else [],
                 batch_id=str(payload.get("batch_id") or ""),
+                include_raw_text=payload.get("include_raw_text") is True,
             )
             output = run_analysis(provider=provider, model=model, base_url=base_url, preview=preview)
         except AIServiceError as exc:
             return jsonify({"error": str(exc)}), 503
-        return jsonify({
-            "status": "completed",
+        analysis_at = generated_at()
+        report = {
+            "analysis_type": preview["analysis_type"],
+            "analysis_label": preview["analysis_label"],
             "provider": provider,
             "provider_label": status["label"],
             "model": status["model"],
-            "generated_at": generated_at(),
+            "input_batch_id": str(payload.get("batch_id") or ""),
+            "input_creator_ids": payload.get("creator_ids") if isinstance(payload.get("creator_ids"), list) else [],
+            "input_note_ids": payload.get("note_ids") if isinstance(payload.get("note_ids"), list) else [],
+            "include_raw_text": preview["include_raw_text"],
+            "analysis_at": analysis_at,
+            "scope_summary": preview["scope_summary"],
             "facts": preview["data"],
             "model_output": output,
-            "scope_summary": preview["scope_summary"],
             "output_kind": "模型推断；请结合事实数据复核",
+            "report_saved": True,
+        }
+        try:
+            saved_report = save_analysis_report(app.config["AI_REPORTS_PATH"], report)
+        except OSError:
+            saved_report = {**report, "run_id": "", "report_saved": False}
+        return jsonify({
+            "status": "completed",
+            **saved_report,
         })
+
+    @app.get("/api/ai/reports")
+    def api_ai_reports():
+        return jsonify({"reports": list_analysis_reports(app.config["AI_REPORTS_PATH"])})
+
+    @app.get("/api/ai/reports/<run_id>")
+    def api_ai_report_detail(run_id: str):
+        report = load_analysis_report(app.config["AI_REPORTS_PATH"], run_id)
+        if report is None:
+            return jsonify({"error": "没有找到该本地 AI 分析报告"}), 404
+        return jsonify(report)
 
     @app.get("/favicon.ico")
     def favicon():

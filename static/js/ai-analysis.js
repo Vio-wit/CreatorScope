@@ -33,6 +33,7 @@
       creator_ids: selectedValues('#creatorSelect'),
       note_ids: selectedValues('#noteSelect'),
       batch_id: $('#batchSelect').value,
+      include_raw_text: $('#includeRawText').checked,
     };
   }
 
@@ -81,6 +82,29 @@
     fill('#batchSelect', data.batches || [], 'batch_id', (item) => item.source + ' · ' + (item.captured_at || item.batch_id), '选择批次');
   }
 
+  async function loadReportHistory(selectRunId = '') {
+    const data = await requestJson('/api/ai/reports');
+    const select = $('#savedReportSelect');
+    const reports = data.reports || [];
+    select.innerHTML = '<option value="">选择一条本地 AI 报告</option>' + reports.map((item) => {
+      const rawTextLabel = item.include_raw_text ? '包含原文' : '不含原文';
+      const label = `${item.analysis_at || '时间未知'} · ${item.provider_label || item.provider} / ${item.model || '模型未知'} · 批次 ${item.input_batch_id || '未指定'} · ${item.analysis_label || item.analysis_type} · ${rawTextLabel}`;
+      return `<option value="${escapeHtml(item.run_id)}">${escapeHtml(label)}</option>`;
+    }).join('');
+    if (selectRunId && reports.some((item) => item.run_id === selectRunId)) select.value = selectRunId;
+    $('#savedReportStatus').textContent = reports.length ? `本机保存 ${reports.length} 条报告记录` : '尚无已完成并保存的模型分析报告';
+  }
+
+  async function showSavedReport(runId) {
+    if (!runId) return;
+    const data = await requestJson(`/api/ai/reports/${encodeURIComponent(runId)}`);
+    $('#factsOutput').textContent = JSON.stringify(data.facts || {}, null, 2);
+    $('#modelOutput').textContent = data.model_output || '';
+    $('#resultMeta').textContent = `${data.provider_label || data.provider} · ${data.model} · 批次 ${data.input_batch_id || '未指定'} · ${data.include_raw_text ? '包含原文' : '不含原文'} · ${data.analysis_at || ''} · ${data.run_id}`;
+    $('#resultCard').hidden = false;
+    $('#savedReportStatus').textContent = `已打开本地记录 ${data.run_id}`;
+  }
+
   async function initialize() {
     const data = await requestJson('/api/ai/config?provider=openai_compatible');
     const provider = $('#providerSelect');
@@ -90,6 +114,7 @@
     loadLocalSettings();
     await refreshProviderStatus(false);
     await loadOptions();
+    await loadReportHistory();
   }
 
   async function createPreview() {
@@ -128,9 +153,12 @@
       }
       $('#factsOutput').textContent = JSON.stringify(data.facts, null, 2);
       $('#modelOutput').textContent = data.model_output;
-      $('#resultMeta').textContent = data.provider_label + ' · ' + data.model + ' · ' + data.generated_at;
+      $('#resultMeta').textContent = data.report_saved
+        ? `${data.provider_label} · ${data.model} · 批次 ${data.input_batch_id || '未指定'} · ${data.include_raw_text ? '包含原文' : '不含原文'} · ${data.analysis_at} · ${data.run_id}`
+        : `${data.provider_label} · ${data.model} · 批次 ${data.input_batch_id || '未指定'} · ${data.analysis_at} · 本地保存失败`;
       $('#resultCard').hidden = false;
-      $('#runStatus').textContent = '完成。请将模型解释视为推断，并核对旁边的事实数据。';
+      $('#runStatus').textContent = data.report_saved ? '完成并已保存本地报告。请将模型解释视为推断，并核对旁边的事实数据。' : '模型已返回结果，但本地报告保存失败；请复制需要保留的内容并检查本机写入权限。';
+      if (data.report_saved) await loadReportHistory(data.run_id);
     } catch (error) {
       $('#runStatus').textContent = error.message;
       $('#runAnalysis').disabled = false;
@@ -171,7 +199,11 @@
       $('#runAnalysis').disabled = !previewBody || !$('#uploadConsent').checked;
     });
     $('#runAnalysis').addEventListener('click', runAnalysis);
-    ['#analysisType', '#batchSelect', '#creatorSelect', '#noteSelect'].forEach((selector) => {
+    $('#loadSavedReport').addEventListener('click', async () => {
+      try { await showSavedReport($('#savedReportSelect').value); }
+      catch (error) { $('#savedReportStatus').textContent = error.message; }
+    });
+    ['#analysisType', '#batchSelect', '#creatorSelect', '#noteSelect', '#includeRawText'].forEach((selector) => {
       $(selector).addEventListener('change', () => invalidatePreview());
     });
     ['#baseUrlInput', '#modelInput'].forEach((selector) => {

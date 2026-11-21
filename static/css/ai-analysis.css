@@ -14,7 +14,11 @@
 .scope-multi small{color:#939d96;font-size:8px;line-height:1.45}
 .ai-action-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap;padding:0 16px 15px}
 .ai-action-row span{color:#87918a;font-size:9px}
-.ai-redaction-note{margin:12px 16px 8px;padding:9px 11px;border-radius:7px;background:#f5f8f5;color:#647269;font-size:9px;line-height:1.55}
+.ai-raw-option{display:flex;flex-direction:column;gap:5px;margin:0 16px 12px;padding:10px 12px;border:1px solid #e4eae4;border-radius:8px;background:#f8faf8}
+.ai-raw-option label{display:flex;align-items:flex-start;gap:8px;color:#58665c;font-size:10px;line-height:1.5}
+.ai-raw-option input{margin:2px 0 0;accent-color:#187b5b}
+.ai-raw-option small{margin-left:22px;color:#87918a;font-size:9px;line-height:1.5}
+.ai-data-scope-note{margin:12px 16px 8px;padding:9px 11px;border-radius:7px;background:#f5f8f5;color:#647269;font-size:9px;line-height:1.55}
 .ai-preview-card pre,.ai-result-card pre{max-height:340px;overflow:auto;margin:0 16px 14px;padding:12px;border-radius:8px;background:#f7f9f7;color:#46534a;font:10px/1.6 Consolas,'Microsoft YaHei',monospace;white-space:pre-wrap;overflow-wrap:anywhere}
 .ai-consent{display:flex;align-items:flex-start;gap:8px;margin:0 16px 14px;padding:11px;border:1px solid #e4eae4;border-radius:8px;color:#58665c;font-size:10px;line-height:1.5}
 .ai-consent input{margin:2px 0 0;accent-color:#187b5b}
@@ -22,5 +26,6 @@
 .ai-result-grid article{min-width:0}
 .ai-result-grid h3{margin:0 0 8px;color:#59665d;font-size:11px}
 .ai-result-grid pre{max-height:500px;margin:0}
+.ai-history-card .ai-action-row select{height:31px;min-width:250px;max-width:min(100%,620px);border:1px solid #e1e7e1;border-radius:7px;background:#fff;padding:0 9px;color:#3d4a41;font:inherit;font-size:9px}
 @media(max-width:1000px){.ai-settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ai-scope-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ai-scope-grid .scope-multi{grid-row:auto}}
 @media(max-width:680px){.ai-settings-grid,.ai-scope-grid,.ai-result-grid{grid-template-columns:1fr}.ai-setting-actions{flex-wrap:wrap}.ai-setting-actions .button{flex:1}.ai-result-grid{padding:10px}}
