@@ -6,6 +6,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 from creatorscope.browser import PauseForUser, PgyVisibleBrowser
 from creatorscope.db import connection, initialize_database
@@ -253,6 +254,86 @@ class VisibleCollectionTests(unittest.TestCase):
         finally:
             manager.shutdown()
             self._wait_for_manager(manager)
+
+    def test_visible_creator_loop_honors_single_batch_and_resume_bounds(self) -> None:
+        class RowLocator:
+            def __init__(self, count):
+                self._count = count
+
+            def count(self):
+                return self._count
+
+        class Page:
+            def __init__(self, url, row_count):
+                self.url = url
+                self.row_count = row_count
+
+            def is_closed(self):
+                return False
+
+            def get_by_role(self, role):
+                return RowLocator(self.row_count) if role == "row" else RowLocator(0)
+
+        def run_case(creator_count, checkpoint_creator_index):
+            list_page = Page("https://pgy.xiaohongshu.com/solar/pre-trade/note/kol", creator_count + 1)
+            list_records = [
+                {
+                    "type": "blogger_list_sample",
+                    "visible_row_index": index + 1,
+                    "fields": {"创作者名称": f"creator-{index + 1}"},
+                }
+                for index in range(creator_count)
+            ]
+            browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+            browser._context = SimpleNamespace(pages=[list_page])
+            browser._page = list_page
+            browser._check_page_blocker = lambda _page, **_kwargs: None
+            browser._capture_list_rows = lambda _page: list_records
+            browser._open_creator_row = lambda _page, row_index, expected_record=None: (
+                Page(
+                    f"https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/detail-{row_index}",
+                    0,
+                ),
+                True,
+            )
+            browser._capture_creator_records = lambda _page, creator_ref: [
+                {
+                    "type": "creator_profile_sample",
+                    "creator_ref": creator_ref,
+                    "fields": {"粉丝数": "1200"},
+                }
+            ]
+            browser._close_owned_page = lambda _page: None
+            saved_records = []
+            result = browser._collect_visible(
+                {
+                    "creator_count": creator_count,
+                    "collect_creator": True,
+                    "collect_notes": False,
+                    "collect_comments": False,
+                },
+                {"creator_index": checkpoint_creator_index, "note_index": 0},
+                check_control=lambda: None,
+                save_checkpoint=lambda _value: None,
+                save_records=lambda payload: saved_records.extend(payload["records"]),
+                save_comments=lambda *_args: {"inserted": 0},
+                report_progress=lambda *_args: None,
+                report_failure=lambda *_args: None,
+                report_note_success=lambda *_args: None,
+                report_field_status=lambda *_args: None,
+                existing_comment_count=0,
+            )
+            return result, saved_records
+
+        one, one_records = run_case(1, 0)
+        ten, ten_records = run_case(10, 0)
+        resumed, resumed_records = run_case(10, 4)
+        self.assertEqual(one["creators_visited"], 1)
+        self.assertEqual(len(one_records), 2)
+        self.assertEqual(ten["creators_visited"], 10)
+        self.assertEqual(len(ten_records), 20)
+        self.assertEqual(resumed["creators_visited"], 6)
+        self.assertEqual(len(resumed_records), 12)
 
     def test_limits_are_rejected_before_task_creation(self) -> None:
         manager = TaskManager(self.db_path, self.root / "unused-baseline.json", RecordingBrowser())
