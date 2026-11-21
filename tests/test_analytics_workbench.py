@@ -9,7 +9,7 @@ from pathlib import Path
 from creatorscope.analytics import analytics_data, creator_library, notes_data, overview_data
 from creatorscope.db import connection, initialize_database
 from creatorscope import create_app
-from research.r4_3_comment_analysis.comment_analysis import compare_word_frequencies
+from research.r4_3_comment_analysis.comment_analysis import compare_word_frequencies, summarize
 
 
 class AnalyticsWorkbenchTests(unittest.TestCase):
@@ -49,13 +49,13 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
 
     def _seed(self) -> None:
         with connection(self.db_path) as conn:
-            for creator_id, pseudonym, creator_name, platform_id, location in (
-                ("creator-a", "博主 0001", "Creator A", "platform-creator-a", "上海"),
-                ("creator-b", "博主 0002", "Creator B", "platform-creator-b", "杭州"),
+            for creator_id, pseudonym, creator_name, platform_id, location, category in (
+                ("creator-a", "博主 0001", "Creator A", "platform-creator-a", "上海", "美妆"),
+                ("creator-b", "博主 0002", "Creator B", "platform-creator-b", "杭州", "旅行"),
             ):
                 conn.execute(
-                    "INSERT INTO creators(creator_id,pseudonym,creator_name,platform,platform_creator_id,location,source_key_hash,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?,?)",
-                    (creator_id, pseudonym, creator_name, "xiaohongshu", platform_id, location, f"hash-{creator_id}", "2026-11-01", "2026-11-02"),
+                    "INSERT INTO creators(creator_id,pseudonym,creator_name,platform,platform_creator_id,location,category,source_key_hash,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                    (creator_id, pseudonym, creator_name, "xiaohongshu", platform_id, location, category, f"hash-{creator_id}", "2026-11-01", "2026-11-02"),
                 )
             for batch_id, source, captured in (
                 ("batch-a", "pgy_visible", "2026-11-01T10:00:00"),
@@ -79,7 +79,7 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
             self._record(conn, "batch-d", "creator_profile_sample", "2026-11-04T10:00:00", "creator-a", None, {"粉丝数": "150", "阅读中位数": "30", "互动中位数": "8", "全部报价": "700", "内容类目": "美妆"}, "当前粉丝快照")
             self._record(conn, "batch-a", "note_detail", "2026-11-01T10:10:00", "creator-a", "note-a", {"阅读量": "1000", "点赞量": "100", "收藏量": "20", "评论量": "10", "分享量": "5"}, "累计")
             self._record(conn, "batch-b", "note_detail", "2026-11-02T10:10:00", "creator-a", "note-a", {"阅读量": "1200", "点赞量": "120", "收藏量": "25", "评论量": "12", "分享量": "6"}, "累计")
-            self._record(conn, "batch-c", "note_detail", "2026-11-03T10:10:00", "creator-b", "note-b", {"阅读量": "500", "点赞量": "50"}, "累计")
+            self._record(conn, "batch-c", "xhs_public_note", "2026-11-03T10:10:00", "creator-b", "note-b", {"阅读量": "500", "点赞量": "50"}, "累计")
             for batch_id, note_id, text in (
                 ("batch-a", "note-a", "好用 温和 保湿"),
                 ("batch-a", "note-b", "旅行 风景"),
@@ -96,6 +96,7 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
         self.assertEqual(sum(source["total_count"] for source in overview["sources"]), 11)
         creators = creator_library(self.db_path, location="上海", batch_id="batch-b", sort_by="followers")
         self.assertEqual([item["creator_id"] for item in creators["creators"]], ["creator-a"])
+        self.assertEqual(creators["creators"][0]["creator_name"], "Creator A")
         dashboard = create_app({"DATABASE_PATH": self.db_path, "BASELINE_PATH": self.db_path.parent / "missing.json"}).test_client().get("/api/dashboard?batch_id=__all__")
         self.assertEqual(dashboard.status_code, 200)
         self.assertTrue(dashboard.get_json()["all_batches"])
@@ -111,6 +112,29 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
         self.assertEqual(len(result["charts"]["metric_trends"]), 5)
         self.assertTrue(all("pgy_visible" in series["label"] and "累计" in series["label"] for series in result["charts"]["metric_trends"]))
         self.assertEqual(notes_data(self.db_path, topic="#护肤", date_from="2026-11-13")["count"], 0)
+
+    def test_note_analysis_uses_note_bodies_and_separates_source_distributions(self) -> None:
+        all_notes = notes_data(self.db_path)
+        self.assertEqual(all_notes["count"], 2)
+        self.assertEqual(all_notes["text_analysis"]["body"]["sample_count"], 2)
+        self.assertEqual({item["creator_name"] for item in all_notes["note_options"]}, {"Creator A", "Creator B"})
+        self.assertIn("raw", {item["word"] for item in all_notes["text_analysis"]["body"]["frequencies"]})
+        self.assertIn("#护肤", {item["word"] for item in all_notes["text_analysis"]["topics"]["frequencies"]})
+        self.assertTrue(all("sample_count" in item for item in all_notes["charts"]["metric_distributions"]))
+        self.assertTrue(all(item["source"] in {"pgy_visible", "xhs_import"} for item in all_notes["charts"]["metric_distributions"]))
+        pgy_notes = notes_data(self.db_path, source="pgy_visible", category="美妆", query="护肤")
+        self.assertEqual(pgy_notes["count"], 1)
+        self.assertEqual({item["source"] for item in pgy_notes["charts"]["top_read"]}, {"pgy_visible"})
+        self.assertEqual({row["note_id"] for row in notes_data(self.db_path, note_id="note-b")["notes"]}, {"note-b"})
+
+        word_frequency = analytics_data(self.db_path, source="pgy_visible", creator_id="creator-a", word_kind="body")
+        words = {item["word"] for item in word_frequency["charts"]["word_frequency"]}
+        self.assertIn("raw", words)
+        self.assertGreater(word_frequency["charts"]["follower_price_sample_count"], 0)
+        self.assertEqual(word_frequency["counts"]["notes"], 1)
+        self.assertEqual(word_frequency["charts"]["note_metrics"][0]["note_id"], "note-a")
+        public_note_metrics = analytics_data(self.db_path, source="xhs_import")
+        self.assertIn("note-b", {item["note_id"] for item in public_note_metrics["charts"]["note_metrics"]})
 
     def test_trend_requires_same_source_period_and_repeated_creator(self) -> None:
         result = analytics_data(self.db_path)
@@ -137,19 +161,47 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
         self.assertEqual(result["comparison_comment_count"], 1)
         self.assertIn("轻薄", {item["word"] for item in result["words"]})
 
+    def test_comment_length_and_reply_charts_use_raw_and_exact_values(self) -> None:
+        rows = [
+            {"comment_text": " 赞 " , "cleaned_text": "赞", "like_count_normalized": 2, "reply_count_raw": "0", "comment_level": 1, "is_pinned": False, "note_id": "note-a", "note_title": "标题", "creator_id": "creator-a", "creator_name": "公开名称"},
+            {"comment_text": "很喜欢", "cleaned_text": "很喜欢", "like_count_normalized": None, "reply_count_raw": "2", "comment_level": 1, "is_pinned": False, "note_id": "note-a", "note_title": "标题", "creator_id": "creator-a", "creator_name": "公开名称"},
+            {"comment_text": "一般", "cleaned_text": "一般", "like_count_normalized": None, "reply_count_raw": "10+", "comment_level": 2, "is_pinned": None, "note_id": "note-a", "note_title": "标题", "creator_id": "creator-a", "creator_name": "公开名称"},
+        ]
+        result = summarize(rows, stopwords=set())
+        self.assertEqual(result["summary"]["length_count"], 3)
+        self.assertEqual(result["summary"]["average_length"], 2.7)
+        self.assertEqual(result["length_boxplot"]["sample_count"], 3)
+        self.assertEqual(result["length_boxplot"]["values"][0], 2)
+        self.assertEqual(result["length_boxplot"]["values"][4], 3)
+        self.assertEqual(result["reply_histogram"], [{"label": "0", "count": 1}, {"label": "2", "count": 1}])
+        self.assertEqual(result["reply_histogram_sample_count"], 2)
+        self.assertEqual(result["reply_histogram_excluded_count"], 1)
+
     def test_notes_api_and_export_apply_filters(self) -> None:
         app = create_app({"DATABASE_PATH": self.db_path, "BASELINE_PATH": self.db_path.parent / "missing.json"})
         client = app.test_client()
         response = client.get("/api/notes?topic=%23%E6%8A%A4%E8%82%A4&creator_id=creator-a&batch_id=batch-b")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()["count"], 1)
+        note_filtered = client.get("/api/notes?note_id=note-b")
+        self.assertEqual(note_filtered.status_code, 200)
+        self.assertEqual(note_filtered.get_json()["count"], 1)
         exported = client.get("/api/notes/export.csv?topic=%23%E6%8A%A4%E8%82%A4&batch_id=batch-b")
         self.assertEqual(exported.status_code, 200)
         self.assertIn("上海护肤分享", exported.get_data(as_text=True))
+        self.assertIn("raw note body", exported.get_data(as_text=True))
         self.assertIn("platform-note-a", exported.get_data(as_text=True))
         self.assertIn("https://example.test/note-a", exported.get_data(as_text=True))
         self.assertIn("platform-creator-a", exported.get_data(as_text=True))
         self.assertNotIn("旅行记录", exported.get_data(as_text=True))
+        exported_rows = list(csv.DictReader(exported.data.decode("utf-8-sig").splitlines()))
+        exported_note = next(row for row in exported_rows if row["platform_note_id"] == "platform-note-a")
+        metric_payload = json.loads(exported_note["metrics"])
+        self.assertEqual(metric_payload["阅读量"]["raw_value"], "1200")
+        self.assertEqual(metric_payload["阅读量"]["parse_status"], "parsed")
+        cloud = client.get("/api/wordcloud.png?kind=body&source=pgy_visible&category=%E7%BE%8E%E5%A6%86")
+        self.assertEqual(cloud.status_code, 200)
+        self.assertTrue(cloud.data.startswith(b"\x89PNG\r\n\x1a\n"))
         compared = client.get("/api/creators/compare?creator_id=creator-a&creator_id=creator-b&batch_id=batch-a")
         self.assertEqual(compared.status_code, 200)
         self.assertEqual(compared.get_json()["count"], 2)

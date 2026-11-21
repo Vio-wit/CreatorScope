@@ -1,7 +1,7 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
   const elements = {
-    batchSelect: $('#batchSelect'), typeSelect: $('#typeSelect'),
+    batchSelect: $('#batchSelect'), sourceSelect: $('#sourceSelect'), typeSelect: $('#typeSelect'),
     importButton: $('#importButton'), openBrowserButton: $('#openBrowserButton'),
     captureButton: $('#captureButton'), closeBrowserButton: $('#closeBrowserButton'),
     uploadButton: $('#uploadButton'), uploadInput: $('#uploadInput'),
@@ -13,6 +13,7 @@
   let pendingTask = false;
   let browserIsOpen = false;
   let activeTaskId = null;
+  let lastNotesData = null;
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -37,9 +38,10 @@
   function initCharts() {
     [
       'typeChart', 'noteChart', 'fanChart', 'categoryChart', 'wordChart',
-      'followerDistChart', 'quoteDistChart', 'followerPriceChart', 'readingEngagementChart',
+      'followerDistChart', 'quoteDistChart', 'quoteTypeChart', 'locationChart', 'followerPriceChart', 'readingEngagementChart',
       'fanAggregateChart', 'correlationChart', 'trendChart', 'noteMetricsChart', 'sourceShareChart',
-      'noteReadRankChart', 'noteInteractionRankChart', 'notePublishChart', 'noteTrendChart',
+      'noteReadRankChart', 'noteInteractionRankChart', 'metricDistributionChart', 'interactionBoxChart',
+      'exposureReadChart', 'readingInteractionChart', 'notePublishChart', 'noteTrendChart',
     ].forEach((id) => {
       const element = document.getElementById(id);
       if (element && window.echarts) charts[id] = echarts.init(element);
@@ -133,10 +135,19 @@
     const chartsData = data.charts || {};
     $('#analysisScope').textContent = `${data.scope || ''} · ${data.availability?.history || ''}`;
     $('#analysisCount').textContent = `${data.counts?.creators || 0} 位创作者 · ${data.counts?.notes || 0} 条笔记`;
+    $('#followerDistStatus').textContent = `精确粉丝值 n=${chartsData.follower_sample_count || 0}`;
+    $('#quoteDistStatus').textContent = `全部报价精确值 n=${chartsData.quote_sample_count || 0}；起价与区间不进入数值区间`;
+    $('#quoteTypeStatus').textContent = data.availability?.quote_types || '报价状态未计算';
     setBarChart('followerDistChart', chartsData.follower_distribution);
     setBarChart('quoteDistChart', chartsData.quote_distribution, true);
+    setBarChart('quoteTypeChart', chartsData.quote_status_distribution, true);
     setScatterChart('followerPriceChart', chartsData.follower_price_scatter, '粉丝数', '报价（元）');
     setScatterChart('readingEngagementChart', chartsData.reading_engagement_scatter, '阅读中位数', '互动中位数');
+    $('#followerPriceStatus').textContent = `共同有效样本 n=${chartsData.follower_price_sample_count || 0}；仅使用精确全部报价`;
+    $('#readingStatus').textContent = `共同有效样本 n=${chartsData.reading_engagement_sample_count || 0}`;
+    const locations = chartsData.location_distribution || [];
+    $('#locationStatus').textContent = `有效地域 ${locations.reduce((sum, item) => sum + item.value, 0)} 位创作者`;
+    setBarChart('locationChart', locations, true);
     setBarChart('fanAggregateChart', (chartsData.fan_analysis || []).map((item) => ({ name: `${item.name} (${item.count})`, value: item.value })), true, '%');
     const categories = chartsData.category_distribution || [];
     if (categories.length) {
@@ -148,13 +159,16 @@
       charts.wordChart?.setOption({ ...baseChart, grid: { left: 50, right: 15, top: 10, bottom: 24 }, xAxis: { type: 'category', data: words.map((item) => item.word), axisLabel: { interval: 0, rotate: 25, fontSize: 8, color: '#88938c' }, axisLine: { lineStyle: { color: '#e8ece8' } }, axisTick: { show: false } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { fontSize: 8, color: '#a0a9a2' } }, series: [{ type: 'bar', data: words.map((item) => item.count), barWidth: 13, itemStyle: { color: '#bf9465', borderRadius: [3, 3, 0, 0] } }] }, true);
       const cloud = $('#wordCloudImage');
       cloud.hidden = false;
-      cloud.src = `/api/wordcloud.png?${elements.batchSelect.value ? `batch_id=${encodeURIComponent(elements.batchSelect.value)}&` : ''}v=${Date.now()}`;
+      const cloudParams = getNoteFilterParams();
+      cloudParams.set('kind', $('#wordKindSelect').value);
+      cloudParams.set('v', Date.now());
+      cloud.src = `/api/wordcloud.png?${cloudParams.toString()}`;
       cloud.onerror = () => { cloud.hidden = true; };
     } else {
       $('#wordCloudImage').hidden = true;
       $('#wordCloudImage').removeAttribute('src');
       $('#wordStatus').textContent = data.availability?.word_frequency || '暂无笔记文本';
-      setEmptyChart(charts.wordChart, '暂无可用标题/正文/标签');
+      setEmptyChart(charts.wordChart, '当前筛选文本不足以分词');
     }
 
     const correlation = chartsData.correlation;
@@ -183,12 +197,23 @@
     $('#followerPriceStatus').textContent = data.availability?.follower_price || '';
     $('#readingStatus').textContent = data.availability?.reading_engagement || '';
     const noteMetrics = chartsData.note_metrics || [];
-    const metricKeys = ['曝光量', '阅读量', '点赞量', '收藏量', '评论量', '分享量'];
-    const metricItems = metricKeys.map((name) => {
-      const values = noteMetrics.map((item) => item[name]).filter((value) => Number.isFinite(value));
-      return { name, value: values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null };
+    const metricKeys = ['曝光量', '阅读量', '点赞量', '收藏量', '评论量', '分享量', '新增关注'];
+    const metricSources = [...new Set(noteMetrics.map((item) => item.source))];
+    const noteMetricSeries = metricSources.map((source) => {
+      const sourceRows = noteMetrics.filter((item) => item.source === source);
+      return {
+        name: `${source} (n=${sourceRows.length})`,
+        type: 'bar',
+        barMaxWidth: 18,
+        data: metricKeys.map((key) => {
+          const values = sourceRows.map((item) => item[key]).filter((value) => Number.isFinite(value));
+          return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+        }),
+      };
     });
-    setBarChart('noteMetricsChart', metricItems);
+    if (noteMetricSeries.length) {
+      charts.noteMetricsChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 14, top: 10, bottom: 48 }, xAxis: { type: 'category', data: metricKeys, axisLabel: { fontSize: 7, rotate: 22 } }, yAxis: { type: 'value', minInterval: 1 }, series: noteMetricSeries }, true);
+    } else setEmptyChart(charts.noteMetricsChart, '当前筛选没有笔记指标');
   }
 
   function renderOverview(data) {
@@ -212,14 +237,87 @@
     if (statusId) $(`#${statusId}`).textContent = validGroups.length > 1 ? `按来源分别排名（${validGroups.length} 组）` : `来源：${validGroups[0].source}`;
   }
 
+  function renderNoteMetricDistribution(chartsData, metric) {
+    const groups = (chartsData.metric_distributions || []).filter((item) => item.metric === metric);
+    if (!groups.length) {
+      $('#metricDistributionStatus').textContent = `${metric}：当前筛选没有精确数值`;
+      return setEmptyChart(charts.metricDistributionChart, '没有可用于直方图的精确样本');
+    }
+    const labels = [...new Set(groups.flatMap((group) => group.bins.map((item) => item.label)))];
+    $('#metricDistributionStatus').textContent = groups.map((group) => `${group.source} n=${group.sample_count}`).join(' · ');
+    charts.metricDistributionChart?.setOption({
+      ...baseChart,
+      color: ['#438f6c', '#d19a64', '#7596bd', '#c8796d', '#8a78aa'],
+      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } },
+      grid: { left: 44, right: 14, top: 12, bottom: 46 },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } },
+      yAxis: { type: 'value', minInterval: 1, name: '样本数' },
+      series: groups.map((group) => {
+        const counts = new Map(group.bins.map((item) => [item.label, item.count]));
+        return { name: group.source, type: 'bar', barMaxWidth: 18, data: labels.map((label) => counts.get(label) ?? 0) };
+      }),
+    }, true);
+  }
+
+  function renderInteractionBoxplot(items) {
+    if (!items.length) {
+      $('#interactionBoxStatus').textContent = '没有精确点赞、收藏、评论或分享数';
+      return setEmptyChart(charts.interactionBoxChart, '当前筛选没有箱线样本');
+    }
+    const labels = items.map((item) => `${item.label} (n=${item.sample_count})`);
+    $('#interactionBoxStatus').textContent = `有效互动指标 n=${items.reduce((sum, item) => sum + item.sample_count, 0)}；每箱按来源和指标分组`;
+    charts.interactionBoxChart?.setOption({
+      ...baseChart,
+      grid: { left: 48, right: 18, top: 12, bottom: 76 },
+      tooltip: { trigger: 'item', formatter: (params) => `${escapeHtml(labels[params.dataIndex] || '')}<br>最小 ${params.data[0]} · Q1 ${params.data[1]} · 中位数 ${params.data[2]} · Q3 ${params.data[3]} · 最大 ${params.data[4]}` },
+      xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, rotate: 25, width: 100, overflow: 'truncate' } },
+      yAxis: { type: 'value', min: 0, name: '互动数' },
+      series: [{ type: 'boxplot', data: items.map((item) => item.values), itemStyle: { color: '#dcebe0', borderColor: '#438f6c' } }],
+    }, true);
+  }
+
+  function renderGroupedScatter(chartId, points, xName, yName, statusId) {
+    const groups = new Map();
+    points.forEach((point) => {
+      const group = groups.get(point.source) || [];
+      group.push([point.x, point.y, point.label]);
+      groups.set(point.source, group);
+    });
+    $(`#${statusId}`).textContent = `有效共同样本 n=${points.length}；${groups.size} 个来源组`;
+    if (!points.length) return setEmptyChart(charts[chartId], '没有具备共同精确字段的笔记');
+    charts[chartId]?.setOption({
+      ...baseChart,
+      color: ['#438f6c', '#d19a64', '#7596bd', '#c8796d', '#8a78aa'],
+      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } },
+      grid: { left: 58, right: 18, top: 12, bottom: 40 },
+      tooltip: { trigger: 'item', formatter: (params) => `${escapeHtml(params.value[2])}<br>${xName}：${params.value[0]}<br>${yName}：${params.value[1]}` },
+      xAxis: { type: 'value', name: xName },
+      yAxis: { type: 'value', name: yName },
+      series: [...groups.entries()].map(([source, data]) => ({ name: source, type: 'scatter', symbolSize: 9, data })),
+    }, true);
+  }
+
   function getNoteFilterParams() {
     const params = new URLSearchParams();
-    const values = { creator_id: $('#noteCreatorFilter').value, date_from: $('#noteDateFrom').value, date_to: $('#noteDateTo').value, note_type: $('#noteTypeFilter').value, topic: $('#noteTopicFilter').value };
+    const values = {
+      creator_id: $('#noteCreatorFilter').value,
+      note_id: $('#noteIdFilter').value,
+      category: $('#categoryFilter').value,
+      source: elements.sourceSelect.value,
+      batch_id: elements.batchSelect.value,
+      date_from: $('#noteDateFrom').value,
+      date_to: $('#noteDateTo').value,
+      note_type: $('#noteTypeFilter').value,
+      topic: $('#noteTopicFilter').value,
+      q: $('#noteKeywordFilter').value.trim(),
+    };
     Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, value); });
     return params;
   }
 
   function renderNotes(data) {
+    lastNotesData = data;
     $('#noteCountLabel').textContent = `${data.count || 0} 篇笔记`;
     const fill = (selector, rows, valueKey, labelFn, emptyLabel, current) => {
       const node = $(selector);
@@ -227,14 +325,18 @@
       if (rows.some((row) => String(row[valueKey]) === current)) node.value = current;
     };
     fill('#noteCreatorFilter', data.creators || [], 'creator_id', (row) => row.pseudonym, '全部创作者', $('#noteCreatorFilter').value);
+    fill('#noteIdFilter', data.note_options || [], 'note_id', (row) => `${row.creator_name} · ${row.title}`, '全部笔记', $('#noteIdFilter').value);
     fill('#noteTypeFilter', (data.note_types || []).map((value) => ({ value })), 'value', (row) => row.value, '全部类型', $('#noteTypeFilter').value);
     fill('#noteTopicFilter', (data.topics || []).map((value) => ({ value })), 'value', (row) => row.value, '全部话题', $('#noteTopicFilter').value);
     const params = getNoteFilterParams();
-    if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
     $('#exportNotes').href = `/api/notes/export.csv?${params.toString()}`;
     const chartsData = data.charts || {};
     renderGroupedRanking('noteReadRankChart', chartsData.top_read, 'noteReadStatus');
     renderGroupedRanking('noteInteractionRankChart', chartsData.top_interactions);
+    renderNoteMetricDistribution(chartsData, $('#noteMetricSelect').value);
+    renderInteractionBoxplot(chartsData.interaction_boxplot || []);
+    renderGroupedScatter('exposureReadChart', chartsData.exposure_read_scatter || [], '曝光量', '阅读量', 'exposureReadStatus');
+    renderGroupedScatter('readingInteractionChart', chartsData.reading_interaction_scatter || [], '阅读量', '互动量', 'readingInteractionStatus');
     const publish = chartsData.publish_distribution || [];
     if (publish.length) charts.notePublishChart?.setOption({ ...baseChart, grid: { left: 38, right: 12, top: 12, bottom: 30 }, xAxis: { type: 'category', data: publish.map((item) => item.month), axisLabel: { fontSize: 8, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, series: [{ type: 'bar', data: publish.map((item) => item.count), barMaxWidth: 24, itemStyle: { color: '#7596bd', borderRadius: [4, 4, 0, 0] } }] }, true);
     else setEmptyChart(charts.notePublishChart, '没有可解析的发布时间');
@@ -313,10 +415,15 @@
 
   function updateSelectOptions(data) {
     const currentBatch = elements.batchSelect.value;
+    const currentSource = elements.sourceSelect.value;
     const batches = data.batches || [];
     elements.batchSelect.innerHTML = '<option value="__all__">全部批次</option>' + batches.map((batch) => `<option value="${escapeHtml(batch.batch_id)}">${escapeHtml(batch.source)} · ${escapeHtml(batch.captured_at)}</option>`).join('');
     if (currentBatch === '__all__' || batches.some((batch) => batch.batch_id === currentBatch)) elements.batchSelect.value = currentBatch;
     else if (data.selected_batch_id) elements.batchSelect.value = data.selected_batch_id;
+
+    const sources = data.sources || [...new Set(batches.map((batch) => batch.source).filter(Boolean))];
+    elements.sourceSelect.innerHTML = '<option value="">全部来源</option>' + sources.map((source) => `<option value="${escapeHtml(source)}">${escapeHtml(source)}</option>`).join('');
+    if (sources.includes(currentSource)) elements.sourceSelect.value = currentSource;
 
     const currentType = elements.typeSelect.value;
     const types = data.record_types || [{ value: '', label: '全部数据' }];
@@ -334,6 +441,22 @@
     if (value === null || value === undefined) return '—';
     const number = Number(value);
     return Number.isFinite(number) ? `${number.toLocaleString('zh-CN', { maximumFractionDigits: 1 })}${suffix}` : escapeHtml(value);
+  }
+
+  function quoteDisplay(creator) {
+    const fields = creator.quote_fields || {};
+    const labels = {
+      '全部报价': '全',
+      '图文笔记一口价': '图文',
+      '视频笔记一口价': '视频',
+    };
+    const statuses = { parsed: '精确', starting_price: '起价', range_unresolved: '区间', not_numeric: '原值' };
+    const values = Object.entries(labels).map(([key, label]) => {
+      const detail = fields[key] || {};
+      if (detail.raw_value === null || detail.raw_value === undefined || detail.raw_value === '') return `${label}：—`;
+      return `${label}：${detail.raw_value}（${statuses[detail.parse_status] || detail.parse_status}）`;
+    });
+    return values.join('；');
   }
 
   async function refreshCreatorOptions() {
@@ -356,6 +479,7 @@
     };
     Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, value); });
     if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
+    if (elements.sourceSelect.value) params.set('source', elements.sourceSelect.value);
     const data = await requestJson(`/api/creators?${params.toString()}`);
     const currentCategory = $('#categoryFilter').value;
     const currentLocation = $('#locationFilter').value;
@@ -369,12 +493,12 @@
     $('#creatorCount').textContent = `${data.count || 0} 位博主`;
     const body = $('#creatorBody');
     if (!data.creators?.length) {
-      body.innerHTML = '<tr><td colspan="9" class="empty-cell">当前筛选条件下没有创作者</td></tr>';
+      body.innerHTML = '<tr><td colspan="10" class="empty-cell">当前筛选条件下没有创作者</td></tr>';
       $('#creatorCompareSelect').innerHTML = '';
       return;
     }
     const typeLabels = { blogger_list_sample: '列表', creator_profile_sample: '详情', creator_content_performance: '表现', fan_analysis: '画像', note_detail: '笔记' };
-    body.innerHTML = data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.platform_creator_id || '—')}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${formatMetric(creator.quote, ' 元')}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml((creator.record_types || []).map((type) => typeLabels[type] || type).join(' / '))}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('');
+    body.innerHTML = data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.platform_creator_id || '—')}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${escapeHtml(quoteDisplay(creator))}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml((creator.record_types || []).map((type) => typeLabels[type] || type).join(' / '))}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('');
     $('#creatorCompareSelect').innerHTML = data.creators.map((creator) => `<option value="${escapeHtml(creator.creator_id)}">${escapeHtml(creator.pseudonym)}</option>`).join('');
     Array.from($('#creatorCompareSelect').options).forEach((option) => { option.selected = compareSelection.includes(option.value); });
   }
@@ -403,14 +527,15 @@
   async function refreshDashboard() {
     const params = new URLSearchParams();
     if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
+    if (elements.sourceSelect.value) params.set('source', elements.sourceSelect.value);
     if (elements.typeSelect.value) params.set('record_type', elements.typeSelect.value);
     const data = await requestJson(`/api/dashboard?${params.toString()}`);
     renderDashboard(data);
   }
 
   async function refreshAnalytics() {
-    const params = new URLSearchParams();
-    if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
+    const params = getNoteFilterParams();
+    params.set('word_kind', $('#wordKindSelect').value);
     const data = await requestJson(`/api/analytics?${params.toString()}`);
     renderAnalytics(data);
   }
@@ -531,9 +656,14 @@
     elements.batchSelect.addEventListener('change', () => {
       Promise.all([refreshDashboard(), refreshAnalytics(), refreshCreatorLibrary(), refreshNotes()]).catch((error) => toast(error.message, true));
     });
+    elements.sourceSelect.addEventListener('change', () => {
+      Promise.all([refreshDashboard(), refreshAnalytics(), refreshCreatorLibrary(), refreshNotes()]).catch((error) => toast(error.message, true));
+    });
     elements.typeSelect.addEventListener('change', refreshDashboard);
     $('#filterCreators').addEventListener('click', () => refreshCreatorLibrary().catch((error) => toast(error.message, true)));
-    ['#categoryFilter', '#locationFilter', '#creatorSort'].forEach((selector) => $(selector).addEventListener('change', () => refreshCreatorLibrary().catch((error) => toast(error.message, true))));
+    ['#categoryFilter', '#locationFilter', '#creatorSort'].forEach((selector) => $(selector).addEventListener('change', () => {
+      Promise.all([refreshCreatorLibrary(), refreshAnalytics(), refreshNotes()]).catch((error) => toast(error.message, true));
+    }));
     $('#creatorCompareSelect').addEventListener('change', () => {
       const selected = Array.from($('#creatorCompareSelect').selectedOptions);
       if (selected.length > 4) { selected.at(-1).selected = false; $('#creatorCompareStatus').textContent = '最多选择 4 位创作者'; }
@@ -547,15 +677,25 @@
       const params = new URLSearchParams();
       Array.from($('#creatorCompareSelect').selectedOptions).forEach((option) => params.append('creator_id', option.value));
       if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
+      if (elements.sourceSelect.value) params.set('source', elements.sourceSelect.value);
       try {
         const data = await requestJson(`/api/creators/compare?${params.toString()}`);
         $('#creatorCompareStatus').textContent = `${data.count} 位创作者 · 同一批次指标，单位按列保留`;
-        $('#creatorCompareBody').innerHTML = data.creators.length ? data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.platform_creator_id || '—')}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${formatMetric(creator.quote, ' 元')}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('') : '<tr><td colspan="9" class="empty-cell">所选创作者在当前批次没有可比记录</td></tr>';
+        $('#creatorCompareBody').innerHTML = data.creators.length ? data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.platform_creator_id || '—')}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${escapeHtml(quoteDisplay(creator))}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('') : '<tr><td colspan="9" class="empty-cell">所选创作者在当前批次没有可比记录</td></tr>';
       } catch (error) { $('#creatorCompareStatus').textContent = error.message; }
     });
-    $('#filterNotes').addEventListener('click', () => refreshNotes().catch((error) => toast(error.message, true)));
-    ['#noteCreatorFilter', '#noteTypeFilter', '#noteTopicFilter'].forEach((selector) => $(selector).addEventListener('change', () => refreshNotes().catch((error) => toast(error.message, true))));
-    ['#noteDateFrom', '#noteDateTo'].forEach((selector) => $(selector).addEventListener('change', () => refreshNotes().catch((error) => toast(error.message, true))));
+    const refreshNoteAnalytics = () => Promise.all([refreshNotes(), refreshAnalytics()]).catch((error) => toast(error.message, true));
+    $('#filterNotes').addEventListener('click', refreshNoteAnalytics);
+    ['#noteCreatorFilter', '#noteIdFilter', '#noteTypeFilter', '#noteTopicFilter'].forEach((selector) => $(selector).addEventListener('change', refreshNoteAnalytics));
+    ['#noteDateFrom', '#noteDateTo'].forEach((selector) => $(selector).addEventListener('change', refreshNoteAnalytics));
+    $('#noteKeywordFilter').addEventListener('input', () => {
+      window.clearTimeout($('#noteKeywordFilter').dataset.timer);
+      $('#noteKeywordFilter').dataset.timer = window.setTimeout(refreshNoteAnalytics, 250);
+    });
+    $('#wordKindSelect').addEventListener('change', () => refreshAnalytics().catch((error) => toast(error.message, true)));
+    $('#noteMetricSelect').addEventListener('change', () => {
+      if (lastNotesData) renderNoteMetricDistribution(lastNotesData.charts || {}, $('#noteMetricSelect').value);
+    });
     const today = new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
     $('#todayLabel').textContent = today;
   }

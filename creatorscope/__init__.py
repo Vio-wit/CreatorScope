@@ -197,6 +197,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             batch_id=None if all_batches else raw_batch_id,
             record_type=request.args.get("record_type") or None,
             all_batches=all_batches,
+            source=request.args.get("source", "").strip(),
         )
         return jsonify(data)
 
@@ -210,6 +211,16 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         return jsonify(analytics_data(
             app.config["DATABASE_PATH"],
             batch_id=None if raw_batch_id == "__all__" else raw_batch_id,
+            source=request.args.get("source", "").strip(),
+            creator_id=request.args.get("creator_id", "").strip(),
+            note_id=request.args.get("note_id", "").strip(),
+            category=request.args.get("category", "").strip(),
+            date_from=request.args.get("date_from", "").strip(),
+            date_to=request.args.get("date_to", "").strip(),
+            note_type=request.args.get("note_type", "").strip(),
+            topic=request.args.get("topic", "").strip(),
+            query=request.args.get("q", "").strip(),
+            word_kind=request.args.get("word_kind", "body").strip(),
         ))
 
     @app.get("/api/wordcloud.png")
@@ -219,6 +230,16 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             image = wordcloud_png(
                 app.config["DATABASE_PATH"],
                 batch_id=None if raw_batch_id == "__all__" else raw_batch_id,
+                kind=request.args.get("kind", "body").strip(),
+                source=request.args.get("source", "").strip(),
+                creator_id=request.args.get("creator_id", "").strip(),
+                note_id=request.args.get("note_id", "").strip(),
+                category=request.args.get("category", "").strip(),
+                date_from=request.args.get("date_from", "").strip(),
+                date_to=request.args.get("date_to", "").strip(),
+                note_type=request.args.get("note_type", "").strip(),
+                topic=request.args.get("topic", "").strip(),
+                query=request.args.get("q", "").strip(),
             )
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 422
@@ -258,6 +279,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 sort_by=request.args.get("sort_by", "pseudonym"),
                 sort_desc=request.args.get("sort_desc", "true").casefold() != "false",
                 batch_id=(request.args.get("batch_id") or None) if request.args.get("batch_id") != "__all__" else None,
+                source=request.args.get("source", "").strip(),
             )
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
@@ -276,6 +298,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             batch_id=raw_batch_id,
             creator_ids=creator_ids,
             sort_by="pseudonym",
+            source=request.args.get("source", "").strip(),
         )
         return jsonify(data)
 
@@ -295,10 +318,14 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             app.config["DATABASE_PATH"],
             batch_id=None if raw_batch_id == "__all__" else raw_batch_id,
             creator_id=request.args.get("creator_id", "").strip(),
+            note_id=request.args.get("note_id", "").strip(),
+            source=request.args.get("source", "").strip(),
+            category=request.args.get("category", "").strip(),
             date_from=date_from,
             date_to=date_to,
             note_type=request.args.get("note_type", "").strip(),
             topic=request.args.get("topic", "").strip(),
+            query=request.args.get("q", "").strip(),
         )
         return jsonify(data)
 
@@ -309,17 +336,25 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             app.config["DATABASE_PATH"],
             batch_id=None if raw_batch_id == "__all__" else raw_batch_id,
             creator_id=request.args.get("creator_id", "").strip(),
+            note_id=request.args.get("note_id", "").strip(),
+            source=request.args.get("source", "").strip(),
+            category=request.args.get("category", "").strip(),
             date_from=request.args.get("date_from", "").strip(),
             date_to=request.args.get("date_to", "").strip(),
             note_type=request.args.get("note_type", "").strip(),
             topic=request.args.get("topic", "").strip(),
+            query=request.args.get("q", "").strip(),
         )
-        fields = ["local_note_id", "platform_note_id", "source_url", "creator_name", "platform_creator_id", "title", "published_at", "note_type", "topics", "source", "batch_id", "read_count", "like_count", "favorite_count", "interaction_comment_count", "share_count", "comment_count", "interaction_score"]
+        fields = ["local_note_id", "platform_note_id", "source_url", "creator_name", "platform_creator_id", "category", "title", "title_raw", "body", "published_at", "note_type", "topics", "topics_json_raw", "source", "batch_id", "read_count", "like_count", "favorite_count", "interaction_comment_count", "share_count", "exposure_count", "follow_count", "comment_count", "interaction_score", "metrics"]
         stream = io.StringIO(newline="")
         writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
         for row in data["notes"]:
-            writer.writerow({**row, "topics": "、".join(row["topics"])})
+            writer.writerow({
+                **row,
+                "topics": "、".join(row["topics"]),
+                "metrics": json.dumps(row["metrics"], ensure_ascii=False, sort_keys=True),
+            })
         response = make_response("\ufeff" + stream.getvalue())
         response.headers["Content-Type"] = "text/csv; charset=utf-8"
         response.headers["Content-Disposition"] = 'attachment; filename="creatorscope_notes.csv"'

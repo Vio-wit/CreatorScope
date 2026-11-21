@@ -61,7 +61,7 @@
         <article class="kpi-card"><div class="kpi-label">筛选后评论<span class="kpi-symbol">▤</span></div><div class="kpi-value" id="commentCount">—</div><div class="kpi-foot">页面可见记录</div></article>
         <article class="kpi-card"><div class="kpi-label">一级 / 回复<span class="kpi-symbol green">↳</span></div><div class="kpi-value compact" id="levelCounts">—</div><div class="kpi-foot">按 DOM 层级区分</div></article>
         <article class="kpi-card"><div class="kpi-label">涉及笔记<span class="kpi-symbol blue">▧</span></div><div class="kpi-value" id="noteCount">—</div><div class="kpi-foot" id="creatorCount">—</div></article>
-        <article class="kpi-card"><div class="kpi-label">平均评论长度<span class="kpi-symbol amber">¶</span></div><div class="kpi-value" id="averageLength">—</div><div class="kpi-foot">折叠空白后的字符数</div></article>
+        <article class="kpi-card"><div class="kpi-label">平均评论长度<span class="kpi-symbol amber">¶</span></div><div class="kpi-value" id="averageLength">—</div><div class="kpi-foot">原文字符数（含空白）</div></article>
         <article class="kpi-card"><div class="kpi-label">可用精确点赞<span class="kpi-symbol">♥</span></div><div class="kpi-value compact" id="likeCoverage">—</div><div class="kpi-foot">只统计可转换整数</div></article>
       </section>
 
@@ -70,8 +70,10 @@
         <article class="chart-card"><div class="card-heading"><div><h2>高频词 Top 20</h2><p>基于原始评论的派生清洗文本</p></div></div><div class="comment-chart" id="topWordsChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>各笔记评论数量</h2><p>当前样本中实际保存的记录数</p></div></div><div class="comment-chart" id="noteCountChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>创作者评论数量对比</h2><p>按当前筛选的已保存样本统计</p></div></div><div class="comment-chart" id="creatorCommentChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>评论长度分布</h2><p>统计口径：Unicode 字符数</p></div></div><div class="comment-chart" id="lengthChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>评论长度分布</h2><p id="lengthScope">按原始评论文本统计</p></div></div><div class="comment-chart" id="lengthChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>评论长度箱线图</h2><p id="lengthBoxplotScope">最小值、四分位数、中位数、最大值</p></div></div><div class="comment-chart" id="lengthBoxplotChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>精确点赞数分布</h2><p id="likesScope">非精确值不会进入数值图</p></div></div><div class="comment-chart" id="likesChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>精确回复数分布</h2><p id="replyScope">非精确值不会进入数值图</p></div></div><div class="comment-chart" id="replyCountChart"></div></article>
         <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>不同笔记关键词对比</h2><p>每篇笔记分别统计高频词</p></div></div><div class="comment-chart comment-chart-tall" id="noteWordsChart"></div></article>
         <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>评论长度与点赞数</h2><p id="scatterScope">只使用可精确转换的点赞值；不代表因果关系</p></div></div><div class="comment-chart" id="lengthLikesChart"></div></article>
       </section>

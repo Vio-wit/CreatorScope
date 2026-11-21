@@ -45,6 +45,7 @@
         </div>
         <div class="heading-actions">
           <label class="select-wrap" aria-label="选择批次"><span>批次</span><select id="batchSelect"><option value="__all__">全部批次</option></select></label>
+          <label class="select-wrap" aria-label="按采集来源筛选"><span>来源</span><select id="sourceSelect"><option value="">全部来源</option></select></label>
           <label class="select-wrap" aria-label="筛选记录类型"><span>数据类型</span><select id="typeSelect"><option value="">全部数据</option></select></label>
         </div>
       </section>
@@ -126,7 +127,7 @@
           <div class="chart" id="categoryChart"></div>
         </article>
         <article class="chart-card">
-          <div class="card-heading"><div><h2>笔记词频</h2><p id="wordStatus">等待可用标题或正文</p></div><span class="card-menu">···</span></div>
+          <div class="card-heading"><div><h2>笔记词频与词云</h2><p id="wordStatus">等待可用标题、正文或话题</p></div><select id="wordKindSelect" aria-label="选择词云文本类型"><option value="body">正文</option><option value="title">标题</option><option value="topics">话题</option></select></div>
           <div class="chart" id="wordChart"></div><img class="wordcloud-image" id="wordCloudImage" alt="笔记内容词云" hidden>
         </article>
       </section>
@@ -136,10 +137,12 @@
         <span class="analysis-count" id="analysisCount">—</span>
       </section>
       <section class="charts-grid analytics-grid">
-        <article class="chart-card"><div class="card-heading"><div><h2>粉丝数量分布</h2><p>每位创作者取最新可用粉丝值</p></div></div><div class="chart" id="followerDistChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>商业报价分布</h2><p>全部报价优先，缺失时取图文/视频均值</p></div></div><div class="chart" id="quoteDistChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>粉丝数量分布</h2><p id="followerDistStatus">每位创作者取最新可用粉丝值</p></div></div><div class="chart" id="followerDistChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>精确商业报价分布</h2><p id="quoteDistStatus">起价和区间单独统计，不转换成精确金额</p></div></div><div class="chart" id="quoteDistChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>报价类型</h2><p id="quoteTypeStatus">精确值、起价、区间分别统计</p></div></div><div class="chart" id="quoteTypeChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>粉丝与报价</h2><p id="followerPriceStatus">等待样本</p></div></div><div class="chart" id="followerPriceChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>阅读与互动</h2><p id="readingStatus">等待样本</p></div></div><div class="chart" id="readingEngagementChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>创作者地域分布</h2><p id="locationStatus">当前筛选下的有效地域</p></div></div><div class="chart" id="locationChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>粉丝画像均值</h2><p>按可用创作者取均值，标注有效样本数</p></div></div><div class="chart" id="fanAggregateChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>指标相关性</h2><p id="correlationStatus">等待样本</p></div></div><div class="chart" id="correlationChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>多批次粉丝趋势</h2><p id="trendStatus">等待快照</p></div></div><div class="chart" id="trendChart"></div></article>
@@ -161,12 +164,12 @@
         <span id="creatorCount">0 位博主</span>
       </section>
       <section class="table-card creator-table-card">
-        <div class="table-scroll"><table><thead><tr><th>创作者名称</th><th>平台 ID</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价估值</th><th>阅读中位数</th><th>互动中位数</th><th>数据类型</th><th>最新批次</th></tr></thead><tbody id="creatorBody"><tr><td colspan="10" class="empty-cell">暂无创作者记录</td></tr></tbody></table></div>
+        <div class="table-scroll"><table><thead><tr><th>创作者名称</th><th>平台 ID</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价原始值 / 类型</th><th>阅读中位数</th><th>互动中位数</th><th>数据类型</th><th>最新批次</th></tr></thead><tbody id="creatorBody"><tr><td colspan="10" class="empty-cell">暂无创作者记录</td></tr></tbody></table></div>
       </section>
 
       <section class="creator-comparison-panel">
         <div class="comparison-controls"><div><strong>创作者对比</strong><small>选择具体批次后，选择 2 至 4 位</small></div><select id="creatorCompareSelect" multiple size="4" aria-label="选择 2 至 4 位创作者"></select><button class="button button-primary" id="compareCreators">对比所选</button><span id="creatorCompareStatus">只并列展示同一批次内可用指标</span></div>
-        <div class="table-scroll"><table><thead><tr><th>创作者名称</th><th>平台 ID</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价</th><th>阅读中位数</th><th>互动中位数</th><th>数据时间</th></tr></thead><tbody id="creatorCompareBody"><tr><td colspan="9" class="empty-cell">选择创作者后查看并列对比</td></tr></tbody></table></div>
+        <div class="table-scroll"><table><thead><tr><th>创作者名称</th><th>平台 ID</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价原始值 / 类型</th><th>阅读中位数</th><th>互动中位数</th><th>数据时间</th></tr></thead><tbody id="creatorCompareBody"><tr><td colspan="9" class="empty-cell">选择创作者后查看并列对比</td></tr></tbody></table></div>
       </section>
 
       <section class="section-heading" id="notes">
@@ -175,16 +178,22 @@
       </section>
       <section class="note-filter-panel">
         <label>创作者<select id="noteCreatorFilter"><option value="">全部创作者</option></select></label>
+        <label>具体笔记<select id="noteIdFilter"><option value="">全部笔记</option></select></label>
         <label>发布时间起<input id="noteDateFrom" type="date"></label>
         <label>发布时间止<input id="noteDateTo" type="date"></label>
         <label>内容类型<select id="noteTypeFilter"><option value="">全部类型</option></select></label>
         <label>话题<select id="noteTopicFilter"><option value="">全部话题</option></select></label>
+        <label>关键词<input id="noteKeywordFilter" type="search" placeholder="搜索名称、标题、正文、话题"></label>
         <button class="button button-primary" id="filterNotes">筛选</button>
         <span id="noteCountLabel">0 篇笔记</span>
       </section>
       <section class="charts-grid note-chart-grid">
         <article class="chart-card"><div class="card-heading"><div><h2>阅读量排行</h2><p id="noteReadStatus">按来源分组</p></div></div><div class="chart" id="noteReadRankChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>点赞收藏评论分享</h2><p>同一来源内汇总各笔记最新值</p></div></div><div class="chart" id="noteInteractionRankChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>指标分布直方图</h2><p id="metricDistributionStatus">逐来源分组，标注有效样本数</p></div><select id="noteMetricSelect" aria-label="选择笔记指标"><option value="阅读量">阅读量</option><option value="点赞量">点赞量</option><option value="收藏量">收藏量</option><option value="评论量">评论量</option><option value="曝光量">曝光量</option><option value="分享量">分享量</option><option value="新增关注">新增关注</option></select></div><div class="chart" id="metricDistributionChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>互动指标箱线图</h2><p id="interactionBoxStatus">按来源分组；显示有效样本数</p></div></div><div class="chart" id="interactionBoxChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>曝光与阅读</h2><p id="exposureReadStatus">有效共同样本 n=0</p></div></div><div class="chart" id="exposureReadChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>阅读与互动</h2><p id="readingInteractionStatus">有效共同样本 n=0</p></div></div><div class="chart" id="readingInteractionChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>发布时间分布</h2><p>按笔记记录的年月统计</p></div></div><div class="chart" id="notePublishChart"></div></article>
         <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>笔记指标历史趋势</h2><p id="noteTrendStatus">等待同来源同周期重复快照</p></div></div><div class="chart" id="noteTrendChart"></div></article>
       </section>

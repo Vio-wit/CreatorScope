@@ -161,7 +161,7 @@ def summarize(rows: list[dict[str, Any]], stopwords: set[str] | None = None) -> 
     creator_counts = Counter(row["creator_id"] for row in rows)
     creator_labels = {row["creator_id"]: row["creator_name"] for row in rows}
     levels = Counter(row["comment_level"] for row in rows)
-    lengths = [len(row["cleaned_text"]) for row in rows]
+    lengths = [len(row["comment_text"]) for row in rows]
     likes = [int(row["like_count_normalized"]) for row in rows if row["like_count_normalized"] is not None]
     exact_replies = [count for row in rows if (count := exact_integer(row["reply_count_raw"])) is not None]
     tokens_by_note: dict[str, Counter[str]] = defaultdict(Counter)
@@ -180,12 +180,18 @@ def summarize(rows: list[dict[str, Any]], stopwords: set[str] | None = None) -> 
         length_hist.append({"label": label, "count": count})
     like_counts = Counter(likes)
     like_hist = [{"label": str(value), "count": count} for value, count in sorted(like_counts.items())]
+    reply_counts = Counter(exact_replies)
+    reply_hist = [{"label": str(value), "count": count} for value, count in sorted(reply_counts.items())]
+    length_boxplot = (
+        [round(float(value), 2) for value in np.percentile(lengths, [0, 25, 50, 75, 100])]
+        if lengths else []
+    )
     note_top_words = []
     for note_id, counter in sorted(tokens_by_note.items()):
         for word, count in counter.most_common(12):
             note_top_words.append({"note_id": note_id, "note_label": note_labels[note_id], "word": word, "count": count})
     scatter = [
-        {"length": len(row["cleaned_text"]), "likes": int(row["like_count_normalized"]), "note_title": row["note_title"]}
+        {"length": len(row["comment_text"]), "likes": int(row["like_count_normalized"]), "note_title": row["note_title"]}
         for row in rows if row["like_count_normalized"] is not None
     ]
     status = "课程实验小样本，仅描述本批数据" if len(rows) < 30 else "描述统计；结论仅适用于已采样本"
@@ -197,6 +203,7 @@ def summarize(rows: list[dict[str, Any]], stopwords: set[str] | None = None) -> 
             "note_count": len(note_counts),
             "creator_count": len({row["creator_id"] for row in rows}),
             "average_length": round(float(np.mean(lengths)), 1) if lengths else None,
+            "length_count": len(lengths),
             "like_count_available": len(likes),
             "reply_count_exact_available": len(exact_replies),
             "pinned_count": sum(row["is_pinned"] is True for row in rows),
@@ -209,7 +216,11 @@ def summarize(rows: list[dict[str, Any]], stopwords: set[str] | None = None) -> 
             for creator_id, count in sorted(creator_counts.items(), key=lambda item: (-item[1], creator_labels[item[0]]))
         ],
         "length_histogram": length_hist,
+        "length_boxplot": {"sample_count": len(lengths), "values": length_boxplot},
         "like_histogram": like_hist,
+        "reply_histogram": reply_hist,
+        "reply_histogram_sample_count": len(exact_replies),
+        "reply_histogram_excluded_count": len(rows) - len(exact_replies),
         "top_words": [{"word": word, "count": count} for word, count in sorted_words[:20]],
         "word_frequencies": [{"word": word, "count": count} for word, count in sorted_words],
         "note_words": note_top_words,
@@ -345,11 +356,11 @@ def generate_charts(analysis: dict[str, Any], output_dir: Path = CHARTS_DIR) -> 
         _save_empty_or_plot(output_dir / "comment_distribution.png", "笔记评论数量", "当前筛选没有记录")
     chart_meta["comment_distribution.png"] = {"records": len(rows), "series": notes}
 
-    lengths = [len(row["cleaned_text"]) for row in rows]
+    lengths = [len(row["comment_text"]) for row in rows]
     if lengths:
         fig, ax = plt.subplots(figsize=(8, 4.5))
         ax.hist(lengths, bins=[0, 10, 20, 40, 80, 160, max(161, max(lengths) + 1)], color="#799cbb", edgecolor="white")
-        ax.set_title("评论长度分布", fontproperties=font)
+        ax.set_title(f"评论长度分布（有效样本 n={len(lengths)}）", fontproperties=font)
         ax.set_xlabel("字符数（Unicode code point）", fontproperties=font)
         ax.set_ylabel("评论数", fontproperties=font)
         fig.tight_layout()
@@ -357,7 +368,20 @@ def generate_charts(analysis: dict[str, Any], output_dir: Path = CHARTS_DIR) -> 
         plt.close(fig)
     else:
         _save_empty_or_plot(output_dir / "comment_length_distribution.png", "评论长度分布", "当前筛选没有记录")
-    chart_meta["comment_length_distribution.png"] = {"records": len(lengths), "values": lengths, "bins": [0, 10, 20, 40, 80, 160]}
+    chart_meta["comment_length_distribution.png"] = {"records": len(lengths), "values": lengths, "bins": [0, 10, 20, 40, 80, 160], "length_basis": "原始评论文本字符数（含空白）"}
+
+    boxplot = analysis["length_boxplot"]
+    if boxplot["values"]:
+        fig, ax = plt.subplots(figsize=(8, 4.5))
+        ax.bxp([{"label": f"原始评论（n={boxplot['sample_count']}）", "whislo": boxplot["values"][0], "q1": boxplot["values"][1], "med": boxplot["values"][2], "q3": boxplot["values"][3], "whishi": boxplot["values"][4], "fliers": []}], showfliers=False, patch_artist=True, boxprops={"facecolor": "#dce9df", "edgecolor": "#5e9275"})
+        ax.set_title(f"评论长度箱线图（有效样本 n={boxplot['sample_count']}）", fontproperties=font)
+        ax.set_ylabel("原文字符数（含空白）", fontproperties=font)
+        fig.tight_layout()
+        fig.savefig(output_dir / "comment_length_boxplot.png", dpi=160, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        _save_empty_or_plot(output_dir / "comment_length_boxplot.png", "评论长度箱线图", "当前筛选没有记录")
+    chart_meta["comment_length_boxplot.png"] = {"records": boxplot["sample_count"], "values": boxplot["values"], "quartiles": ["min", "q1", "median", "q3", "max"]}
 
     like_values = [int(row["like_count_normalized"]) for row in rows if row["like_count_normalized"] is not None]
     if len(like_values) >= 2:
@@ -372,6 +396,20 @@ def generate_charts(analysis: dict[str, Any], output_dir: Path = CHARTS_DIR) -> 
     else:
         _save_empty_or_plot(output_dir / "comment_like_distribution.png", "评论点赞数分布", f"有效精确数值样本 n={len(like_values)}；样本不足")
     chart_meta["comment_like_distribution.png"] = {"records": len(like_values), "values": like_values, "excluded_non_exact": len(rows) - len(like_values)}
+
+    reply_hist = analysis["reply_histogram"]
+    if reply_hist:
+        fig, ax = plt.subplots(figsize=(8, 4.5))
+        ax.bar([item["label"] for item in reply_hist], [item["count"] for item in reply_hist], color="#8b83ae", edgecolor="white")
+        ax.set_title(f"精确回复数分布（有效样本 n={analysis['reply_histogram_sample_count']}）", fontproperties=font)
+        ax.set_xlabel("页面显示的精确回复数；非精确值不参与", fontproperties=font)
+        ax.set_ylabel("评论数", fontproperties=font)
+        fig.tight_layout()
+        fig.savefig(output_dir / "comment_reply_distribution.png", dpi=160, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        _save_empty_or_plot(output_dir / "comment_reply_distribution.png", "精确回复数分布", "当前筛选没有精确回复数")
+    chart_meta["comment_reply_distribution.png"] = {"records": analysis["reply_histogram_sample_count"], "histogram": reply_hist, "excluded_non_exact": analysis["reply_histogram_excluded_count"]}
 
     note_ids = sorted({item["note_id"] for item in analysis["note_words"]})
     terms = sorted({item["word"] for item in analysis["note_words"]}, key=lambda word: (-sum(item["count"] for item in analysis["note_words"] if item["word"] == word), word))[:12]
@@ -400,7 +438,7 @@ def generate_charts(analysis: dict[str, Any], output_dir: Path = CHARTS_DIR) -> 
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.scatter([item["length"] for item in scatter], [item["likes"] for item in scatter], color="#c87169", alpha=0.8)
         ax.set_title(f"评论长度与点赞数（有效样本 n={len(scatter)}）", fontproperties=font)
-        ax.set_xlabel("清洗后长度（字符）", fontproperties=font)
+        ax.set_xlabel("原始评论字符数（含空白）", fontproperties=font)
         ax.set_ylabel("精确点赞数", fontproperties=font)
         fig.tight_layout()
         fig.savefig(output_dir / "comment_length_like_scatter.png", dpi=160, bbox_inches="tight")
