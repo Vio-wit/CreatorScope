@@ -10,7 +10,7 @@ from typing import Any
 
 from flask import Flask, jsonify, make_response, render_template, request
 
-from .analytics import analytics_data, creator_library, dashboard_data, notes_data, overview_data, wordcloud_png
+from .analytics import analytics_data, compare_creators, compare_notes, creator_library, dashboard_data, note_compare_options, notes_data, overview_data, wordcloud_png
 from .ai import AIServiceError, build_preview, generated_at, provider_status, run_analysis, test_connection
 from .browser import PgyVisibleBrowser
 from .db import connection, initialize_database
@@ -293,14 +293,43 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         raw_batch_id = request.args.get("batch_id") or None
         if not raw_batch_id or raw_batch_id == "__all__":
             return jsonify({"error": "请选择一个具体采集批次，以保持对比口径一致"}), 400
-        data = creator_library(
+        data = compare_creators(
             app.config["DATABASE_PATH"],
+            creator_ids,
             batch_id=raw_batch_id,
-            creator_ids=creator_ids,
-            sort_by="pseudonym",
             source=request.args.get("source", "").strip(),
         )
         return jsonify(data)
+
+    @app.get("/api/notes/compare")
+    def api_notes_compare():
+        note_ids = list(dict.fromkeys(request.args.getlist("note_id")))
+        raw_batch_id = request.args.get("batch_id") or None
+        if not raw_batch_id or raw_batch_id == "__all__":
+            return jsonify({"error": "请选择一个具体采集批次，以保持对比口径一致"}), 400
+        if not 2 <= len(note_ids) <= 4:
+            return jsonify({"error": "请选择 2 至 4 篇笔记进行对比"}), 400
+        try:
+            data = compare_notes(
+                app.config["DATABASE_PATH"],
+                note_ids,
+                batch_id=raw_batch_id,
+                source=request.args.get("source", "").strip(),
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        return jsonify(data)
+
+    @app.get("/api/notes/compare/options")
+    def api_notes_compare_options():
+        raw_batch_id = request.args.get("batch_id") or None
+        if not raw_batch_id or raw_batch_id == "__all__":
+            return jsonify({"error": "请选择一个具体采集批次"}), 400
+        return jsonify({"options": note_compare_options(
+            app.config["DATABASE_PATH"],
+            batch_id=raw_batch_id,
+            source=request.args.get("source", "").strip(),
+        )})
 
     @app.get("/api/notes")
     def api_notes():

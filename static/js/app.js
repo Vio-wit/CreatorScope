@@ -14,6 +14,9 @@
   let browserIsOpen = false;
   let activeTaskId = null;
   let lastNotesData = null;
+  let lastAnalyticsData = null;
+  let lastCreatorCompareRows = [];
+  let lastNoteCompareRows = [];
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -42,6 +45,8 @@
       'fanAggregateChart', 'correlationChart', 'trendChart', 'noteMetricsChart', 'sourceShareChart',
       'noteReadRankChart', 'noteInteractionRankChart', 'metricDistributionChart', 'interactionBoxChart',
       'exposureReadChart', 'readingInteractionChart', 'notePublishChart', 'noteTrendChart',
+      'audienceGenderChart', 'audienceAgeChart', 'audienceRegionChart', 'audienceInterestChart', 'audienceDeviceChart',
+      'creatorCompareBarChart', 'creatorCompareRadarChart', 'noteCompareBarChart', 'noteCompareRadarChart',
     ].forEach((id) => {
       const element = document.getElementById(id);
       if (element && window.echarts) charts[id] = echarts.init(element);
@@ -131,7 +136,76 @@
     }, true);
   }
 
+  function renderComparisonBar(chartId, rows, key, labelKey, metricLabel) {
+    const values = (rows || []).filter((row) => Number.isFinite(Number(row[key])) && row[key] !== null && row[key] !== undefined);
+    if (!values.length) return setEmptyChart(charts[chartId], `没有共同可用的${metricLabel}精确值`);
+    const labels = values.map((row) => row[labelKey]);
+    charts[chartId]?.setOption({
+      ...baseChart,
+      grid: { left: 118, right: 24, top: 12, bottom: 18 },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (params) => `${escapeHtml(labels[params[0].dataIndex])}<br>${escapeHtml(metricLabel)}：${Number(params[0].value).toLocaleString('zh-CN')}` },
+      xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: '#f0f2f0' } } },
+      yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 8, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } },
+      series: [{ type: 'bar', data: values.map((row) => Number(row[key])), barMaxWidth: 22, itemStyle: { color: '#4a9b75', borderRadius: [0, 4, 4, 0] } }],
+    }, true);
+  }
+
+  function renderComparisonRadar(chartId, rows, axes, labelKey) {
+    const complete = axes.filter((axis) => rows.length >= 2 && rows.every((row) => row[axis.key] !== null && row[axis.key] !== undefined && Number.isFinite(Number(row[axis.key]))) && Math.max(...rows.map((row) => Number(row[axis.key]))) > 0);
+    if (!complete.length) return setEmptyChart(charts[chartId], '至少两条记录共有一个非零精确指标，才能绘雷达图');
+    const indicators = complete.map((axis) => ({ name: axis.label, max: 100 }));
+    charts[chartId]?.setOption({
+      ...baseChart,
+      color: ['#438f6c', '#d19a64', '#7596bd', '#c8796d'],
+      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } },
+      tooltip: { trigger: 'item', formatter: (params) => {
+        const row = rows.find((item) => item[labelKey] === params.name);
+        return `${escapeHtml(params.name)}<br>${complete.map((axis) => `${escapeHtml(axis.label)}：${Number(row[axis.key]).toLocaleString('zh-CN')}`).join('<br>')}`;
+      } },
+      radar: { indicator: indicators, radius: '62%', axisName: { color: '#7f8b82', fontSize: 8 }, splitLine: { lineStyle: { color: '#e9eee9' } }, splitArea: { areaStyle: { color: ['#fbfcfb', '#f5f8f5'] } } },
+      series: [{ type: 'radar', data: rows.map((row) => ({ name: row[labelKey], value: complete.map((axis) => {
+        const maximum = Math.max(...rows.map((item) => Number(item[axis.key])));
+        return maximum > 0 ? Number(row[axis.key]) / maximum * 100 : 0;
+      }) })) }],
+    }, true);
+  }
+
+  function renderCreatorComparison(data) {
+    const rows = data.creators || [];
+    lastCreatorCompareRows = rows;
+    const status = data.availability?.publish_frequency || '同一批次、来源范围内对比';
+    $('#creatorCompareStatus').textContent = `${data.count} 位创作者 · ${status}`;
+    $('#creatorCompareBody').innerHTML = rows.length ? rows.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.platform_creator_id || '—')}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${escapeHtml(quoteDisplay(creator))}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td><td>${creator.publish_frequency_30d === null || creator.publish_frequency_30d === undefined ? '—' : `${creator.publish_frequency_30d} 篇`}</td></tr>`).join('') : '<tr><td colspan="10" class="empty-cell">所选创作者在当前批次没有可比记录</td></tr>';
+    const key = $('#creatorCompareMetric').value;
+    const option = $('#creatorCompareMetric').selectedOptions[0];
+    renderComparisonBar('creatorCompareBarChart', rows, key, 'pseudonym', option?.textContent || key);
+    renderComparisonRadar('creatorCompareRadarChart', rows, [
+      { key: 'followers', label: '粉丝数' }, { key: 'quote', label: '精确报价' },
+      { key: 'reading', label: '阅读中位数' }, { key: 'engagement', label: '互动中位数' },
+      { key: 'publish_frequency_30d', label: '可见发文数' },
+    ], 'pseudonym');
+    const profiles = (lastAnalyticsData?.charts?.audience_groups || []).flatMap((group) => group.profiles || []);
+    renderAudienceComparison(Array.from($('#creatorCompareSelect').selectedOptions).map((item) => item.value), profiles);
+  }
+
+  function renderNoteComparison(data) {
+    const rows = data.notes || [];
+    lastNoteCompareRows = rows;
+    $('#noteCompareStatus').textContent = `${rows.length} 篇 · 来源 ${data.source || '—'} · 批次 ${data.batch_id || '—'} · ${data.availability?.interaction_rate || ''} · ${data.availability?.publish_frequency || ''}`;
+    $('#noteCompareBody').innerHTML = rows.length ? rows.map((note) => `<tr><td>${escapeHtml(note.creator_name)}<br><small>${escapeHtml(note.platform_creator_id || '—')}</small></td><td>${escapeHtml(note.title)}<br><small>${escapeHtml(note.note_id)}</small></td><td>${escapeHtml(note.source)}<br><small>${escapeHtml(note.batch_id || data.batch_id)}</small></td><td>${formatMetric(note.followers, ' 人')}</td><td>${formatMetric(note.quote, ' 元')}</td><td>${formatMetric(note.read_count)}</td><td>${formatMetric(note.like_count)}</td><td>${formatMetric(note.favorite_count)}</td><td>${formatMetric(note.interaction_comment_count)}</td><td>${formatMetric(note.share_count)}</td><td>${note.interaction_rate === null ? '—' : `${note.interaction_rate}%`}</td><td>${note.publish_frequency_30d === null || note.publish_frequency_30d === undefined ? '—' : `${note.publish_frequency_30d} 篇`}</td><td>${note.saved_comment_count ?? '—'}</td></tr>`).join('') : '<tr><td colspan="13" class="empty-cell">当前批次没有可比笔记记录</td></tr>';
+    const key = $('#noteCompareMetric').value;
+    const option = $('#noteCompareMetric').selectedOptions[0];
+    const labels = rows.map((note) => ({ ...note, compare_label: `${note.creator_name} · ${note.title}` }));
+    renderComparisonBar('noteCompareBarChart', labels, key, 'compare_label', option?.textContent || key);
+    renderComparisonRadar('noteCompareRadarChart', rows, [
+      { key: 'read_count', label: '阅读量' }, { key: 'like_count', label: '点赞量' },
+      { key: 'favorite_count', label: '收藏量' }, { key: 'interaction_comment_count', label: '评论量' },
+      { key: 'share_count', label: '分享量' }, { key: 'interaction_rate', label: '互动率 %' },
+    ], 'label');
+  }
+
   function renderAnalytics(data) {
+    lastAnalyticsData = data;
     const chartsData = data.charts || {};
     $('#analysisScope').textContent = `${data.scope || ''} · ${data.availability?.history || ''}`;
     $('#analysisCount').textContent = `${data.counts?.creators || 0} 位创作者 · ${data.counts?.notes || 0} 条笔记`;
@@ -149,6 +223,7 @@
     $('#locationStatus').textContent = `有效地域 ${locations.reduce((sum, item) => sum + item.value, 0)} 位创作者`;
     setBarChart('locationChart', locations, true);
     setBarChart('fanAggregateChart', (chartsData.fan_analysis || []).map((item) => ({ name: `${item.name} (${item.count})`, value: item.value })), true, '%');
+    renderAudienceProfiles(chartsData.audience_groups || []);
     const categories = chartsData.category_distribution || [];
     if (categories.length) {
       charts.categoryChart?.setOption({ ...baseChart, color: ['#438f6c', '#78ad86', '#aec9aa', '#e8c58f', '#b6c6d9'], tooltip: { trigger: 'item', formatter: '{b}<br>{c} 位博主 ({d}%)' }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '48%'], label: { fontSize: 8, color: '#77847b' }, labelLine: { length: 7, length2: 5 }, data: categories }] }, true);
@@ -214,6 +289,92 @@
     if (noteMetricSeries.length) {
       charts.noteMetricsChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 14, top: 10, bottom: 48 }, xAxis: { type: 'category', data: metricKeys, axisLabel: { fontSize: 7, rotate: 22 } }, yAxis: { type: 'value', minInterval: 1 }, series: noteMetricSeries }, true);
     } else setEmptyChart(charts.noteMetricsChart, '当前筛选没有笔记指标');
+  }
+
+  function aggregateProfileValues(profiles, field, average = false) {
+    const counts = new Map();
+    profiles.forEach((profile) => (profile[field] || []).forEach((item) => {
+      const current = counts.get(item.label) || { count: 0, sum: 0, n: 0 };
+      current.count += 1;
+      if (Number.isFinite(item.value)) { current.sum += item.value; current.n += 1; }
+      counts.set(item.label, current);
+    }));
+    return [...counts.entries()].map(([name, item]) => ({
+      name,
+      value: average && item.n ? Number((item.sum / item.n).toFixed(2)) : item.count,
+      sample_count: average ? item.n : item.count,
+    })).sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
+  }
+
+  function renderAudienceProfiles(groups) {
+    const select = $('#audienceGroupSelect');
+    const current = select.value;
+    select.innerHTML = '<option value="">选择兼容来源与周期</option>' + groups.map((group) => `<option value="${group.group_id}">${escapeHtml(group.label)}</option>`).join('');
+    if (groups.some((group) => String(group.group_id) === current)) select.value = current;
+    else if (groups.length) select.value = String(groups[0].group_id);
+    const group = groups.find((item) => String(item.group_id) === select.value);
+    if (!group) {
+      ['audienceGenderChart', 'audienceAgeChart', 'audienceRegionChart', 'audienceInterestChart', 'audienceDeviceChart'].forEach((id) => setEmptyChart(charts[id], '当前筛选没有真实受众画像'));
+      $('#audienceScope').textContent = '没有已保存的年龄、性别、地域、兴趣或设备字段；不补造比例。';
+      $('#audienceCompareBody').innerHTML = '<tr><td colspan="9" class="empty-cell">没有可比较的受众画像</td></tr>';
+      return;
+    }
+    const profiles = group.profiles || [];
+    $('#audienceScope').textContent = `来源 ${group.source} · 周期 ${group.period} · 有画像记录 ${group.creator_count} 位；图表只在此组内汇总`;
+
+    let gender = aggregateProfileValues(profiles, 'gender_distribution', true);
+    const hasFullGender = gender.length > 0;
+    if (!hasFullGender) {
+      const leaders = new Map();
+      profiles.filter((profile) => profile.gender_leading).forEach((profile) => leaders.set(profile.gender_leading, (leaders.get(profile.gender_leading) || 0) + 1));
+      gender = [...leaders.entries()].map(([name, value]) => ({ name, value }));
+    }
+    $('#audienceGenderStatus').textContent = hasFullGender ? `页面提供分类占比；按有该分类值的创作者平均，n=${profiles.filter((item) => item.gender_distribution?.length).length}` : `仅统计页面报告的主要性别类别次数，n=${profiles.filter((item) => item.gender_leading).length}；不推算其余类别`;
+    if (gender.length) charts.audienceGenderChart?.setOption({ ...baseChart, tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.name)}<br>${hasFullGender ? `创作者平均值 ${item.value}%` : `主要类别报告次数 ${item.value}`}` }, legend: { type: 'scroll', bottom: 0 }, series: [{ type: 'pie', radius: ['36%', '62%'], center: ['50%', '43%'], label: { formatter: '{b} {d}%' }, data: gender }] }, true);
+    else setEmptyChart(charts.audienceGenderChart, '没有已采集的性别画像');
+
+    let ages = aggregateProfileValues(profiles, 'age_distribution', true);
+    const hasFullAge = ages.length > 0;
+    if (!hasFullAge) {
+      const leaders = new Map();
+      profiles.filter((profile) => profile.age_leading).forEach((profile) => leaders.set(profile.age_leading, (leaders.get(profile.age_leading) || 0) + 1));
+      ages = [...leaders.entries()].map(([name, value]) => ({ name, value }));
+    }
+    $('#audienceAgeStatus').textContent = hasFullAge ? `按来源与周期组内平均；有效画像 n=${profiles.filter((item) => item.age_distribution?.length).length}` : `仅展示页面报告的主要年龄段次数，n=${profiles.filter((item) => item.age_leading).length}`;
+    setBarChart('audienceAgeChart', ages, true, hasFullAge ? '%' : ' 位');
+
+    const regions = aggregateProfileValues(profiles, 'regions').slice(0, 10);
+    $('#audienceRegionStatus').textContent = `报告的粉丝省份 Top 10；创作者出现次数，画像 n=${profiles.filter((item) => item.regions?.length).length}`;
+    setBarChart('audienceRegionChart', regions, true, ' 位');
+    const interests = aggregateProfileValues(profiles, 'interests').slice(0, 10);
+    $('#audienceInterestStatus').textContent = `页面报告的兴趣标签出现次数；画像 n=${profiles.filter((item) => item.interests?.length).length}`;
+    setBarChart('audienceInterestChart', interests, true, ' 位');
+    const devices = aggregateProfileValues(profiles, 'devices', true);
+    $('#audienceDeviceStatus').textContent = `只显示页面采集到的品牌比例；样本 n=${profiles.filter((item) => item.devices?.length).length}，不补齐未提供品牌`;
+    setBarChart('audienceDeviceChart', devices, true, '%');
+    renderAudienceComparison(profiles.map((profile) => profile.creator_id), profiles);
+  }
+
+  function renderAudienceComparison(selectedIds, profiles) {
+    const selected = new Set(selectedIds);
+    const rows = profiles.filter((profile) => selected.has(profile.creator_id));
+    const compatible = new Map();
+    rows.forEach((profile) => {
+      const key = `${profile.source}\u0000${profile.period}`;
+      const group = compatible.get(key) || [];
+      group.push(profile);
+      compatible.set(key, group);
+    });
+    const comparableRows = [...compatible.values()].filter((group) => new Set(group.map((profile) => profile.creator_id)).size >= 2).flat();
+    if (comparableRows.length < 2) {
+      $('#audienceCompareBody').innerHTML = '<tr><td colspan="9" class="empty-cell">当前同来源、同周期画像少于 2 位创作者</td></tr>';
+      return;
+    }
+    $('#audienceCompareBody').innerHTML = comparableRows.map((profile) => {
+      const rawValues = (items) => (items || []).map((item) => `${item.label}${item.raw_value === null || item.raw_value === undefined ? '' : ` ${item.raw_value}`}`).join('、') || '未提供';
+      const share = (key) => profile.shares?.[key]?.raw_value ?? '未提供';
+      return `<tr><td>${escapeHtml(profile.creator_name)}</td><td>${escapeHtml(profile.source)}</td><td>${escapeHtml(profile.period)}</td><td>${escapeHtml(profile.gender_leading || rawValues(profile.gender_distribution))}</td><td>${escapeHtml(profile.age_leading || rawValues(profile.age_distribution))}</td><td>${escapeHtml(rawValues(profile.regions))}</td><td>${escapeHtml(rawValues(profile.interests))}</td><td>${escapeHtml(rawValues(profile.devices))}</td><td>活跃 ${escapeHtml(share('active'))}；阅读 ${escapeHtml(share('read'))}；互动 ${escapeHtml(share('interaction'))}</td></tr>`;
+    }).join('');
   }
 
   function renderOverview(data) {
@@ -358,6 +519,30 @@
     const params = getNoteFilterParams();
     if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
     renderNotes(await requestJson(`/api/notes?${params.toString()}`));
+    await refreshNoteCompareOptions();
+  }
+
+  async function refreshNoteCompareOptions() {
+    const select = $('#noteCompareSelect');
+    const batchId = elements.batchSelect.value;
+    if (!batchId || batchId === '__all__') {
+      select.innerHTML = '';
+      $('#noteCompareStatus').textContent = '请选择一个具体采集批次后选择 2 至 4 篇';
+      lastNoteCompareRows = [];
+      setEmptyChart(charts.noteCompareBarChart, '请选择一个具体采集批次');
+      setEmptyChart(charts.noteCompareRadarChart, '请选择一个具体采集批次');
+      return;
+    }
+    const params = new URLSearchParams({ batch_id: batchId });
+    if (elements.sourceSelect.value) params.set('source', elements.sourceSelect.value);
+    const result = await requestJson(`/api/notes/compare/options?${params.toString()}`);
+    const previous = new Set(Array.from(select.selectedOptions).map((option) => option.value));
+    select.innerHTML = (result.options || []).map((row) => `<option value="${escapeHtml(row.note_id)}">${escapeHtml(row.creator_name)} · ${escapeHtml(row.title || '（无标题）')} · ${escapeHtml(row.note_id)}</option>`).join('');
+    Array.from(select.options).forEach((option) => { if (previous.has(option.value)) option.selected = true; });
+    $('#noteCompareStatus').textContent = `${result.options?.length || 0} 篇当前批次可选笔记；选择 2 至 4 篇`;
+    lastNoteCompareRows = [];
+    setEmptyChart(charts.noteCompareBarChart, '选择 2 至 4 篇笔记后查看');
+    setEmptyChart(charts.noteCompareRadarChart, '选择 2 至 4 篇笔记后查看');
   }
 
   function renderCoverage(data) {
@@ -669,6 +854,9 @@
       if (selected.length > 4) { selected.at(-1).selected = false; $('#creatorCompareStatus').textContent = '最多选择 4 位创作者'; }
       else $('#creatorCompareStatus').textContent = `${selected.length} 位已选择；请选 2 至 4 位`;
     });
+    $('#audienceGroupSelect').addEventListener('change', () => {
+      if (lastAnalyticsData) renderAudienceProfiles(lastAnalyticsData.charts?.audience_groups || []);
+    });
     $('#compareCreators').addEventListener('click', async () => {
       if (elements.batchSelect.value === '__all__') {
         $('#creatorCompareStatus').textContent = '请选择一个具体采集批次，以保证来源和时间口径一致';
@@ -680,9 +868,41 @@
       if (elements.sourceSelect.value) params.set('source', elements.sourceSelect.value);
       try {
         const data = await requestJson(`/api/creators/compare?${params.toString()}`);
-        $('#creatorCompareStatus').textContent = `${data.count} 位创作者 · 同一批次指标，单位按列保留`;
-        $('#creatorCompareBody').innerHTML = data.creators.length ? data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.platform_creator_id || '—')}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${escapeHtml(quoteDisplay(creator))}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('') : '<tr><td colspan="9" class="empty-cell">所选创作者在当前批次没有可比记录</td></tr>';
+        renderCreatorComparison(data);
       } catch (error) { $('#creatorCompareStatus').textContent = error.message; }
+    });
+    $('#creatorCompareMetric').addEventListener('change', () => {
+      const option = $('#creatorCompareMetric').selectedOptions[0];
+      renderComparisonBar('creatorCompareBarChart', lastCreatorCompareRows, $('#creatorCompareMetric').value, 'pseudonym', option?.textContent || '指标');
+    });
+    $('#noteCompareSelect').addEventListener('change', () => {
+      const selected = Array.from($('#noteCompareSelect').selectedOptions);
+      if (selected.length > 4) { selected.at(-1).selected = false; $('#noteCompareStatus').textContent = '最多选择 4 篇笔记'; }
+      else $('#noteCompareStatus').textContent = `${selected.length} 篇已选择；请选 2 至 4 篇`;
+      lastNoteCompareRows = [];
+      setEmptyChart(charts.noteCompareBarChart, '点击“对比所选笔记”查看');
+      setEmptyChart(charts.noteCompareRadarChart, '点击“对比所选笔记”查看');
+    });
+    $('#compareNotes').addEventListener('click', async () => {
+      if (!elements.batchSelect.value || elements.batchSelect.value === '__all__') {
+        $('#noteCompareStatus').textContent = '请选择一个具体采集批次，以保证来源和时间口径一致';
+        return;
+      }
+      const selected = Array.from($('#noteCompareSelect').selectedOptions);
+      if (selected.length < 2 || selected.length > 4) {
+        $('#noteCompareStatus').textContent = '请选择 2 至 4 篇笔记';
+        return;
+      }
+      const params = new URLSearchParams({ batch_id: elements.batchSelect.value });
+      selected.forEach((option) => params.append('note_id', option.value));
+      if (elements.sourceSelect.value) params.set('source', elements.sourceSelect.value);
+      try { renderNoteComparison(await requestJson(`/api/notes/compare?${params.toString()}`)); }
+      catch (error) { $('#noteCompareStatus').textContent = error.message; }
+    });
+    $('#noteCompareMetric').addEventListener('change', () => {
+      const option = $('#noteCompareMetric').selectedOptions[0];
+      const rows = lastNoteCompareRows.map((note) => ({ ...note, compare_label: `${note.creator_name} · ${note.title}` }));
+      renderComparisonBar('noteCompareBarChart', rows, $('#noteCompareMetric').value, 'compare_label', option?.textContent || '指标');
     });
     const refreshNoteAnalytics = () => Promise.all([refreshNotes(), refreshAnalytics()]).catch((error) => toast(error.message, true));
     $('#filterNotes').addEventListener('click', refreshNoteAnalytics);

@@ -33,7 +33,7 @@
 
       <section class="page-heading comment-heading">
         <div><p class="eyebrow">XIAOHONGSHU · COMMENT LAB</p><h1>评论分析</h1><p class="subheading">基于 R4.2 页面可见评论的小样本。原始正文保留，不脱敏、不改写。</p></div>
-        <div class="heading-actions"><a class="button button-secondary" href="/">返回 CreatorScope</a><a class="button button-secondary download-link" id="exportJsonl" href="/api/comments/export.jsonl">导出 JSONL</a><a class="button button-primary download-link" id="exportCsv" href="/api/comments/export.csv">导出 CSV</a></div>
+        <div class="heading-actions"><a class="button button-secondary" href="/">返回 CreatorScope</a><a class="button button-secondary download-link" id="sentimentReviewLink" href="/api/comments/sentiment/review.csv">人工复核抽样 CSV</a><a class="button button-secondary download-link" id="exportJsonl" href="/api/comments/export.jsonl">导出 JSONL</a><a class="button button-primary download-link" id="exportCsv" href="/api/comments/export.csv">导出 CSV</a></div>
       </section>
 
       <section class="comment-sample-notice" role="note">
@@ -76,6 +76,14 @@
         <article class="chart-card"><div class="card-heading"><div><h2>精确回复数分布</h2><p id="replyScope">非精确值不会进入数值图</p></div></div><div class="comment-chart" id="replyCountChart"></div></article>
         <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>不同笔记关键词对比</h2><p>每篇笔记分别统计高频词</p></div></div><div class="comment-chart comment-chart-tall" id="noteWordsChart"></div></article>
         <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>评论长度与点赞数</h2><p id="scatterScope">只使用可精确转换的点赞值；不代表因果关系</p></div></div><div class="comment-chart" id="lengthLikesChart"></div></article>
+      </section>
+
+      <section class="section-heading comment-table-heading"><div><p class="eyebrow">EXPLORATORY TEXT ANALYSIS</p><h2>评论情感倾向与主题探索</h2><p class="subheading" id="sentimentScope">词典规则仅作倾向线索；等待当前筛选结果</p><p class="comment-footnote" id="sentimentMethod">jieba + 小型情感词典 + 否定词和程度副词规则；需人工抽样复核</p></div></section>
+      <section class="comment-chart-grid">
+        <article class="chart-card"><div class="card-heading"><div><h2>词典情感倾向</h2><p>正向、负向、中性未命中与混合分开；不推断个体真实情绪</p></div></div><div class="comment-chart" id="sentimentChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>主题关键词排行</h2><p>由透明的关键词规则标记；一条评论可命中多个主题</p></div></div><div class="comment-chart" id="topicChart"></div></article>
+        <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>不同笔记主题对比</h2><p>仅对当前筛选中的评论原文作主题匹配</p></div></div><div class="comment-chart comment-chart-tall" id="noteTopicChart"></div></article>
+        <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>不同创作者主题对比</h2><p>使用当前筛选内的创作者公开名称与评论样本</p></div></div><div class="comment-chart comment-chart-tall" id="creatorTopicChart"></div></article>
       </section>
 
       <section class="section-heading comment-table-heading"><div><p class="eyebrow">VISIBLE COMMENT RECORDS</p><h2>评论明细</h2><p class="subheading" id="resultCount">—</p></div><span class="analysis-count">原文保留</span></section>

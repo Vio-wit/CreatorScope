@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from creatorscope.analytics import analytics_data, creator_library, notes_data, overview_data
+from creatorscope.analytics import analytics_data, compare_creators, compare_notes, creator_library, note_compare_options, notes_data, overview_data
 from creatorscope.db import connection, initialize_database
 from creatorscope import create_app
 from research.r4_3_comment_analysis.comment_analysis import compare_word_frequencies, summarize
@@ -111,6 +111,7 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
         self.assertEqual(note["comment_count"], 1)
         self.assertEqual(len(result["charts"]["metric_trends"]), 5)
         self.assertTrue(all("pgy_visible" in series["label"] and "累计" in series["label"] for series in result["charts"]["metric_trends"]))
+        self.assertTrue(all(series["source"] == "pgy_visible" and series["metric_key"] for series in result["charts"]["metric_trends"]))
         self.assertEqual(notes_data(self.db_path, topic="#护肤", date_from="2026-11-13")["count"], 0)
 
     def test_note_analysis_uses_note_bodies_and_separates_source_distributions(self) -> None:
@@ -135,6 +136,40 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
         self.assertEqual(word_frequency["charts"]["note_metrics"][0]["note_id"], "note-a")
         public_note_metrics = analytics_data(self.db_path, source="xhs_import")
         self.assertIn("note-b", {item["note_id"] for item in public_note_metrics["charts"]["note_metrics"]})
+
+    def test_audience_profiles_keep_raw_categories_and_group_by_source_and_period(self) -> None:
+        profile_fields = {
+            "gender_share": {"female": "92.98%", "male": "7.01%"},
+            "age_share": {"18_24": "52.1%", "25_34": "35.0%"},
+            "top_provinces": [{"name": "广东", "share": "14.3%"}, {"name": "江苏", "share": "7.9%"}],
+            "top_interests": ["生活记录", "影视"],
+            "device_brand_share_examples": {"Apple": "54.95%", "Huawei": "13.66%"},
+            "active_share_raw": "82.5%",
+            "period": "近30日",
+        }
+        with connection(self.db_path) as conn:
+            for creator_id, captured_at, suffix in (
+                ("creator-a", "2026-11-01T10:20:00", "a"),
+                ("creator-b", "2026-11-01T10:21:00", "b"),
+            ):
+                payload = {**profile_fields, "_source_row": 1 if suffix == "a" else 2}
+                conn.execute(
+                    "INSERT INTO records(batch_id,record_type,captured_at,fields_json,fields_hash,creator_id,source) VALUES(?,?,?,?,?,?,?)",
+                    ("batch-a", "fan_analysis", captured_at, json.dumps(payload, ensure_ascii=False), f"fan-{suffix}", creator_id, ""),
+                )
+
+        result = analytics_data(self.db_path, source="pgy_visible")
+        groups = result["charts"]["audience_groups"]
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0]["creator_count"], 2)
+        first = groups[0]["profiles"][0]
+        self.assertEqual(first["period"], "近30日")
+        self.assertEqual(first["gender_distribution"][0]["raw_value"], "92.98%")
+        self.assertEqual(first["gender_distribution"][0]["label"], "女性")
+        self.assertEqual(first["age_distribution"][0]["label"], "18–24")
+        self.assertEqual(first["regions"][0]["label"], "广东")
+        self.assertEqual(first["devices"][0]["raw_value"], "54.95%")
+        self.assertEqual(result["availability"]["audience"], "2 条真实画像快照；按来源与统计周期分组")
 
     def test_trend_requires_same_source_period_and_repeated_creator(self) -> None:
         result = analytics_data(self.db_path)
@@ -205,12 +240,45 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
         compared = client.get("/api/creators/compare?creator_id=creator-a&creator_id=creator-b&batch_id=batch-a")
         self.assertEqual(compared.status_code, 200)
         self.assertEqual(compared.get_json()["count"], 2)
+        self.assertEqual(compared.get_json()["availability"]["comparison_scope"], "精确 creator_id；单一批次；来源按筛选值约束")
+        self.assertEqual(next(row for row in compared.get_json()["creators"] if row["creator_id"] == "creator-a")["publish_frequency_30d"], 1)
         rejected = client.get("/api/creators/compare?creator_id=creator-a&creator_id=creator-b&batch_id=__all__")
         self.assertEqual(rejected.status_code, 400)
         word_change = client.get("/api/comments/word-change?baseline_batch_id=batch-a&comparison_batch_id=batch-b")
         self.assertEqual(word_change.status_code, 200)
         self.assertEqual(word_change.get_json()["common_note_count"], 1)
         self.assertGreater(len(word_change.get_json()["words"]), 0)
+
+    def test_note_comparison_uses_exact_ids_single_batch_and_raw_values(self) -> None:
+        with connection(self.db_path) as conn:
+            conn.execute(
+                "INSERT INTO notes(note_id,creator_id,note_key_hash,platform_note_id,title,body,topics_json,published_at,note_type,source_url,source,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                ("note-c", "creator-a", "note-hash-c", "platform-note-c", "原始笔记标题 C", "原始正文 C", "[]", "2026-10-20", "图文", "https://example.test/note-c", "pgy_visible", "2026-11-01", "2026-11-01"),
+            )
+            self._record(conn, "batch-a", "note_detail", "2026-11-01T10:12:00", "creator-a", "note-c", {"阅读量": "500", "点赞量": "20", "收藏量": "10", "评论量": "5", "分享量": "2"}, "累计")
+
+        options = note_compare_options(self.db_path, batch_id="batch-a", source="pgy_visible")
+        self.assertEqual({item["note_id"] for item in options}, {"note-a", "note-c"})
+        direct = compare_notes(self.db_path, ["note-a", "note-c"], batch_id="batch-a", source="pgy_visible")
+        self.assertEqual(direct["count"], 2)
+        self.assertEqual(direct["source"], "pgy_visible")
+        by_id = {item["note_id"]: item for item in direct["notes"]}
+        self.assertEqual(by_id["note-c"]["title"], "原始笔记标题 C")
+        self.assertEqual(by_id["note-c"]["body"], "原始正文 C")
+        self.assertEqual(by_id["note-a"]["interaction_rate"], 13.5)
+        self.assertEqual(by_id["note-c"]["interaction_rate"], 7.4)
+        self.assertEqual(by_id["note-c"]["publish_frequency_30d"], 2)
+
+        client = create_app({"DATABASE_PATH": self.db_path, "BASELINE_PATH": self.db_path.parent / "missing.json", "TESTING": True}).test_client()
+        response = client.get("/api/notes/compare?note_id=note-a&note_id=note-c&batch_id=batch-a&source=pgy_visible")
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual({item["note_id"] for item in payload["notes"]}, {"note-a", "note-c"})
+        self.assertEqual(payload["availability"]["saved_comments"], "另列本地保存的评论行数，不与页面评论指标混为一项")
+        all_batches = client.get("/api/notes/compare?note_id=note-a&note_id=note-c&batch_id=__all__")
+        self.assertEqual(all_batches.status_code, 400)
+        with self.assertRaisesRegex(ValueError, "至少需要 2 篇"):
+            compare_notes(self.db_path, ["note-a", "note-b"], batch_id="batch-a", source="pgy_visible")
 
     def test_per_record_source_and_raw_cleaned_and_statistics_exports(self) -> None:
         with connection(self.db_path) as conn:

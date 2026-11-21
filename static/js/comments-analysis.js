@@ -1,7 +1,7 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
   const charts = {};
-  const ids = ['topWordsChart', 'noteCountChart', 'creatorCommentChart', 'lengthChart', 'lengthBoxplotChart', 'likesChart', 'replyCountChart', 'noteWordsChart', 'lengthLikesChart', 'wordChangeChart'];
+  const ids = ['topWordsChart', 'noteCountChart', 'creatorCommentChart', 'lengthChart', 'lengthBoxplotChart', 'likesChart', 'replyCountChart', 'noteWordsChart', 'lengthLikesChart', 'wordChangeChart', 'sentimentChart', 'topicChart', 'noteTopicChart', 'creatorTopicChart'];
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
   async function requestJson(url) {
@@ -119,6 +119,51 @@
     chart('lengthBoxplotChart').setOption(option, true);
   }
 
+  function renderGroupTopicComparison(id, groups) {
+    const populated = (groups || []).filter((group) => group.topics?.length);
+    if (!populated.length) {
+      chart(id).clear();
+      chart(id).setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: '当前样本没有可比较主题', fill: '#9aa39d', fontSize: 13 } }] });
+      return;
+    }
+    const totalByTopic = new Map();
+    populated.forEach((group) => group.topics.forEach((item) => totalByTopic.set(item.label, (totalByTopic.get(item.label) || 0) + item.count)));
+    const labels = [...totalByTopic.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 8).map(([label]) => label);
+    const option = baseOption();
+    option.grid = { left: 105, right: 26, top: 18, bottom: 50, containLabel: true };
+    option.legend = { bottom: 4, type: 'scroll' };
+    option.xAxis = { type: 'category', data: labels, axisLabel: { rotate: 18, interval: 0 } };
+    option.yAxis = { type: 'value', minInterval: 1 };
+    option.series = populated.map((group) => {
+      const values = new Map(group.topics.map((item) => [item.label, item.count]));
+      return { name: `${group.label} (n=${group.sample_count})`, type: 'bar', barMaxWidth: 24, data: labels.map((label) => values.get(label) || 0) };
+    });
+    chart(id).setOption(option, true);
+  }
+
+  function renderSentiment(data) {
+    const summary = data.summary || {};
+    const counts = summary.sentiment_counts || {};
+    const sentimentItems = Object.entries(counts).map(([name, value]) => ({ name, value })).filter((item) => item.value > 0);
+    $('#sentimentScope').textContent = `${summary.scope_notice || '词典规则只作倾向线索'} · 当前样本 n=${summary.comment_count || 0} · 人工复核抽样 ${data.review_sample_count || 0} 条`;
+    $('#sentimentMethod').textContent = summary.method || '';
+    $('#sentimentReviewLink').href = `/api/comments/sentiment/review.csv${filters().toString() ? `?${filters().toString()}` : ''}`;
+    if (sentimentItems.length) {
+      const option = baseOption();
+      option.legend = { bottom: 0, type: 'scroll' };
+      option.tooltip = { trigger: 'item', formatter: (item) => `${escapeHtml(item.name)}<br>评论数 ${item.value}<br>占样本 ${item.percent}%` };
+      option.series = [{ type: 'pie', radius: ['35%', '62%'], center: ['50%', '43%'], label: { formatter: '{b} {d}%' }, data: sentimentItems }];
+      chart('sentimentChart').setOption(option, true);
+    } else {
+      chart('sentimentChart').clear();
+      chart('sentimentChart').setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: '没有可分析评论', fill: '#9aa39d', fontSize: 13 } }] });
+    }
+    const topics = summary.topic_counts || [];
+    setBar('topicChart', topics.slice(0, 12).map((item) => item.label).reverse(), topics.slice(0, 12).map((item) => item.count).reverse(), true, '#7596bd');
+    renderGroupTopicComparison('noteTopicChart', data.by_note || []);
+    renderGroupTopicComparison('creatorTopicChart', data.by_creator || []);
+  }
+
   function renderRows(rows) {
     const body = $('#commentRows');
     if (!rows.length) {
@@ -149,7 +194,10 @@
     const params = filters();
     updateExportLinks(params);
     const query = params.toString();
-    const data = await requestJson(`/api/comments/analysis${query ? `?${query}` : ''}`);
+    const [data, sentiment] = await Promise.all([
+      requestJson(`/api/comments/analysis${query ? `?${query}` : ''}`),
+      requestJson(`/api/comments/sentiment${query ? `?${query}` : ''}`),
+    ]);
     const summary = data.summary;
     $('#commentCount').textContent = summary.comment_count;
     $('#levelCounts').textContent = `${summary.root_count} / ${summary.reply_count}`;
@@ -182,6 +230,7 @@
     renderNoteWords(data.note_words || []);
     renderScatter(data.scatter || []);
     renderRows(data.comments || []);
+    renderSentiment(sentiment);
   }
 
   async function loadWordChange() {
