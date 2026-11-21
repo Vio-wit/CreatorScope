@@ -1,7 +1,7 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
   const charts = {};
-  const ids = ['topWordsChart', 'noteCountChart', 'creatorCommentChart', 'lengthChart', 'lengthBoxplotChart', 'likesChart', 'replyCountChart', 'noteWordsChart', 'lengthLikesChart', 'wordChangeChart', 'sentimentChart', 'topicChart', 'noteTopicChart', 'creatorTopicChart'];
+  const ids = ['topWordsChart', 'noteCountChart', 'creatorCommentChart', 'lengthChart', 'lengthBoxplotChart', 'likesChart', 'replyCountChart', 'noteWordsChart', 'lengthLikesChart', 'wordChangeChart', 'sentimentChart', 'tfidfChart', 'topicChart', 'noteTopicChart', 'creatorTopicChart'];
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
   async function requestJson(url) {
@@ -141,6 +141,26 @@
     chart(id).setOption(option, true);
   }
 
+  function renderTfidf(items) {
+    const populated = (items || []).slice(0, 12);
+    const option = baseOption();
+    option.grid = { left: 36, right: 34, top: 18, bottom: 35, containLabel: true };
+    option.xAxis = { type: 'value', min: 0, axisLabel: { formatter: (value) => Number(value).toFixed(2) } };
+    option.yAxis = { type: 'category', data: populated.map((item) => item.word).reverse(), axisLabel: { width: 220, overflow: 'truncate' } };
+    if (!populated.length) {
+      option.graphic = [{ type: 'text', left: 'center', top: 'middle', style: { text: '当前筛选没有可计算的关键词', fill: '#9aa39d', fontSize: 13 } }];
+      option.series = [];
+    } else {
+      const values = populated.map((item) => ({ value: item.score, documentFrequency: item.document_frequency, documentCount: item.document_count })).reverse();
+      option.tooltip = { trigger: 'axis', formatter: (params) => {
+        const item = params[0];
+        return `${escapeHtml(item.name)}<br>TF-IDF 汇总分：${Number(item.value).toFixed(6)}<br>出现评论数：${item.data.documentFrequency} / ${item.data.documentCount}`;
+      } };
+      option.series = [{ type: 'bar', data: values, barMaxWidth: 22, itemStyle: { color: '#7596bd', borderRadius: [0, 5, 5, 0] } }];
+    }
+    chart('tfidfChart').setOption(option, true);
+  }
+
   function renderSentiment(data) {
     const summary = data.summary || {};
     const counts = summary.sentiment_counts || {};
@@ -148,6 +168,7 @@
     $('#sentimentScope').textContent = `${summary.scope_notice || '词典规则只作倾向线索'} · 当前样本 n=${summary.comment_count || 0} · 人工复核抽样 ${data.review_sample_count || 0} 条`;
     $('#sentimentMethod').textContent = summary.method || '';
     $('#sentimentReviewLink').href = `/api/comments/sentiment/review.csv${filters().toString() ? `?${filters().toString()}` : ''}`;
+    renderTfidf(summary.tfidf_keywords || []);
     if (sentimentItems.length) {
       const option = baseOption();
       option.legend = { bottom: 0, type: 'scroll' };

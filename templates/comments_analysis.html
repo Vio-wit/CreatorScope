@@ -22,6 +22,8 @@
       <a class="nav-item" href="/#analytics"><span class="nav-icon">◷</span>统计分析</a>
       <a class="nav-item" href="/#creators"><span class="nav-icon">◎</span>博主库</a>
       <a class="nav-item active" href="/comments"><span class="nav-icon">▧</span>评论分析</a>
+      <a class="nav-item" href="/news"><span class="nav-icon">◉</span>新闻热点关联</a>
+      <a class="nav-item" href="/ai"><span class="nav-icon">✦</span>AI 分析</a>
       <div class="sidebar-bottom"><span class="local-dot"></span><div><strong>本地运行</strong><small>统一 SQLite 数据库</small></div></div>
     </aside>
 
@@ -78,9 +80,10 @@
         <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>评论长度与点赞数</h2><p id="scatterScope">只使用可精确转换的点赞值；不代表因果关系</p></div></div><div class="comment-chart" id="lengthLikesChart"></div></article>
       </section>
 
-      <section class="section-heading comment-table-heading"><div><p class="eyebrow">EXPLORATORY TEXT ANALYSIS</p><h2>评论情感倾向与主题探索</h2><p class="subheading" id="sentimentScope">词典规则仅作倾向线索；等待当前筛选结果</p><p class="comment-footnote" id="sentimentMethod">jieba + 小型情感词典 + 否定词和程度副词规则；需人工抽样复核</p></div></section>
+      <section class="section-heading comment-table-heading"><div><p class="eyebrow">EXPLORATORY TEXT ANALYSIS</p><h2>评论情感倾向与主题探索</h2><p class="subheading" id="sentimentScope">词典规则仅作倾向线索；等待当前筛选结果</p><p class="comment-footnote" id="sentimentMethod">jieba + TF-IDF 关键词 + 小型情感词典 + 否定词和程度副词规则；需人工抽样复核</p></div></section>
       <section class="comment-chart-grid">
         <article class="chart-card"><div class="card-heading"><div><h2>词典情感倾向</h2><p>正向、负向、中性未命中与混合分开；不推断个体真实情绪</p></div></div><div class="comment-chart" id="sentimentChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>评论关键词 TF-IDF</h2><p>按当前筛选评论计算；分数只用于关键词排序</p></div></div><div class="comment-chart" id="tfidfChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>主题关键词排行</h2><p>由透明的关键词规则标记；一条评论可命中多个主题</p></div></div><div class="comment-chart" id="topicChart"></div></article>
         <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>不同笔记主题对比</h2><p>仅对当前筛选中的评论原文作主题匹配</p></div></div><div class="comment-chart comment-chart-tall" id="noteTopicChart"></div></article>
         <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>不同创作者主题对比</h2><p>使用当前筛选内的创作者公开名称与评论样本</p></div></div><div class="comment-chart comment-chart-tall" id="creatorTopicChart"></div></article>
