@@ -1,7 +1,7 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
   const charts = {};
-  const ids = ['topWordsChart', 'noteCountChart', 'creatorCommentChart', 'lengthChart', 'likesChart', 'noteWordsChart', 'lengthLikesChart', 'wordChangeChart'];
+  const ids = ['topWordsChart', 'noteCountChart', 'creatorCommentChart', 'lengthChart', 'lengthBoxplotChart', 'likesChart', 'replyCountChart', 'noteWordsChart', 'lengthLikesChart', 'wordChangeChart'];
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
   async function requestJson(url) {
@@ -104,6 +104,21 @@
     chart('lengthLikesChart').setOption(option, true);
   }
 
+  function renderLengthBoxplot(boxplot) {
+    const option = baseOption();
+    option.grid = { left: 58, right: 26, top: 32, bottom: 55, containLabel: true };
+    option.xAxis = { type: 'category', data: ['原始评论长度'] };
+    option.yAxis = { type: 'value', name: '字符数', minInterval: 1 };
+    if (!boxplot?.values?.length) {
+      option.graphic = [{ type: 'text', left: 'center', top: 'middle', style: { text: '当前筛选没有评论', fill: '#9aa39d', fontSize: 13 } }];
+      option.series = [];
+    } else {
+      option.tooltip = { trigger: 'item', formatter: () => `最小值：${boxplot.values[0]}<br>Q1：${boxplot.values[1]}<br>中位数：${boxplot.values[2]}<br>Q3：${boxplot.values[3]}<br>最大值：${boxplot.values[4]}<br>有效样本 n=${boxplot.sample_count}` };
+      option.series = [{ type: 'boxplot', data: [boxplot.values], itemStyle: { color: '#dce9df', borderColor: '#5e9275' } }];
+    }
+    chart('lengthBoxplotChart').setOption(option, true);
+  }
+
   function renderRows(rows) {
     const body = $('#commentRows');
     if (!rows.length) {
@@ -145,6 +160,9 @@
     $('#sampleNotice').textContent = `${summary.scope_notice} · 当前筛选 ${summary.comment_count} 条`;
     $('#resultCount').textContent = `当前显示 ${data.comments.length} 条 · 不代表评论区总量`;
     $('#likesScope').textContent = `精确数值 n=${summary.like_count_available}；${summary.unavailable_like_values} 条缺失/非精确值未当作 0`;
+    $('#lengthScope').textContent = `原始评论文本；Unicode 字符数 n=${summary.length_count}`;
+    $('#lengthBoxplotScope').textContent = `原文字符数；有效样本 n=${data.length_boxplot?.sample_count || 0}`;
+    $('#replyScope').textContent = `精确回复数 n=${data.reply_histogram_sample_count}；${data.reply_histogram_excluded_count} 条缺失/非精确值不参与`;
     $('#scatterScope').textContent = `有效散点 n=${data.scatter.length}；仅描述本批样本，不代表因果关系`;
     $('#analysisStatus').textContent = summary.comment_count < 30 ? `${summary.scope_notice}。词频、点赞和长度关系均不作总体推断。` : '按当前筛选结果更新；描述统计不作总体推断。';
     $('#commentWordcloud').src = `/api/comments/wordcloud.png${query ? `?${query}&` : '?'}v=${Date.now()}`;
@@ -156,8 +174,11 @@
     const creators = data.by_creator || [];
     setBar('creatorCommentChart', creators.map((item) => item.label), creators.map((item) => item.count), true, '#7596bd');
     setBar('lengthChart', data.length_histogram.map((item) => item.label), data.length_histogram.map((item) => item.count), false, '#799cbb');
+    renderLengthBoxplot(data.length_boxplot);
     const likes = data.like_histogram || [];
     setBar('likesChart', likes.map((item) => item.label), likes.map((item) => item.count), false, '#dfa05c');
+    const replies = data.reply_histogram || [];
+    setBar('replyCountChart', replies.map((item) => item.label), replies.map((item) => item.count), false, '#8b83ae');
     renderNoteWords(data.note_words || []);
     renderScatter(data.scatter || []);
     renderRows(data.comments || []);
