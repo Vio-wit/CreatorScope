@@ -236,6 +236,24 @@ def initialize_database(db_path: Path) -> None:
         )
 
 
+def schema_version_readonly(db_path: Path) -> int:
+    """Read the recorded schema version without creating or modifying a database."""
+    path = Path(db_path).resolve()
+    if not path.is_file():
+        return 0
+    conn = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True, timeout=20)
+    try:
+        has_migrations = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_migrations'"
+        ).fetchone()
+        if not has_migrations:
+            return 0
+        row = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()
+        return int(row[0] or 0)
+    finally:
+        conn.close()
+
+
 def verify_database_readonly(db_path: Path, required_version: int = SCHEMA_VERSION) -> dict[str, object]:
     """Validate a prepared dataset without opening it for writes or migration."""
     path = Path(db_path).resolve()
