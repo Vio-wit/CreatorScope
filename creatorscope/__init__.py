@@ -16,6 +16,7 @@ from .browser import PgyVisibleBrowser
 from .db import connection, initialize_database
 from .domain import field_dictionary
 from .ingest import MAX_UPLOAD_BYTES
+from .news import NEWS_FEEDS, append_news_items, correlate_news_notes, fetch_feed, load_news_items
 from .tasks import TaskManager
 from research.r4_3_comment_analysis.comments_web import comment_analysis_bp
 
@@ -42,6 +43,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             os.environ.get("CREATORSCOPE_DB", str(instance_dir / "creatorscope_unified.sqlite3"))
         ),
         AI_REPORTS_PATH=instance_dir / "ai_reports",
+        NEWS_DATA_PATH=instance_dir / "news_items.jsonl",
         BASELINE_PATH=project_root / "data" / "baseline" / "pgy_live_sample_2026-11-19.json",
         MAX_CONTENT_LENGTH=MAX_UPLOAD_BYTES + 64 * 1024,
     )
@@ -50,6 +52,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     app.config["DATABASE_PATH"] = Path(app.config["DATABASE_PATH"])
     app.config["AI_REPORTS_PATH"] = Path(app.config["AI_REPORTS_PATH"])
+    app.config["NEWS_DATA_PATH"] = Path(app.config["NEWS_DATA_PATH"])
     # All CreatorScope modules share one local database, including comment analysis.
     app.config["COMMENT_ANALYSIS_DATABASE_PATH"] = app.config["DATABASE_PATH"]
     app.config["BASELINE_PATH"] = Path(app.config["BASELINE_PATH"])
@@ -73,6 +76,63 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @app.get("/ai")
     def ai_page():
         return render_template("ai_analysis.html")
+
+    @app.get("/news")
+    def news_page():
+        return render_template("news.html")
+
+    @app.get("/api/news/options")
+    def api_news_options():
+        with connection(app.config["DATABASE_PATH"]) as conn:
+            batches = [dict(row) for row in conn.execute(
+                "SELECT batch_id, source, captured_at FROM batches ORDER BY captured_at DESC, rowid DESC"
+            ).fetchall()]
+        return jsonify({
+            "sources": [{"value": key, "label": value["source_name"], "feed_url": value["feed_url"], "official_source_url": value["official_source_url"]} for key, value in NEWS_FEEDS.items()],
+            "batches": batches,
+        })
+
+    @app.get("/api/news")
+    def api_news():
+        source_key = request.args.get("source_key", "").strip()
+        items = load_news_items(app.config["NEWS_DATA_PATH"])
+        if source_key:
+            items = [item for item in items if item.get("source_key") == source_key]
+        raw_batch_id = request.args.get("batch_id") or ""
+        selected_batch = None if raw_batch_id in {"", "__all__"} else raw_batch_id
+        note_rows = notes_data(app.config["DATABASE_PATH"], batch_id=selected_batch)["notes"] if selected_batch else []
+        correlation = correlate_news_notes(items, note_rows)
+        date_methods: dict[str, int] = {}
+        for item in items:
+            method = str(item.get("published_at_method") or "missing")
+            date_methods[method] = date_methods.get(method, 0) + 1
+        published_days = sorted(str(item.get("published_at") or "")[:10] for item in items if item.get("published_at"))
+        return jsonify({
+            "items": sorted(items, key=lambda item: str(item.get("published_at") or ""), reverse=True),
+            "count": len(items), "correlation": correlation,
+            "batch_id": selected_batch,
+            "date_coverage": {
+                "methods": date_methods,
+                "earliest": published_days[0] if published_days else None,
+                "latest": published_days[-1] if published_days else None,
+            },
+            "availability": "选择具体笔记批次后计算关联；无选定批次时只显示新闻数据。" if not selected_batch else correlation["method_notice"],
+        })
+
+    @app.post("/api/news/collect")
+    def api_news_collect():
+        payload = request.get_json(silent=True) or {}
+        source_key = str(payload.get("source_key") or "")
+        try:
+            items = fetch_feed(source_key)
+            saved = append_news_items(app.config["NEWS_DATA_PATH"], items)
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except RuntimeError as exc:
+            return jsonify({"error": str(exc)}), 502
+        except OSError:
+            return jsonify({"error": "无法保存本地 RSS 记录"}), 500
+        return jsonify({"status": "completed", "source_key": source_key, **saved})
 
     @app.get("/api/ai/config")
     def api_ai_config():
