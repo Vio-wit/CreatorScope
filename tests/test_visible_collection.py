@@ -395,6 +395,8 @@ class VisibleCollectionTests(unittest.TestCase):
         self.assertEqual(len(resumed_records), 12)
         self.assertEqual(reordered["creators_visited"], 1)
         self.assertEqual(reordered_rows, [2])
+        with self.assertRaisesRegex(PauseForUser, "目标为 5 位.*仅 4 位"):
+            run_case(5, 0, row_order=[1, 2, 3, 4])
 
     def test_creator_checkpoint_resolves_reordered_visible_rows_by_stable_identity(self) -> None:
         browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)

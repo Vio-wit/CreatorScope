@@ -877,7 +877,6 @@ class PgyVisibleBrowser:
         visible_creator_records = self._capture_list_rows(page)
         if not visible_creator_records:
             raise CaptureError("当前列表没有可按表头识别的创作者记录；未启动批量采集")
-        creator_limit = min(creator_limit, len(visible_creator_records))
         planned_targets = checkpoint.get("creator_targets")
         if not isinstance(planned_targets, list):
             raise PauseForUser(
@@ -890,6 +889,11 @@ class PgyVisibleBrowser:
             )
             creator_limit = len(creator_list_records)
         else:
+            if len(visible_creator_records) < creator_limit:
+                raise PauseForUser(
+                    f"目标为 {creator_limit} 位，但当前可识别列表仅 {len(visible_creator_records)} 位；"
+                    "请调整筛选或采集数量后新建任务，目标人数不会自动缩小"
+                )
             initial_targets = [
                 self._creator_target_descriptor(record)
                 for record in visible_creator_records[:creator_limit]
