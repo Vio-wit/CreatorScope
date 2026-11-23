@@ -153,6 +153,76 @@ class ReportAndQualityTests(unittest.TestCase):
             conn.execute("UPDATE batches SET status='paused' WHERE batch_id='batch-q'")
         self.assertIsNone(batch_quality_report(self.db_path, "batch-q")["creator_acceptance"]["passed"])
 
+    def test_five_creator_identity_conflicts_exclude_target_and_block_grades(self) -> None:
+        with connection(self.db_path) as conn:
+            self._batch(conn, "batch-identity", "test", "2026-11-21T10:00:00")
+            conn.execute("UPDATE tasks SET task_type='visible_collection', parameters_json=? WHERE task_id='task-batch-identity'",
+                         (json.dumps({"settings": {"creator_count": 5}}),))
+            for index in range(4):
+                creator_id = f"identity-{index}"
+                name = f"creator-{index}"
+                platform_id = f"platform-{index}"
+                conn.execute("""INSERT INTO creators(creator_id,pseudonym,creator_name,platform_creator_id,source_key_hash,first_seen_at,last_seen_at)
+                                VALUES(?,?,?,?,?,?,?)""", (creator_id, creator_id, name, platform_id, creator_id, "2026-11-21", "2026-11-21"))
+                list_id = self._record(conn, "batch-identity", "blogger_list_sample", "2026-11-21", creator_id, None,
+                                       {"创作者名称": name, "粉丝数": "1200", "阅读中位数（日常）": "800"})
+                profile_id = self._record(conn, "batch-identity", "creator_profile_sample", "2026-11-21", creator_id, None,
+                                          {"创作者名称": name, "平台公开ID": platform_id})
+                for record_id, record_type, field, raw, normalization in (
+                    (profile_id, "creator_profile_sample", "平台公开ID", platform_id, ""),
+                    (list_id, "blogger_list_sample", "粉丝数", "1200", "parsed"),
+                ):
+                    conn.execute("""INSERT INTO collection_field_observations
+                        (batch_id,record_id,entity_type,entity_ref,record_type,field_name,raw_value,normalization_status,source,captured_at,status)
+                        VALUES ('batch-identity',?,'creator',?,?,?,?,?,'test','2026-11-21','captured')""",
+                        (record_id, creator_id, record_type, field, raw, normalization))
+            conn.execute("UPDATE records SET source='test' WHERE batch_id='batch-identity'")
+        report = batch_quality_report(self.db_path, "batch-identity")
+        self.assertEqual(report["creator_acceptance"]["success"], 4)
+        self.assertTrue(report["creator_acceptance"]["passed"])
+        follower = next(row for row in report["field_coverage"] if row["record_type"] == "blogger_list_sample" and row["field_name"] == "粉丝数")
+        self.assertEqual(follower["five_creator_grade"], "stable")
+
+        with connection(self.db_path) as conn:
+            conn.execute("""INSERT INTO records(batch_id,record_type,source,captured_at,fields_json,fields_hash,creator_id)
+                            VALUES ('batch-identity','blogger_list_sample','test','2026-11-21',?,?, 'identity-0')""",
+                         (json.dumps({"创作者名称": "另一位达人"}, ensure_ascii=False), "conflicting-list"))
+        report = batch_quality_report(self.db_path, "batch-identity")
+        self.assertEqual(report["creator_acceptance"]["identity_conflicts"], 1)
+        self.assertEqual(report["creator_acceptance"]["success"], 3)
+        self.assertFalse(report["creator_acceptance"]["passed"])
+        self.assertTrue(all(row["five_creator_grade"] == "incomplete" for row in report["field_coverage"] if row["record_type"] == "blogger_list_sample"))
+
+        with connection(self.db_path) as conn:
+            conn.execute("DELETE FROM records WHERE fields_hash='conflicting-list'")
+            conn.execute("UPDATE records SET fields_json=? WHERE batch_id='batch-identity' AND creator_id='identity-0' AND record_type='creator_profile_sample'",
+                         (json.dumps({"创作者名称": "详情其他姓名", "平台公开ID": "platform-0"}, ensure_ascii=False),))
+        report = batch_quality_report(self.db_path, "batch-identity")
+        self.assertEqual(report["creator_acceptance"]["identity_conflicts"], 1)
+        self.assertEqual(report["creator_acceptance"]["success"], 3)
+        self.assertFalse(report["creator_acceptance"]["passed"])
+
+    def test_displayed_unavailable_counts_distinct_entities_without_parsed_value(self) -> None:
+        with connection(self.db_path) as conn:
+            for creator_id in ("creator-a", "creator-b"):
+                record_id = conn.execute("SELECT record_id FROM records WHERE batch_id='batch-q' AND record_type='creator_profile_sample' AND creator_id=?", (creator_id,)).fetchone()[0]
+                second_record_id = conn.execute(
+                    "INSERT INTO records(batch_id,record_type,captured_at,fields_json,fields_hash,creator_id) VALUES ('batch-q','creator_profile_sample','2026-11-21','{}',?,?)",
+                    (f"second-observation-{creator_id}", creator_id),
+                ).lastrowid
+                for observation_record_id, normalization in zip(
+                    (record_id, second_record_id),
+                    (["displayed_unavailable", "parsed"] if creator_id == "creator-a" else ["displayed_unavailable", "displayed_unavailable"]),
+                ):
+                    conn.execute("""INSERT INTO collection_field_observations
+                        (batch_id,record_id,entity_type,entity_ref,record_type,field_name,raw_value,normalization_status,source,captured_at,status)
+                        VALUES ('batch-q',?,'creator',?,'creator_profile_sample','测试指标','--',?,'test','2026-11-21','captured')""",
+                        (observation_record_id, creator_id, normalization))
+        report = batch_quality_report(self.db_path, "batch-q")
+        field = next(row for row in report["field_coverage"] if row["field_name"] == "测试指标")
+        self.assertEqual(field["states"]["captured"], 2)
+        self.assertEqual(field["displayed_unavailable_count"], 1)
+
     def test_quality_overview_summarizes_saved_batches(self) -> None:
         overview = quality_overview(self.db_path)
         self.assertEqual(len(overview["batches"]), 1)

@@ -28,7 +28,8 @@ COMMENT_FIELDS = (
 )
 CREATOR_LIST_FIELDS = (
     "创作者名称", "平台公开ID", "粉丝数", "阅读中位数（日常）",
-    "互动中位数（日常）", "全部报价", "合作报价", "图文报价", "视频报价",
+    "互动中位数（日常）", "曝光中位数（合作）", "阅读中位数（合作）",
+    "互动中位数（合作）", "全部报价", "合作报价", "图文报价", "视频报价",
     "内容领域", "地域", "人设", "标签",
 )
 CREATOR_PROFILE_FIELDS = (
@@ -286,21 +287,21 @@ class PgyVisibleBrowser:
             rows = page.get_by_role("row").all()
             parsed: list[dict[str, Any]] = []
             for visible_row_index, row in enumerate(rows):
-                cells = row.get_by_role("cell").all_inner_texts()
-                if not cells:
-                    cells = row.get_by_role("gridcell").all_inner_texts()
-                if not cells:
-                    cells = row.locator("td").all_inner_texts()
-                if not cells:
-                    continue
+                # Read text and links in one browser evaluation: a virtualized
+                # row may otherwise be reused between two separate reads.
                 metadata = row.evaluate(
                     """el => ({
+                      cells: Array.from(el.querySelectorAll('[role="cell"], [role="gridcell"], td'))
+                        .filter(c => c.getClientRects().length).map(c => c.innerText || ''),
                       links: Array.from(el.querySelectorAll('a[href]')).map(a => ({
                         text: (a.innerText || a.textContent || '').trim(), href: a.href
                       })),
                       rowKey: el.getAttribute('data-row-key') || el.getAttribute('data-key') || ''
                     })"""
                 )
+                cells = metadata.get("cells", [])
+                if not cells:
+                    continue
                 record = self._parse_creator_list_row(headers, cells, metadata)
                 if record:
                     record["visible_row_index"] = visible_row_index
@@ -322,6 +323,10 @@ class PgyVisibleBrowser:
             return "平台公开ID"
         if "粉丝" in normalized and any(token in normalized for token in ("数", "量", "人数")):
             return "粉丝数"
+        if "合作" in normalized and "中位数" in normalized:
+            for label in ("曝光", "阅读", "互动"):
+                if label in normalized:
+                    return f"{label}中位数（合作）"
         if "阅读" in normalized and "中位数" in normalized:
             return "阅读中位数（日常）" if "日常" in normalized else "阅读中位数"
         if "互动" in normalized and "中位数" in normalized:
@@ -729,6 +734,26 @@ class PgyVisibleBrowser:
             resolved.append(matches[0][1])
         return resolved
 
+    @staticmethod
+    def _validate_creator_identity(list_record: dict[str, Any], detail_url: str, creator_records: list[dict[str, Any]]) -> None:
+        """Do not associate list data with a detail until both identities agree."""
+        fields = list_record.get("fields") or {}
+        expected_name = str(fields.get("创作者名称") or "").strip()
+        expected_id = str(fields.get("平台公开ID") or "").strip()
+        expected_path = str(list_record.get("creator_detail_path") or "").strip()
+        profile = next((r.get("fields") or {} for r in creator_records
+                        if r.get("type") == "creator_profile_sample"), {})
+        actual_name = str(profile.get("创作者名称") or "").strip()
+        actual_id = str(profile.get("平台公开ID") or "").strip()
+        if not expected_name or not actual_name or not actual_id:
+            raise CaptureError("创作者详情身份未完整加载；未保存该达人，请检查后重试")
+        if expected_name != actual_name:
+            raise CaptureError(f"列表创作者「{expected_name[:40]}」与详情「{actual_name[:40]}」不一致；未保存该达人")
+        if expected_id and expected_id != actual_id:
+            raise CaptureError("列表与详情的创作者公开 ID 不一致；未保存该达人")
+        if expected_path and expected_path != urlparse(detail_url).path:
+            raise CaptureError("列表与详情的创作者地址不一致；未保存该达人")
+
     def _select_collection_page(self, targets: list[dict[str, Any]]):
         pages = [page for page in (self._context.pages if self._context else [])
                  if not page.is_closed() and urlparse(page.url).hostname == PGY_HOST
@@ -963,6 +988,9 @@ class PgyVisibleBrowser:
                 if route.hostname != PGY_HOST or "/solar/pre-trade/blogger-detail/" not in route.path:
                     raise CaptureError("列表行未打开可识别的蒲公英创作者详情页")
                 creator_ref = f"pgy:{route.path}"
+                creator_stage = "核对创作者身份"
+                creator_records = self._capture_creator_records(detail_page, creator_ref)
+                self._validate_creator_identity(list_record, detail_page.url, creator_records)
                 list_record["creator_ref"] = creator_ref
                 list_record.pop("visible_row_index", None)
                 save_records(
@@ -973,7 +1001,6 @@ class PgyVisibleBrowser:
                 )
                 creator_stage = "读取创作者资料和指标"
                 if settings.get("collect_creator", True):
-                    creator_records = self._capture_creator_records(detail_page, creator_ref)
                     if creator_records:
                         save_records(
                             {
@@ -1201,11 +1228,24 @@ class PgyVisibleBrowser:
 
     def _open_creator_row(self, page, row_index: int, *, expected_record: dict[str, Any] | None = None):
         before_pages = set(self._context.pages)
-        row = page.get_by_role("row").nth(row_index)
-        if expected_record:
-            expected_fields = expected_record.get("fields", {})
-            expected_id = str(expected_fields.get("平台公开ID") or "").strip()
-            expected_name = str(expected_fields.get("创作者名称") or "").strip()
+        expected_fields = (expected_record or {}).get("fields", {})
+        expected_id = str(expected_fields.get("平台公开ID") or "").strip()
+        expected_name = str(expected_fields.get("创作者名称") or "").strip()
+        rows = page.get_by_role("row")
+        if expected_name:
+            # nth() can resolve to another row when scrolling changes the set
+            # of visible rows. Anchor the locator to the creator's exact name.
+            row = rows.filter(has=page.get_by_text(expected_name, exact=True))
+            if row.count() != 1:
+                raise CaptureError("目标创作者名称不能唯一定位列表行；未执行点击")
+        else:
+            row = rows.nth(row_index)
+
+        def verify_row():
+            if not expected_record:
+                return
+            if row.count() != 1:
+                raise CaptureError("滚动后目标创作者列表行不能唯一定位；未执行点击")
             try:
                 row_text = re.sub(r"\s+", " ", row.inner_text(timeout=5000)).strip()
             except Exception:
@@ -1214,6 +1254,9 @@ class PgyVisibleBrowser:
                 raise CaptureError("目标创作者公开 ID 与列表行不匹配；为避免串位已停止")
             if expected_name and expected_name not in row_text:
                 raise CaptureError("目标创作者名称与列表行不匹配；为避免串位已停止")
+
+        if expected_record:
+            verify_row()
         links = row.locator("a:visible, [role='link']:visible")
         images = row.locator("img:visible")
         avatars = row.locator("[class*='avatar']:visible")
@@ -1259,6 +1302,10 @@ class PgyVisibleBrowser:
         for target, target_kind in candidates:
             try:
                 target.scroll_into_view_if_needed(timeout=5000)
+                page.wait_for_timeout(300)
+                verify_row()
+            except CaptureError:
+                raise
             except Exception as exc:
                 click_errors.append(
                     f"{target_kind}:{type(exc).__name__}[target_summary_unavailable]"
@@ -1372,11 +1419,24 @@ class PgyVisibleBrowser:
         lines = capture_visible()
         deadline = time.monotonic() + 8
         start_wait = time.monotonic()
+        scrolled = False
         while time.monotonic() < deadline:
             identity_ready = bool(self._creator_identity_fields(lines).get("平台公开ID"))
             data_ready = self._creator_detail_data_ready(lines)
-            if data_ready and (identity_ready or time.monotonic() - start_wait >= 3):
+            if data_ready and identity_ready:
                 break
+            if not scrolled and time.monotonic() - start_wait >= 2:
+                # Trigger below-the-fold lazy sections only when the detail has
+                # not loaded; preserve the user's previous scroll position.
+                try:
+                    page.evaluate("""() => {
+                      const y = window.scrollY;
+                      window.scrollTo(0, document.documentElement.scrollHeight);
+                      window.setTimeout(() => window.scrollTo(0, y), 300);
+                    }""")
+                except Exception:
+                    pass
+                scrolled = True
             page.wait_for_timeout(250)
             lines = capture_visible()
         if not self._creator_detail_data_ready(lines) and any("加载中" in line for line in lines):
@@ -1393,6 +1453,10 @@ class PgyVisibleBrowser:
                 fans_tab.first.click(timeout=8000)
                 page.wait_for_timeout(450)
                 fan_lines = capture_visible()
+                fan_deadline = time.monotonic() + 3
+                while time.monotonic() < fan_deadline and not self._fans_record(fan_lines):
+                    page.wait_for_timeout(250)
+                    fan_lines = capture_visible()
             except CaptureError:
                 raise
             except Exception:

@@ -144,6 +144,7 @@
     $('#fieldCount').textContent = `${fields.length} 个字段项`;
     $('#fieldRows').innerHTML = fields.length ? fields.map((item) => {
       const states = Object.entries(item.states || {}).map(([key, value]) => `<span class="state-chip ${escapeHtml(key)}">${escapeHtml(stateLabel(key))} ${value}</span>`).join(' ');
+      const unavailable = item.displayed_unavailable_count ? ` <span class="state-chip">页面显示缺失 ${number(item.displayed_unavailable_count)}</span>` : '';
       return `<tr>
         <td>${escapeHtml(typeLabel(item.record_type))}</td>
         <td>${escapeHtml(item.field_name)}</td>
@@ -151,7 +152,7 @@
         <td>${number(item.captured_records)}</td>
         <td><span class="quality-pill ${coverageClass(item.coverage_pct)}">${percent(item.coverage_pct)}</span></td>
         <td>${escapeHtml(GRADE_LABELS[item.five_creator_grade] || '—')}</td>
-        <td class="quality-states">${states || '—'}</td>
+        <td class="quality-states">${states || '—'}${unavailable}</td>
       </tr>`;
     }).join('') : '<tr><td colspan="7" class="empty-cell">本批次没有字段观察记录</td></tr>';
 

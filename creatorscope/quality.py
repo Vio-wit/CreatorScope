@@ -182,6 +182,12 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
                JOIN metric_values m ON m.record_id=r.record_id
                WHERE r.batch_id=? AND r.note_id IS NULL""", (batch_id,),
         ).fetchall()
+        identity_records = conn.execute(
+            """SELECT creator_id, record_type, fields_json FROM records
+               WHERE batch_id=? AND creator_id IS NOT NULL AND note_id IS NULL
+                 AND record_type IN ('blogger_list_sample', 'creator_profile_sample')""",
+            (batch_id,),
+        ).fetchall()
 
     try:
         task_result = json.loads(batch["result_json"] or "{}")
@@ -198,11 +204,30 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
 
     creator_acceptance = None
     if five_creator_task:
+        names_by_creator: dict[str, dict[str, set[str]]] = {}
+        for row in identity_records:
+            try:
+                fields = json.loads(row["fields_json"] or "{}")
+            except (ValueError, TypeError):
+                continue
+            if not isinstance(fields, dict):
+                continue
+            name = str(fields.get("创作者名称") or "").strip()
+            if name:
+                by_type = names_by_creator.setdefault(str(row["creator_id"]), {})
+                by_type.setdefault(str(row["record_type"]), set()).add(name)
+        identity_conflicts = set()
+        for creator_id, by_type in names_by_creator.items():
+            list_names = by_type.get("blogger_list_sample", set())
+            detail_names = by_type.get("creator_profile_sample", set())
+            if len(list_names) > 1 or (list_names and detail_names and list_names != detail_names):
+                identity_conflicts.add(creator_id)
         by_identity: dict[str, dict[str, Any]] = {}
         for row in creator_metrics:
             identity = str(row["platform_creator_id"] or "").strip()
             group = _CORE_METRIC_GROUPS.get(str(row["metric_key"]))
-            if not identity or not row["identity_observed"] or not row["source"] or not row["captured_at"]:
+            if (str(row["creator_id"]) in identity_conflicts or not identity or
+                    not row["identity_observed"] or not row["source"] or not row["captured_at"]):
                 continue
             entry = by_identity.setdefault(identity, {"creator_ids": set(), "groups": set()})
             entry["creator_ids"].add(str(row["creator_id"]))
@@ -212,14 +237,16 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
         creator_acceptance = {
             "target": 5, "success": success, "minimum_success": ceil(5 * 0.7),
             "success_pct": round(success * 100 / 5, 1),
+            "identity_conflicts": len(identity_conflicts),
             "passed": success >= ceil(5 * 0.7) if batch["status"] == "completed" and success <= 5 else None,
-            "note": "只统计本批明确观察到平台 ID、来源和时间齐全且至少两类核心指标成功解析的唯一达人；身份冲突不计。",
+            "note": "只统计本批明确观察到平台 ID、来源和时间齐全且至少两类核心指标成功解析的唯一达人；列表与详情姓名冲突的达人不计，存在冲突时字段评级待核验。",
         }
     grade_sample_ready = bool(
         five_creator_task
         and batch["task_status"] == "completed"
         and creator_acceptance
         and creator_acceptance["success"] >= creator_acceptance["minimum_success"]
+        and not creator_acceptance["identity_conflicts"]
     )
 
     records_by_type = {str(row["record_type"]): int(row["row_count"]) for row in record_rows}
@@ -234,7 +261,7 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
         targets_by_field.setdefault((record_type, field_name), {}).setdefault(target_key, []).append(row)
         item = grouped_fields.setdefault(
             (record_type, field_name),
-            {"record_type": record_type, "field_name": field_name, "states": {}, "normalized_count": 0, "parse_success_count": 0},
+            {"record_type": record_type, "field_name": field_name, "states": {}, "normalized_count": 0, "parse_success_count": 0, "displayed_unavailable_count": 0},
         )
         item["normalized_count"] += int(row["normalized_value_json"] is not None)
         item["parse_success_count"] += int(row["normalization_status"] == "parsed")
@@ -247,6 +274,9 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
         key = (item["record_type"], item["field_name"])
         for target_rows in targets_by_field[key].values():
             statuses = [str(row["status"]) for row in target_rows]
+            normalization_statuses = {str(row["normalization_status"]) for row in target_rows}
+            if "displayed_unavailable" in normalization_statuses and "parsed" not in normalization_statuses:
+                item["displayed_unavailable_count"] += 1
             if "captured" in statuses:
                 effective_status = "captured"
             else:
