@@ -12,11 +12,15 @@ from creatorscope.history_analytics import (
     HistoryAnalyticsError,
     NOTE_SAMPLE_SHA256,
     analysis_data,
+    history_creator_library,
+    history_note_library,
+    list_library_sources,
     list_sources,
     note_samples,
     _connection,
 )
 from creatorscope.history_evidence import MARKER, SCHEMA
+from creatorscope.history_evidence import import_file
 
 
 class HistoryAnalyticsTests(unittest.TestCase):
@@ -80,15 +84,15 @@ class HistoryAnalyticsTests(unittest.TestCase):
 
         for index, digest in enumerate(NOTE_SAMPLE_SHA256, 1):
             source_id = f"note-source-{index}"
-            add_source(source_id, f"笔记文本样本{index:02d}", digest)
+            add_source(source_id, f"rednote_note__笔记文本样本{index:02d}", digest)
             conn.execute(
                 "INSERT INTO source_records (record_id,source_id,row_number,raw_json,raw_text,row_digest,duplicate_content,identity_status,capture_time,parse_status) VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (f"note-{index}", source_id, 1, "{}", f"URL: https://example.test/{index}\n正文摘录", f"note-digest-{index}", 0, "unassigned", None, "parsed"),
             )
             values = {
                 "note_title": (f"展示标题 {index}", "text"),
-                "note_body_candidate": (f"正文内容 {index}", "text"),
-                "note_topics_candidate": (json.dumps(["课程展示", f"话题{index}"], ensure_ascii=False), "text"),
+                "note_body_candidate": (f"正文内容 {index} [话题]", "text"),
+                "note_topics_candidate": (json.dumps(["课程展示", "[话题]", f"话题{index}"], ensure_ascii=False), "text"),
             }
             for target, (value, unit) in values.items():
                 conn.execute(
@@ -116,6 +120,58 @@ class HistoryAnalyticsTests(unittest.TestCase):
         self.assertEqual(details["metrics"]["followers"]["valid_count"], 2)
         self.assertEqual(ept["records"][0]["lineage"]["sha256"], "e" * 64)
 
+    def test_history_library_merges_only_matching_strong_ids_and_pages_results(self) -> None:
+        db = self.root / "expanded-history.sqlite3"
+        index = self.root / "index.json"
+        detail = self.root / "detail.json"
+        index.write_text(json.dumps([
+            {"creator_name": "历史名", "xhs_profile_id": "profile-1", "latest_known_followers": "10000"},
+            {"creator_name": "同名无编号", "latest_known_followers": "20000"},
+            {"creator_name": "达人名单_2026.xlsx", "latest_known_followers": "20260728214705"},
+        ], ensure_ascii=False), encoding="utf-8")
+        detail.write_text(json.dumps([
+            {"博主昵称": "详情新名", "xhs_profile_id": "profile-1", "粉丝数": "1.2w", "地域": "首尔"},
+        ], ensure_ascii=False), encoding="utf-8")
+        import_file(db, index, "rednote_creator__历史索引")
+        import_file(db, detail, "rednote_creator__达人详情")
+
+        options = list_library_sources(db)["sources"]
+        all_history = next(item for item in options if item["key"] == "history_all")
+        self.assertEqual(all_history["sample_count"], 4)
+        self.assertEqual(all_history["entity_count"], 2)
+
+        first = history_creator_library(db, "history_all", limit=1, offset=0)
+        self.assertEqual(first["result_count"], 2)
+        self.assertEqual(first["source"]["entity_count"], 2)
+        self.assertEqual(len(first["records"]), 1)
+        linked = history_creator_library(db, "history_all", query="历史名", limit=10)
+        self.assertEqual(linked["result_count"], 1)
+        self.assertEqual(linked["records"][0]["name"], "详情新名")
+        self.assertEqual(linked["records"][0]["aliases"], ["历史名", "详情新名"])
+        self.assertEqual(linked["records"][0]["followers"], 12000)
+        self.assertEqual(len(linked["records"][0]["source_records"]), 2)
+        self.assertEqual(linked["records"][0]["source_file_count"], 2)
+        self.assertTrue(all(record["source_paths"] for record in linked["records"][0]["source_records"]))
+        self.assertEqual(history_creator_library(db, "history_all", query="同名无编号")["result_count"], 1)
+        self.assertEqual(history_creator_library(db, "history_all", query="达人名单")["result_count"], 0)
+
+    def test_library_source_counts_match_visible_rows_with_sparse_records(self) -> None:
+        conn = sqlite3.connect(self.history_db)
+        conn.execute(
+            "INSERT INTO source_records (record_id,source_id,row_number,raw_json,raw_text,row_digest,duplicate_content,identity_status,capture_time,parse_status) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            ("ept-sparse", "ept", 4, "{}", None, "digest-ept-sparse", 0, "pending", None, "parsed"),
+        )
+        conn.execute("INSERT INTO source_paths VALUES (?,?,?)", ("ept", "sparse-ept.csv", "2026-11-23T00:00:00+00:00"))
+        conn.commit()
+        conn.close()
+
+        option = next(item for item in list_library_sources(self.history_db)["sources"] if item["key"] == "EPT")
+        page = history_creator_library(self.history_db, "EPT", limit=10)
+        self.assertEqual(option["sample_count"], page["source"]["sample_count"])
+        self.assertEqual(option["entity_count"], page["source"]["entity_count"])
+        self.assertEqual(option["entity_count"], page["result_count"])
+        self.assertTrue(page["records"][0]["source_records"][0]["source_paths"])
+
     def test_history_reads_are_read_only_and_preserve_database_bytes(self) -> None:
         before = hashlib.sha256(self.history_db.read_bytes()).hexdigest()
         analysis_data(self.history_db)
@@ -137,6 +193,16 @@ class HistoryAnalyticsTests(unittest.TestCase):
         serialized = json.dumps(result, ensure_ascii=False)
         self.assertNotIn("https://", serialized)
         self.assertNotIn("正文摘录", serialized)
+
+    def test_history_note_library_searches_content_and_removes_topic_marker_noise(self) -> None:
+        page = history_note_library(self.history_db, query="课程展示", limit=2)
+        self.assertEqual(page["total_count"], 3)
+        self.assertEqual(page["result_count"], 3)
+        self.assertEqual((page["title_count"], page["body_count"], page["topics_count"]), (3, 3, 3))
+        self.assertEqual(len(page["samples"]), 2)
+        self.assertNotIn("[话题]", page["samples"][0]["body"])
+        self.assertNotIn("话题", page["samples"][0]["topics"])
+        self.assertEqual(history_note_library(self.history_db, query="不存在")["result_count"], 0)
 
     def test_invalid_source_and_unmarked_database_are_rejected(self) -> None:
         with self.assertRaises(HistoryAnalyticsError):
@@ -167,6 +233,10 @@ class HistoryAnalyticsTests(unittest.TestCase):
             self.assertEqual(response.get_json()["source"]["sample_count"], 3)
             self.assertEqual(client.get("/api/history-analysis?source=bad").status_code, 400)
             self.assertEqual(client.get("/api/history-analysis/note-samples").get_json()["sample_count"], 3)
+            self.assertEqual(client.get("/api/history-analysis/note-library?limit=2").get_json()["result_count"], 3)
+            self.assertIn("sources", client.get("/api/history-analysis/library-sources").get_json())
+            self.assertEqual(client.get("/api/history-analysis/library?source=bad").status_code, 400)
+            self.assertEqual(client.get("/api/history-analysis/library?limit=201").status_code, 400)
             for page in ("/", "/ai", "/comments", "/quality", "/news"):
                 page_response = client.get(page)
                 self.assertEqual(page_response.status_code, 200, page)
