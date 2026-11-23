@@ -9,14 +9,45 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ai-analysis.css') }}">
   <script defer src="{{ url_for('static', filename='js/ai-analysis.js') }}"></script>
 </head>
-<body>
+<body class="ai-analysis-page">
   <div class="shell">
     {% include '_sidebar.html' %}
     <main class="main-content">
       <header class="topbar"><div class="breadcrumb">CreatorScope <span>/</span> AI 分析</div><div class="topbar-right"><span class="local-badge"><i></i>仅本机</span></div></header>
       <section class="page-heading">
         <div><p class="eyebrow">OPTIONAL MODEL ANALYSIS</p><h1>AI 分析</h1><p class="subheading">传统统计始终可用；模型调用只在你检查本机原始数据预览并确认后执行。</p></div>
-        <div class="heading-actions"><a class="button button-secondary" href="/">返回工作台</a></div>
+        <div class="heading-actions"><a class="button button-secondary" href="/#collection">采集工作台</a></div>
+      </section>
+      <section class="ai-settings-card unified-selector-card" aria-labelledby="unifiedSelectorTitle">
+        <div class="card-heading"><div><h2 id="unifiedSelectorTitle">本地达人筛选与横向对比</h2><p>直接查询统一达人库；自然语言先在本机转成可编辑条件，不需要 API Key。</p></div><span class="analysis-count" id="unifiedResultCount">正在读取</span></div>
+        <div class="natural-query-row">
+          <label for="naturalNeed">合作需求</label>
+          <textarea id="naturalNeed" rows="2" placeholder="例如：找美妆领域、粉丝不少于10万、日常阅读至少5000的达人"></textarea>
+          <div class="ai-action-row"><button class="button button-secondary" id="parseNaturalNeed">整理为筛选条件</button><span id="naturalNeedStatus">本机规则只识别字段白名单；不确定的词会留给你手动调整。</span></div>
+        </div>
+        <div class="unified-filter-grid">
+          <label>名称 / 平台 ID<input id="unifiedSearch" type="search" placeholder="搜索名称或 ID"></label>
+          <label>来源分组<select id="unifiedBucket"><option value="">全部来源</option></select></label>
+          <label>内容领域<select id="unifiedCategory"><option value="">全部领域</option></select></label>
+          <label>蒲公英账号 IP<select id="unifiedIp"><option value="">全部 IP</option></select></label>
+          <details class="unified-range-details"><summary>数值范围</summary>
+            <div class="unified-range-grid">
+              <label>粉丝数<input id="filterFollowersMin" type="number" min="0" placeholder="最少"></label><label class="range-max"><span aria-hidden="true">&nbsp;</span><input id="filterFollowersMax" type="number" min="0" placeholder="最多"></label>
+              <label>日常阅读<input id="filterDailyReadMin" type="number" min="0" placeholder="最少"></label><label class="range-max"><span aria-hidden="true">&nbsp;</span><input id="filterDailyReadMax" type="number" min="0" placeholder="最多"></label>
+              <label>日常互动<input id="filterDailyInteractionMin" type="number" min="0" placeholder="最少"></label><label class="range-max"><span aria-hidden="true">&nbsp;</span><input id="filterDailyInteractionMax" type="number" min="0" placeholder="最多"></label>
+            </div>
+          </details>
+        </div>
+        <div class="ai-action-row unified-filter-actions"><button class="button button-primary" id="searchUnifiedCreators">筛选达人</button><button class="button button-secondary" id="clearUnifiedFilters">清空条件</button><span id="unifiedFilterStatus">最多勾选 4 位；缺失值保留为空。</span></div>
+        <div class="unified-selection-summary" id="unifiedSelectionSummary">已选择 0 / 4 位</div>
+        <div class="unified-results-scroll"><table class="unified-results-table"><thead><tr><th>选</th><th>达人 / 来源</th><th>粉丝</th><th>日常阅读</th><th>日常互动</th><th>领域</th><th>完整度</th></tr></thead><tbody id="unifiedCreatorRows"><tr><td colspan="7" class="empty-cell">正在读取统一达人库…</td></tr></tbody></table></div>
+        <div class="ai-action-row unified-page-actions"><button class="button button-secondary" id="unifiedPrevious">上一页</button><span id="unifiedPageStatus">—</span><button class="button button-secondary" id="unifiedNext">下一页</button><button class="button button-primary" id="compareUnifiedCreators" disabled>查看横向对比</button><button class="button button-secondary" id="previewUnifiedAdvice" disabled>准备 AI 建议预览</button></div>
+        <section class="unified-compare-panel" id="unifiedComparePanel" hidden>
+          <div class="card-heading"><div><h3>所选达人对比</h3><p>显示已取得原值、来源、时间和字段完整度；缺失不填 0。</p></div></div>
+          <p class="unified-compare-notice" id="unifiedCompareNotice"></p>
+          <div class="unified-chart-grid" id="unifiedCompareCharts"></div>
+          <div class="unified-results-scroll"><table class="unified-results-table unified-compare-table"><thead><tr><th>达人</th><th>来源分组</th><th>来源</th><th>采集时间</th><th>完整度</th><th>粉丝数</th><th>日常阅读</th><th>日常互动</th><th>领域</th><th>图文 / 视频报价原值</th></tr></thead><tbody id="unifiedCompareRows"></tbody></table></div>
+        </section>
       </section>
       <section class="ai-settings-card">
         <div class="card-heading"><div><h2>模型服务配置</h2><p>Provider、Base URL 和 Model 仅保存在此浏览器；API Key 由服务器进程环境变量提供。</p></div><span id="keyStatus" class="analysis-count">读取配置中</span></div>
@@ -29,14 +60,14 @@
         <p class="ai-help" id="providerHelp">密钥不会回传、显示或写入数据库。</p>
       </section>
       <section class="ai-scope-card">
-          <div class="card-heading"><div><h2>选择分析范围</h2><p>笔记正文和评论原文由你单独选择；每次请求前先查看本机预览。</p></div></div>
+          <div class="card-heading"><div><h2>AI 分析预览与建议</h2><p>笔记正文默认不发送；每次模型请求前先查看本机预览并明确确认。</p></div></div>
         <div class="ai-scope-grid">
           <label>分析任务<select id="analysisType"></select></label>
-          <label>评论批次<select id="batchSelect"><option value="">选择批次</option></select></label>
+          <label>选择批次<select id="batchSelect"><option value="">选择批次</option></select></label>
           <label class="scope-multi">创作者<select id="creatorSelect" multiple size="5"></select><small>按住 Ctrl 可多选；对比最多 4 位。</small></label>
           <label class="scope-multi">笔记<select id="noteSelect" multiple size="5"></select><small>按住 Ctrl 可多选；每次最多 3 篇（评论统计最多 5 篇）。</small></label>
         </div>
-        <div class="ai-raw-option"><label><input id="includeRawText" type="checkbox"><span>将所选笔记正文和评论原文纳入预览及模型输入</span></label><small>默认关闭不改变本机原始数据和导出；关闭时仍会发送名称、平台 ID、标题、话题、指标和评论统计/词频摘要。</small></div>
+        <div class="ai-raw-option"><label><input id="includeRawText" type="checkbox"><span>将所选笔记正文纳入预览及模型输入</span></label><small>默认关闭不改变本机原始数据和导出；开启时全文会显示在预览内，模型调用仍需单独确认。</small></div>
         <div class="ai-action-row"><button class="button button-secondary" id="previewButton">生成原始数据预览</button><span id="scopeStatus">仅生成本地预览，不会调用模型。</span></div>
       </section>
       <section class="ai-preview-card" id="previewCard" hidden>
