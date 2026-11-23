@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7f4">
+  <title>CreatorScope · 实训报告</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script defer src="{{ url_for('static', filename='js/report.js') }}"></script>
+</head>
+<body class="report-body">
+  <div class="shell">
+    <aside class="sidebar no-print">
+      <a class="brand" href="/" aria-label="CreatorScope 首页">
+        <span class="brand-mark">C</span><span><strong>CreatorScope</strong><small>课程数据工作台</small></span>
+      </a>
+      <div class="nav-label">工作区</div>
+      <a class="nav-item" href="/"><span class="nav-icon">▦</span>数据看板</a>
+      <a class="nav-item" href="/#collection"><span class="nav-icon">↧</span>采集任务</a>
+      <a class="nav-item" href="/#analytics"><span class="nav-icon">◷</span>统计分析</a>
+      <a class="nav-item" href="/#creators"><span class="nav-icon">◎</span>博主库</a>
+      <a class="nav-item" href="/comments"><span class="nav-icon">▧</span>评论分析</a>
+      <a class="nav-item" href="/quality"><span class="nav-icon">◍</span>数据质量</a>
+      <a class="nav-item active" href="/report"><span class="nav-icon">▤</span>实训报告</a>
+      <a class="nav-item" href="/news"><span class="nav-icon">◉</span>新闻热点关联</a>
+      <a class="nav-item" href="/ai"><span class="nav-icon">✦</span>AI 分析</a>
+      <div class="sidebar-bottom"><span class="local-dot"></span><div><strong>本地运行</strong><small>统一 SQLite 数据库</small></div></div>
+    </aside>
+
+    <main class="main-content report-main">
+      <header class="topbar no-print">
+        <div class="breadcrumb">CreatorScope <span>/</span> 实训报告</div>
+        <div class="topbar-right"><span class="local-badge"><i></i>仅本机</span><span class="date-label">{{ report.generated_at[:19].replace('T', ' ') if report else '—' }}</span></div>
+      </header>
+
+      {% if error %}
+      <div class="report-error">
+        <strong>无法生成报告</strong>
+        <p>{{ error }}</p>
+      </div>
+      {% else %}
+
+      <section class="report-toolbar no-print">
+        <div class="report-toolbar-copy">
+          <p class="eyebrow">REPORT BUILDER</p>
+          <h1>实训报告</h1>
+          <p class="subheading">整页由本机数据库直接生成：数据变了重新打开即可刷新。Word 版含 4 张图表，Markdown 版适合粘贴进已有报告模板。</p>
+        </div>
+        <div class="report-toolbar-actions">
+          <a class="button button-primary download-link" href="/api/report.docx{% if report.batch_id %}?batch_id={{ report.batch_id }}{% endif %}">下载 Word（.docx）</a>
+          <a class="button button-secondary download-link" href="/api/report.md{% if report.batch_id %}?batch_id={{ report.batch_id }}{% endif %}">下载 Markdown</a>
+          <button class="button button-secondary" type="button" id="printReport">打印 / 存为 PDF</button>
+        </div>
+        <div class="report-scope-row">
+          <span class="report-scope">数据范围：{{ report.scope }}{% if report.batch %}（批次 {{ report.batch_id }} · {{ report.batch.source }}）{% endif %}</span>
+          {% if report.batch_id %}<a class="report-scope-link" href="/report">改为全部批次</a>{% else %}<a class="report-scope-link" href="/quality">去质量看板挑一个批次</a>{% endif %}
+        </div>
+      </section>
+
+      <article class="report-sheet" id="reportSheet">
+        <header class="report-cover">
+          <p class="report-kicker">CreatorScope · 数据采集与处理综合实训</p>
+          <h2>{{ report.title }}</h2>
+          <table class="report-meta">
+            <tbody>
+              <tr><th>生成时间</th><td>{{ report.generated_at[:19].replace('T', ' ') }}</td></tr>
+              <tr><th>本地数据库</th><td>{{ report.database_name }}</td></tr>
+              <tr><th>数据范围</th><td>{{ report.scope }}{% if report.batch %}（{{ report.batch.source }}）{% endif %}</td></tr>
+              <tr><th>样本规模</th><td>创作者 {{ report.overview.counts.creators }} · 笔记 {{ report.overview.counts.notes }} · 评论 {{ report.overview.counts.comments }} · 采集批次 {{ report.overview.counts.batches }}</td></tr>
+            </tbody>
+          </table>
+        </header>
+
+        <section class="report-section">
+          <h3>一、数据集与采集方法</h3>
+          <p class="report-text">本报告汇总本机已保存的记录。数据可能来自可见页面采集或历史导入；请结合下方来源及原始批次记录核实采集方法。</p>
+          <h4>1.1 数据来源构成</h4>
+          <table class="report-table">
+            <thead><tr><th>采集来源</th><th class="num">已保存行数</th><th class="num">占比</th></tr></thead>
+            <tbody>
+              {% for item in report.overview.sources %}
+              <tr><td>{{ item.source or '未标注来源' }}</td><td class="num">{{ item.total_count }}</td><td class="num">{{ '%.1f'|format(item.share_pct or 0) }}%</td></tr>
+              {% else %}
+              <tr><td colspan="3" class="empty-row">本机还没有已保存的记录</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <h4>1.2 记录类型构成</h4>
+          <table class="report-table">
+            <thead><tr><th>记录类型</th><th class="num">行数</th></tr></thead>
+            <tbody>
+              {% for item in report.type_summary %}
+              <tr><td>{{ item.label }}</td><td class="num">{{ item.count }}</td></tr>
+              {% else %}
+              <tr><td colspan="2" class="empty-row">本机还没有已保存的记录</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+
+        <section class="report-section">
+          <h3>二、数据质量与字段覆盖</h3>
+          {% if report.quality %}
+          <table class="report-meta report-quality-meta">
+            <tbody>
+              <tr><th>批次</th><td>{{ report.quality.batch_id }}</td><th>来源</th><td>{{ report.quality.source }}</td></tr>
+              <tr><th>状态</th><td>{{ report.quality.status_label }}</td><th>耗时</th><td>{{ report.quality.elapsed_seconds if report.quality.elapsed_seconds is not none else '—' }} 秒</td></tr>
+              <tr><th>记录行</th><td>{{ report.quality.counts.records }}</td><th>评论</th><td>{{ report.quality.counts.comments }}</td></tr>
+              <tr><th>重复记录</th><td>{{ report.quality.counts.duplicate_records }}</td><th>数值解析成功率</th><td>{{ report.quality.metrics.parse_success_pct if report.quality.metrics.parse_success_pct is not none else '—' }}%</td></tr>
+            </tbody>
+          </table>
+          <h4>2.1 字段覆盖率（前 25 个字段）</h4>
+          <table class="report-table">
+            <thead><tr><th>记录类型</th><th>字段</th><th class="num">应有</th><th class="num">已捕获</th><th class="num">覆盖率</th><th>状态分布</th></tr></thead>
+            <tbody>
+              {% for item in report.quality.field_coverage[:25] %}
+              <tr>
+                <td>{{ item.record_label }}</td>
+                <td>{{ item.field_name }}</td>
+                <td class="num">{{ item.expected_records }}</td>
+                <td class="num">{{ item.captured_records }}</td>
+                <td class="num">{{ item.coverage_pct if item.coverage_pct is not none else '—' }}{% if item.coverage_pct is not none %}%{% endif %}</td>
+                <td class="states">{% if item.state_text %}{{ item.state_text }}{% else %}—{% endif %}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="6" class="empty-row">本批次没有字段观察记录</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <h4>2.1 按记录类型的字段覆盖</h4>
+          <p class="report-note">非空占比 = 该类型所有记录的非空字段数合计 / 字段数合计，按记录累加而不是按对象去重。</p>
+          <table class="report-table">
+            <thead><tr><th>记录类型</th><th class="num">记录数</th><th class="num">字段数</th><th class="num">非空字段数</th><th class="num">非空占比</th></tr></thead>
+            <tbody>
+              {% for item in report.field_coverage %}
+              <tr><td>{{ item.label }}</td><td class="num">{{ item.record_count }}</td><td class="num">{{ item.field_count }}</td><td class="num">{{ item.present_count }}</td><td class="num">{{ item.coverage_pct }}%</td></tr>
+              {% else %}
+              <tr><td colspan="5" class="empty-row">本机还没有已保存的字段</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <h4>2.2 字段状态观测汇总</h4>
+          <p class="report-text">分母是该字段实际产生过状态观察的记录数；不同批次的对象数不同，因此这里只给观测占比，不合并成单一覆盖率。</p>
+          <table class="report-table">
+            <thead><tr><th>记录类型</th><th>字段</th><th class="num">观测记录</th><th class="num">已捕获</th><th class="num">捕获占比</th></tr></thead>
+            <tbody>
+              {% for item in report.coverage[:25] %}
+              <tr><td>{{ item.record_label }}</td><td>{{ item.field_name }}</td><td class="num">{{ item.observed }}</td><td class="num">{{ item.captured }}</td><td class="num">{{ item.share_pct if item.share_pct is not none else '—' }}{% if item.share_pct is not none %}%{% endif %}</td></tr>
+              {% else %}
+              <tr><td colspan="5" class="empty-row">本机还没有字段观察记录</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% endif %}
+        </section>
+
+        <section class="report-section">
+          <h3>三、创作者与受众</h3>
+          <h4>3.1 粉丝数分布</h4>
+          <table class="report-table compact">
+            <thead><tr><th>粉丝区间</th><th class="num">创作者数</th></tr></thead>
+            <tbody>
+              {% for item in report.analytics.charts.follower_distribution %}
+              <tr><td>{{ item.name }}</td><td class="num">{{ item.value }}</td></tr>
+              {% else %}
+              <tr><td colspan="2" class="empty-row">当前范围没有可用的粉丝数</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <h4>3.2 商业报价类型</h4>
+          <table class="report-table compact">
+            <thead><tr><th>报价类型</th><th class="num">条数</th></tr></thead>
+            <tbody>
+              {% for item in report.analytics.charts.quote_status_distribution %}
+              <tr><td>{{ item.name }}</td><td class="num">{{ item.value }}</td></tr>
+              {% else %}
+              <tr><td colspan="2" class="empty-row">当前范围没有可用的报价字段</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <p class="report-note">起价与区间不会被折算成精确金额；缺失与“其他非数值”分别计数。</p>
+          <h4>3.3 创作者地域</h4>
+          <table class="report-table compact">
+            <thead><tr><th>地域</th><th class="num">创作者数</th></tr></thead>
+            <tbody>
+              {% for item in report.analytics.charts.location_distribution %}
+              <tr><td>{{ item.name }}</td><td class="num">{{ item.value }}</td></tr>
+              {% else %}
+              <tr><td colspan="2" class="empty-row">当前范围没有已保存的地域字段</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <h4>3.4 受众画像</h4>
+          {% if report.audience_rows %}
+          <p class="report-note">只汇总页面真的按分类给出的字段；按来源与统计周期分组，不跨组相加。</p>
+          <table class="report-table">
+            <thead><tr><th>来源</th><th>统计周期</th><th>创作者</th><th>维度</th><th>分类</th><th class="num">占比</th></tr></thead>
+            <tbody>
+              {% for item in report.audience_rows %}
+              <tr><td>{{ item.source }}</td><td>{{ item.period }}</td><td>{{ item.creator }}</td><td>{{ item.dimension }}</td><td>{{ item.label }}</td><td class="num">{{ item.value if item.value is not none else '—' }}{% if item.value is not none %}%{% endif %}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="report-text muted">当前范围没有可用的受众画像字段。</p>
+          {% endif %}
+        </section>
+
+        <section class="report-section">
+          <h3>四、笔记互动</h3>
+          <h4>4.1 各来源指标样本量</h4>
+          <table class="report-table compact">
+            <thead><tr><th>来源</th><th>指标</th><th class="num">精确样本数</th></tr></thead>
+            <tbody>
+              {% for item in report.notes.charts.metric_distributions %}
+              <tr><td>{{ item.source }}</td><td>{{ item.metric }}</td><td class="num">{{ item.sample_count }}</td></tr>
+              {% else %}
+              <tr><td colspan="3" class="empty-row">当前范围没有可用的精确指标数值</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <h4>4.2 互动指标四分位</h4>
+          <table class="report-table">
+            <thead><tr><th>来源</th><th>指标</th><th class="num">样本数</th><th>最小 / Q1 / 中位 / Q3 / 最大</th></tr></thead>
+            <tbody>
+              {% for item in report.notes.charts.interaction_boxplot %}
+              <tr><td>{{ item.source }}</td><td>{{ item.metric }}</td><td class="num">{{ item.sample_count }}</td><td>{% for value in item['values'] %}{{ '%.0f'|format(value) }}{% if not loop.last %} / {% endif %}{% endfor %}</td></tr>
+              {% else %}
+              <tr><td colspan="4" class="empty-row">当前范围没有可用的互动数值</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <h4>4.3 笔记正文词频</h4>
+          {% set body_text = report.notes.text_analysis.body %}
+          {% if body_text.frequencies %}
+          <p class="report-text">按 {{ body_text.sample_count }} 条可用正文分词，取前 15 个高频词（jieba 分词，已除停用词）。</p>
+          <p class="report-wordline">{% for item in body_text.frequencies[:15] %}<span class="report-word">{{ item.word }}<em>{{ item.count }}</em></span>{% endfor %}</p>
+          <div class="report-wordcloud"><img src="/api/wordcloud.png?kind=body{% if report.batch_id %}&batch_id={{ report.batch_id }}{% endif %}" alt="笔记正文词云"></div>
+          {% else %}
+          <p class="report-text muted">当前范围没有可用的笔记正文，词频章节为空。</p>
+          {% endif %}
+          <h4>4.4 阅读量排行</h4>
+          <table class="report-table compact">
+            <thead><tr><th>来源</th><th>笔记</th><th class="num">阅读量</th></tr></thead>
+            <tbody>
+              {% for group in report.notes.charts.top_read %}
+                {% for item in group['items'][:5] %}
+                <tr><td>{{ group.source }}</td><td>{{ item.label }}</td><td class="num">{{ item.value }}</td></tr>
+                {% endfor %}
+              {% else %}
+              <tr><td colspan="3" class="empty-row">当前范围没有可比较的阅读量</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+
+        <section class="report-section">
+          <h3>五、评论分析</h3>
+          {% if report.comments %}
+          {% set summary = report.comments.summary.summary %}
+          {% set sentiment = report.comments.sentiment.summary %}
+          <h4>5.1 评论规模</h4>
+          <table class="report-table compact">
+            <thead><tr><th>指标</th><th class="num">数值</th></tr></thead>
+            <tbody>
+              <tr><td>已保存评论</td><td class="num">{{ summary.comment_count }}</td></tr>
+              <tr><td>一级评论</td><td class="num">{{ summary.root_count }}</td></tr>
+              <tr><td>回复</td><td class="num">{{ summary.reply_count }}</td></tr>
+              <tr><td>涉及笔记</td><td class="num">{{ summary.note_count }}</td></tr>
+              <tr><td>涉及创作者</td><td class="num">{{ summary.creator_count }}</td></tr>
+              <tr><td>置顶评论</td><td class="num">{{ summary.pinned_count }}</td></tr>
+              <tr><td>平均原文长度（字符）</td><td class="num">{{ summary.average_length if summary.average_length is not none else '—' }}</td></tr>
+              <tr><td>可精确转换的点赞值</td><td class="num">{{ summary.like_count_available }}</td></tr>
+              <tr><td>可精确转换的回复数</td><td class="num">{{ summary.reply_count_exact_available }}</td></tr>
+            </tbody>
+          </table>
+          <p class="report-note">{{ summary.scope_notice }}</p>
+          <h4>5.2 情感倾向（词典规则）</h4>
+          <table class="report-table compact">
+            <thead><tr><th>倾向</th><th class="num">条数</th></tr></thead>
+            <tbody>
+              {% for label in ['正向倾向', '中性 / 未命中词典', '负向倾向', '混合倾向', '未分类（空文本）'] %}
+              <tr><td>{{ label }}</td><td class="num">{{ sentiment.sentiment_counts.get(label, 0) }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <p class="report-note">{{ sentiment.method }}</p>
+          <h4>5.3 高频词与 TF-IDF 关键词</h4>
+          <div class="report-two-col">
+            <div>
+              <table class="report-table compact">
+                <thead><tr><th>词项</th><th class="num">出现次数</th></tr></thead>
+                <tbody>
+                  {% for item in report.comments.summary.top_words[:12] %}
+                  <tr><td>{{ item.word }}</td><td class="num">{{ item.count }}</td></tr>
+                  {% else %}
+                  <tr><td colspan="2" class="empty-row">没有可用词频</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <table class="report-table compact">
+                <thead><tr><th>TF-IDF 关键词</th><th class="num">分数</th></tr></thead>
+                <tbody>
+                  {% for item in sentiment.tfidf_keywords[:12] %}
+                  <tr><td>{{ item.word }}</td><td class="num">{{ '%.3f'|format(item.score or 0) }}</td></tr>
+                  {% else %}
+                  <tr><td colspan="2" class="empty-row">没有可计算的关键词</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% else %}
+          <p class="report-text muted">当前范围没有已保存的可见评论。</p>
+          {% endif %}
+        </section>
+
+        <section class="report-section">
+          <h3>六、结论与说明</h3>
+          <p class="report-text">以上图表与表格均为对本机已保存样本的描述统计：粉丝与报价分布描述样本结构，笔记指标描述当前可见数值，评论词频与情感倾向描述已保存评论的文本特征。任何跨来源、跨周期的比较都在相同口径内进行，样本不足时保留空白而不是补 0。</p>
+        </section>
+
+        <section class="report-section">
+          <h3>七、局限与合规声明</h3>
+          <ul class="report-limits">
+            {% for item in report.limitations %}<li>{{ item }}</li>{% endfor %}
+          </ul>
+        </section>
+      </article>
+      {% endif %}
+
+      <footer class="footer no-print"><span>CreatorScope · 课程实训原型</span><span>Playwright · Flask · SQLite · pandas · NumPy · jieba · WordCloud · ECharts</span></footer>
+    </main>
+  </div>
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+</body>
+</html>

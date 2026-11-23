@@ -6,6 +6,7 @@ import io
 import json
 import math
 import sqlite3
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,7 @@ from .domain import field_dictionary
 from .ingest import MAX_UPLOAD_BYTES
 from .news import NEWS_FEEDS, append_news_items, correlate_news_notes, fetch_feed, load_news_items
 from .quality import batch_quality_report, quality_overview
+from .report import build_report, render_docx, render_markdown, report_filename
 from .tasks import TaskManager
 from .migrations import backup_database
 from research.r4_3_comment_analysis.comments_web import comment_analysis_bp
@@ -670,6 +672,64 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         except ValueError:
             return jsonify({"error": "limit 必须为整数"}), 400
         return jsonify(quality_overview(app.config["DATABASE_PATH"], limit=limit))
+
+    def _report_bundle():
+        raw_batch_id = (request.args.get("batch_id") or "").strip()
+        batch_id = None if raw_batch_id in {"", "__all__"} else raw_batch_id
+        try:
+            return build_report(app.config["DATABASE_PATH"], batch_id=batch_id)
+        except sqlite3.DatabaseError:
+            return None
+
+    @app.get("/report")
+    def report_page():
+        try:
+            bundle = _report_bundle()
+        except LookupError:
+            return jsonify({"error": "采集批次不存在"}), 404
+        if bundle is None:
+            return render_template("report.html", report=None, demo_mode=app.config["DEMO_MODE"], error="数据库不可读取"), 503
+        return render_template("report.html", report=bundle, demo_mode=app.config["DEMO_MODE"], error=None)
+
+    @app.get("/api/report.md")
+    def api_report_markdown():
+        try:
+            bundle = _report_bundle()
+        except LookupError:
+            return jsonify({"error": "采集批次不存在"}), 404
+        if bundle is None:
+            return jsonify({"error": "数据库不可读取"}), 503
+        response = make_response(render_markdown(bundle))
+        response.headers["Content-Type"] = "text/markdown; charset=utf-8"
+        response.headers["Content-Disposition"] = (
+            f'attachment; filename="{report_filename(bundle, "md")}"'
+        )
+        return response
+
+    @app.get("/api/report.docx")
+    def api_report_docx():
+        try:
+            bundle = _report_bundle()
+        except LookupError:
+            return jsonify({"error": "采集批次不存在"}), 404
+        if bundle is None:
+            return jsonify({"error": "数据库不可读取"}), 503
+        buffer = io.BytesIO()
+        try:
+            with tempfile.TemporaryDirectory(prefix="creatorscope-report-") as workspace:
+                target = render_docx(bundle, Path(workspace) / "report.docx")
+                buffer.write(target.read_bytes())
+        except ImportError:
+            return jsonify({"error": "缺少 python-docx，请先运行 setup.ps1 安装依赖"}), 503
+        buffer.seek(0)
+        response = make_response(buffer.read())
+        response.headers["Content-Type"] = (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        response.headers["Content-Disposition"] = (
+            f'attachment; filename="{report_filename(bundle, "docx")}"'
+        )
+        return response
 
     @app.get("/api/export/json")
     def api_export_json():
