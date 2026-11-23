@@ -206,3 +206,114 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
             "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。",
         ],
     }
+
+
+def coverage_by_field(db_path: Path) -> list[dict[str, Any]]:
+    """跨批次汇总字段观察状态。
+
+    分母是"该字段实际产生过状态观察的记录数"，不同批次的对象数不同，
+    所以这里只给观测占比，不合并成单一覆盖率。
+    """
+
+    with _read_only_connection(db_path) as conn:
+        rows = conn.execute(
+            """SELECT record_type, field_name,
+                      COUNT(*) AS observed,
+                      SUM(CASE WHEN status = 'captured' THEN 1 ELSE 0 END) AS captured
+               FROM collection_field_observations
+               GROUP BY record_type, field_name
+               ORDER BY record_type, field_name"""
+        ).fetchall()
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        observed = int(row["observed"] or 0)
+        captured = int(row["captured"] or 0)
+        result.append({
+            "record_type": str(row["record_type"] or ""),
+            "field_name": str(row["field_name"] or ""),
+            "observed": observed,
+            "captured": captured,
+            "share_pct": round(captured * 100 / observed, 1) if observed else None,
+        })
+    return result
+
+
+def quality_overview(db_path: Path, *, limit: int = 20) -> dict[str, Any]:
+    """批次级质量摘要，供本地质量看板列表使用。
+
+    逐批调用 batch_quality_report 以保持与批次详情完全一致的口径；
+    因此按最新批次倒序取前 limit 个批次（默认 20）。
+    """
+
+    limit = max(1, min(int(limit), 200))
+    with _read_only_connection(db_path) as conn:
+        batch_ids = [
+            str(row["batch_id"])
+            for row in conn.execute(
+                """SELECT batch_id FROM batches
+                   ORDER BY COALESCE(completed_at, started_at, captured_at) DESC, batch_id
+                   LIMIT ?""",
+                (limit,),
+            ).fetchall()
+        ]
+    batches: list[dict[str, Any]] = []
+    for batch_id in batch_ids:
+        report = batch_quality_report(db_path, batch_id)
+        if not report:
+            continue
+        coverage = report.get("field_coverage") or []
+        captured = sum(int(item.get("captured_records") or 0) for item in coverage)
+        expected = sum(int(item.get("expected_records") or 0) for item in coverage)
+        counts = report.get("counts") or {}
+        metrics = report.get("metrics") or {}
+        batches.append({
+            "batch_id": report.get("batch_id"),
+            "source": report.get("source"),
+            "status": report.get("status"),
+            "task_status": report.get("task_status"),
+            "started_at": report.get("started_at"),
+            "completed_at": report.get("completed_at"),
+            "elapsed_seconds": report.get("elapsed_seconds"),
+            "counts": {
+                "records": counts.get("records", 0),
+                "creators": counts.get("creators", 0),
+                "notes": counts.get("notes", 0),
+                "comments": counts.get("comments", 0),
+                "duplicates": counts.get("duplicate_records", 0),
+                "failures": counts.get("failures", 0),
+            },
+            "field_count": len(coverage),
+            "captured_observations": captured,
+            "expected_observations": expected,
+            "coverage_pct": round(captured * 100 / expected, 1) if expected else None,
+            "parse_success_pct": metrics.get("parse_success_pct"),
+            "partial_fields": sum(
+                1 for item in coverage
+                if item.get("coverage_pct") is not None and item.get("coverage_pct") < 100
+            ),
+        })
+
+    totals = {
+        "batches": len(batches),
+        "records": sum(item["counts"]["records"] for item in batches),
+        "creators": sum(item["counts"]["creators"] for item in batches),
+        "notes": sum(item["counts"]["notes"] for item in batches),
+        "comments": sum(item["counts"]["comments"] for item in batches),
+        "failures": sum(item["counts"]["failures"] for item in batches),
+        "fields": sum(item["field_count"] for item in batches),
+        "partial_fields": sum(item["partial_fields"] for item in batches),
+    }
+    captured_total = sum(item["captured_observations"] for item in batches)
+    expected_total = sum(item["expected_observations"] for item in batches)
+    totals["coverage_pct"] = round(captured_total * 100 / expected_total, 1) if expected_total else None
+    return {
+        "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "limit": limit,
+        "batches": batches,
+        "totals": totals,
+        "notes": [
+            "批次按完成时间倒序，最多列出最近若干个批次；覆盖率口径与批次详情完全一致。",
+            "覆盖率按采集对象去重统计，同一对象后来成功捕获时以成功状态为准。",
+            "缺失不等于平台未提供：没有明确字段观察状态的记录不会被推定。",
+        ],
+    }
