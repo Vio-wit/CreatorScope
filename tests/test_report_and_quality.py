@@ -28,7 +28,19 @@ class ReportAndQualityTests(unittest.TestCase):
         rows["2"][0]["status"] = "not_attempted"
         self.assertEqual(_five_creator_field_grade(rows), "incomplete")
         del rows["2"]
-        self.assertEqual(_five_creator_field_grade(rows), "incomplete")
+        self.assertEqual(_five_creator_field_grade(rows), "unstable")
+
+        four_rows = {
+            str(i): [{"platform_creator_id": str(i), "status": "captured", "metric_unit": "count", "normalization_status": "parsed", "field_name": "粉丝数"}]
+            for i in range(4)
+        }
+        self.assertEqual(_five_creator_field_grade(four_rows), "stable")
+        four_rows["0"][0]["status"] = "not_displayed"
+        self.assertEqual(_five_creator_field_grade(four_rows), "partial")
+        four_rows["1"][0]["status"] = "not_displayed"
+        self.assertEqual(_five_creator_field_grade(four_rows), "unstable")
+        del four_rows["2"]
+        self.assertEqual(_five_creator_field_grade(four_rows), "incomplete")
 
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory(prefix="creatorscope-report-")
