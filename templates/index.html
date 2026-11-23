@@ -12,30 +12,7 @@
 </head>
 <body data-mode="{{ 'demo' if demo_mode else 'live' }}">
   <div class="shell">
-    <aside class="sidebar">
-      <a class="brand" href="/" aria-label="CreatorScope 首页">
-        <span class="brand-mark">C</span>
-        <span><strong>CreatorScope</strong><small>课程数据工作台</small></span>
-      </a>
-      <div class="nav-label">工作区</div>
-      <a class="nav-item active" href="#overview"><span class="nav-icon">▦</span>数据看板</a>
-      <a class="nav-item" href="#collection"><span class="nav-icon">↧</span>采集任务</a>
-      <a class="nav-item" href="#analytics"><span class="nav-icon">◷</span>统计分析</a>
-      <a class="nav-item" href="#creators"><span class="nav-icon">◎</span>博主库</a>
-      <a class="nav-item" href="#notes"><span class="nav-icon">▧</span>笔记管理</a>
-      <a class="nav-item" href="#records"><span class="nav-icon">▤</span>样本记录</a>
-      <a class="nav-item" href="/comments"><span class="nav-icon">▧</span>评论分析</a>
-      <a class="nav-item" href="/quality">数据质量</a>
-      <a class="nav-item" href="/report">实训报告</a>
-      {% if not demo_mode %}
-      <a class="nav-item" href="/news"><span class="nav-icon">◉</span>新闻热点关联</a>
-      <a class="nav-item" href="/ai"><span class="nav-icon">✦</span>AI 分析</a>
-      {% endif %}
-      <div class="sidebar-bottom">
-        <span class="local-dot"></span>
-        <div><strong>本地运行</strong><small>数据保存在本机 SQLite</small></div>
-      </div>
-    </aside>
+    {% include '_sidebar.html' %}
 
     <main class="main-content">
       <header class="topbar">
@@ -146,6 +123,39 @@
         <div><p class="eyebrow">DATA ANALYSIS</p><h2>实际数据分析</h2><p class="subheading" id="analysisScope">基于已保存的创作者快照；字段不足时明确提示。</p></div>
         <span class="analysis-count" id="analysisCount">—</span>
       </section>
+      <section class="history-analysis-panel" id="historyAnalysis" aria-labelledby="historyAnalysisTitle">
+        <div class="history-panel-heading">
+          <div>
+            <p class="eyebrow">HISTORICAL DATA</p>
+            <h2 id="historyAnalysisTitle">历史数据分析</h2>
+            <p class="subheading">按数据集查看粉丝规模与日常阅读、互动表现。</p>
+          </div>
+          <label class="select-wrap"><span>数据集</span><select id="historySourceSelect" aria-label="选择历史数据集"><option value="">加载中…</option></select></label>
+        </div>
+        <p class="history-status" id="historyAnalysisStatus" role="status">正在读取本机历史样本…</p>
+        <section class="history-kpi-grid" aria-label="历史样本概况">
+          <article class="kpi-card"><div class="kpi-label">数据样本<span class="kpi-symbol">▤</span></div><div class="kpi-value" id="historySampleCount">—</div><div class="kpi-foot" id="historySourceFiles">—</div></article>
+          <article class="kpi-card"><div class="kpi-label">平均粉丝数<span class="kpi-symbol blue">◎</span></div><div class="kpi-value compact" id="historyFollowersAverage">—</div><div class="kpi-foot" id="historyFollowersCount">—</div></article>
+          <article class="kpi-card"><div class="kpi-label">日常阅读中位数<span class="kpi-symbol amber">⌁</span></div><div class="kpi-value compact" id="historyReadingMedian">—</div><div class="kpi-foot" id="historyReadingCount">—</div></article>
+          <article class="kpi-card"><div class="kpi-label">日常互动中位数<span class="kpi-symbol green">↗</span></div><div class="kpi-value compact" id="historyInteractionMedian">—</div><div class="kpi-foot" id="historyInteractionCount">—</div></article>
+        </section>
+        <section class="charts-grid history-chart-grid">
+          <article class="chart-card"><div class="card-heading"><div><h3>粉丝规模分布</h3><p id="historyFollowerScope">按粉丝数区间统计</p></div></div><div class="chart" id="historyFollowersChart"></div></article>
+          <article class="chart-card"><div class="card-heading"><div><h3>日常阅读与互动</h3><p id="historyPerformanceScope">仅对比两项都有数值的样本</p></div></div><div class="chart" id="historyPerformanceChart"></div></article>
+        </section>
+        <article class="table-card history-fields-card">
+          <div class="card-heading table-heading"><div><h3>字段样本覆盖</h3><p>数值按原字段单位统计</p></div></div>
+          <div class="table-scroll"><table><thead><tr><th>字段</th><th>有效样本</th><th>单位</th><th>统计口径</th></tr></thead><tbody id="historyFieldBody"><tr><td colspan="4" class="empty-cell">读取中…</td></tr></tbody></table></div>
+        </article>
+        <article class="table-card history-records-card">
+          <div class="card-heading table-heading"><div><h3>样本横向比较</h3><p>每行对应一条来源记录；空值保持为空</p></div><span class="table-count" id="historyRecordCount">—</span></div>
+          <div class="table-scroll"><table><thead><tr><th>样本</th><th>粉丝数</th><th>日常阅读中位数</th><th>日常互动中位数</th></tr></thead><tbody id="historyRecordBody"><tr><td colspan="4" class="empty-cell">读取中…</td></tr></tbody></table></div>
+        </article>
+        <section class="history-note-section">
+          <div class="card-heading"><div><h3>课堂内容样本</h3><p id="historyNoteStatus">从历史笔记中选取正文与话题示例</p></div><span class="analysis-count" id="historyNoteCount">—</span></div>
+          <div class="history-note-grid" id="historyNoteSamples"><article class="history-note-card empty-cell">读取中…</article></div>
+        </section>
+      </section>
       <section class="charts-grid analytics-grid">
         <article class="chart-card"><div class="card-heading"><div><h2>粉丝数量分布</h2><p id="followerDistStatus">每位创作者取最新可用粉丝值</p></div></div><div class="chart" id="followerDistChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>精确商业报价分布</h2><p id="quoteDistStatus">起价和区间单独统计，不转换成精确金额</p></div></div><div class="chart" id="quoteDistChart"></div></article>
@@ -172,7 +182,7 @@
       </section>
 
       <section class="section-heading" id="creators">
-        <div><p class="eyebrow">CREATOR LIBRARY</p><h2>博主库</h2><p class="subheading">展示采集到的创作者名称与平台 ID；历史样本缺少原始身份字段时明确标记，不从哈希反推。</p></div>
+        <div><p class="eyebrow">CREATOR LIBRARY</p><h2>达人库</h2><p class="subheading">按领域、地域和表现指标筛选并横向比较。</p></div>
       </section>
       <section class="creator-filter-panel">
         <label>领域<select id="categoryFilter"><option value="">全部领域</option></select></label>
@@ -246,8 +256,8 @@
       </section>
 
       <section class="table-card field-dictionary-card">
-        <div class="card-heading table-heading"><div><h2>蒲公英字段字典</h2><p>按现有实测样本记录单位与页面周期；未见字段标记为待采</p></div><span class="table-count" id="dictionaryCount">—</span></div>
-        <div class="table-scroll"><table><thead><tr><th>分组</th><th>字段名称</th><th>页面/存储单位</th><th>统计周期</th><th>样本状态</th></tr></thead><tbody id="dictionaryBody"><tr><td colspan="5" class="empty-cell">加载字段字典…</td></tr></tbody></table></div>
+        <div class="card-heading table-heading"><div><h2>蒲公英字段目录</h2><p>字段名称、单位与页面统计口径</p></div><span class="table-count" id="dictionaryCount">—</span></div>
+        <div class="table-scroll"><table><thead><tr><th>分组</th><th>字段名称</th><th>页面/存储单位</th><th>统计周期</th></tr></thead><tbody id="dictionaryBody"><tr><td colspan="4" class="empty-cell">加载字段目录…</td></tr></tbody></table></div>
       </section>
 
       <footer class="footer"><span>CreatorScope · 课程实训原型</span><span>Playwright · Flask · SQLite · pandas · NumPy · jieba · WordCloud · ECharts</span></footer>

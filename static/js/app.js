@@ -48,6 +48,7 @@
       'exposureReadChart', 'readingInteractionChart', 'notePublishChart', 'noteTrendChart',
       'audienceGenderChart', 'audienceAgeChart', 'audienceRegionChart', 'audienceInterestChart', 'audienceDeviceChart',
       'creatorCompareBarChart', 'creatorCompareRadarChart', 'noteCompareBarChart', 'noteCompareRadarChart',
+      'historyFollowersChart', 'historyPerformanceChart',
     ].forEach((id) => {
       const element = document.getElementById(id);
       if (element && window.echarts) charts[id] = echarts.init(element);
@@ -695,7 +696,7 @@
   async function refreshFieldDictionary() {
     const fields = await requestJson('/api/fields');
     $('#dictionaryCount').textContent = `${fields.length} 个字段`;
-    $('#dictionaryBody').innerHTML = fields.map((field) => `<tr><td>${escapeHtml(field.group)}</td><td>${escapeHtml(field.name)}</td><td>${escapeHtml(field.unit)}</td><td>${escapeHtml(field.period)}</td><td><span class="coverage-pill ${field.observed ? '' : 'pending-pill'}">${field.observed ? '真实样本已见' : '待采/待核'}</span></td></tr>`).join('');
+    $('#dictionaryBody').innerHTML = fields.map((field) => `<tr><td>${escapeHtml(field.group)}</td><td>${escapeHtml(field.name)}</td><td>${escapeHtml(field.unit)}</td><td>${escapeHtml(field.period)}</td></tr>`).join('');
   }
 
   function renderDashboard(data) {
@@ -727,6 +728,94 @@
     params.set('word_kind', $('#wordKindSelect').value);
     const data = await requestJson(`/api/analytics?${params.toString()}`);
     renderAnalytics(data);
+  }
+
+  function renderHistoryAnalysis(data) {
+    const source = data.source || {};
+    const metrics = data.metrics || {};
+    const followers = metrics.followers || {};
+    const reading = metrics.daily_read_median || {};
+    const interaction = metrics.daily_interaction_median || {};
+    $('#historyAnalysisStatus').textContent = `${source.label || '历史数据'} · ${source.sample_count || 0} 条样本`;
+    $('#historySampleCount').textContent = formatMetric(source.sample_count || 0);
+    $('#historySourceFiles').textContent = `来源文件 ${formatMetric(source.source_file_count || 0)} 个`;
+    $('#historyFollowersAverage').textContent = followers.average === null || followers.average === undefined ? '暂无数据' : formatMetric(followers.average);
+    $('#historyFollowersCount').textContent = `有效样本 ${formatMetric(followers.valid_count || 0)}`;
+    $('#historyReadingMedian').textContent = reading.median === null || reading.median === undefined ? '暂无数据' : formatMetric(reading.median);
+    $('#historyReadingCount').textContent = `有效样本 ${formatMetric(reading.valid_count || 0)}`;
+    $('#historyInteractionMedian').textContent = interaction.median === null || interaction.median === undefined ? '暂无数据' : formatMetric(interaction.median);
+    $('#historyInteractionCount').textContent = `有效样本 ${formatMetric(interaction.valid_count || 0)}`;
+    $('#historyFollowerScope').textContent = `粉丝数，有效样本 ${followers.valid_count || 0}`;
+    $('#historyPerformanceScope').textContent = `共同样本 ${data.performance_pairs?.length || 0} 条`;
+    $('#historyRecordCount').textContent = `${data.records?.length || 0} 条记录`;
+
+    const bucketRows = data.follower_distribution || [];
+    if (bucketRows.some((item) => item.count > 0)) {
+      charts.historyFollowersChart?.setOption({
+        ...baseChart,
+        grid: { left: 48, right: 16, top: 12, bottom: 32 },
+        tooltip: { trigger: 'axis', formatter: (items) => `${escapeHtml(items[0]?.name || '')}<br>${formatMetric(items[0]?.value || 0)} 条样本` },
+        xAxis: { type: 'category', data: bucketRows.map((item) => item.label), axisTick: { show: false }, axisLabel: { color: '#929c95', fontSize: 8, interval: 0, rotate: 16 } },
+        yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        series: [{ type: 'bar', data: bucketRows.map((item) => item.count), barMaxWidth: 32, itemStyle: { color: '#4a9b75', borderRadius: [4, 4, 0, 0] } }],
+      }, true);
+    } else setEmptyChart(charts.historyFollowersChart, '暂无可用粉丝数');
+
+    const pairs = data.performance_pairs || [];
+    if (pairs.length) {
+      charts.historyPerformanceChart?.setOption({
+        ...baseChart,
+        grid: { left: 48, right: 14, top: 12, bottom: 37 },
+        tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.data.name)}<br>日常阅读：${formatMetric(item.value[0])} 次<br>日常互动：${formatMetric(item.value[1])} 次` },
+        xAxis: { type: 'value', name: '日常阅读中位数', nameTextStyle: { fontSize: 8 }, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        yAxis: { type: 'value', name: '日常互动中位数', nameTextStyle: { fontSize: 8 }, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        series: [{ type: 'scatter', symbolSize: 8, itemStyle: { color: '#4a9b75', opacity: 0.7 }, data: pairs.map((item) => ({ name: item.sample, value: [item.reading, item.interaction] })) }],
+      }, true);
+    } else setEmptyChart(charts.historyPerformanceChart, '暂无共同有效样本');
+
+    const labels = {
+      followers: '粉丝数', daily_read_median: '日常阅读中位数', daily_interaction_median: '日常互动中位数',
+      likes_and_favorites: '获赞与收藏', published_notes: '发布笔记数',
+    };
+    const units = { followers: '人', daily_read_median: '次', daily_interaction_median: '次', likes_and_favorites: '次', published_notes: '篇' };
+    const scopes = { followers: '采集记录值', daily_read_median: '日常中位数', daily_interaction_median: '日常中位数', likes_and_favorites: '页面显示值', published_notes: '页面显示值' };
+    $('#historyFieldBody').innerHTML = Object.entries(metrics).map(([key, item]) => `<tr><td>${escapeHtml(labels[key] || item.label || key)}</td><td>${formatMetric(item.valid_count || 0)} / ${formatMetric(item.total_count || 0)}</td><td>${escapeHtml(units[key] || item.unit || '')}</td><td>${escapeHtml(scopes[key] || '')}</td></tr>`).join('');
+    const recordFields = ['followers', 'daily_read_median', 'daily_interaction_median'];
+    $('#historyRecordBody').innerHTML = (data.records || []).map((row) => `<tr><td>${escapeHtml(row.sample)}</td>${recordFields.map((field) => `<td>${row[field] === null || row[field] === undefined ? '—' : formatMetric(row[field])}</td>`).join('')}</tr>`).join('') || '<tr><td colspan="4" class="empty-cell">暂无样本</td></tr>';
+  }
+
+  function renderHistoryNoteSamples(payload) {
+    const samples = payload.samples || [];
+    $('#historyNoteCount').textContent = `${payload.sample_count || 0} 篇`;
+    $('#historyNoteStatus').textContent = samples.length ? '正文与话题示例' : '暂无可展示的笔记内容';
+    $('#historyNoteSamples').innerHTML = samples.map((item) => `<article class="history-note-card"><h4>${escapeHtml(item.title)}</h4><p class="history-note-body">${escapeHtml(item.body)}</p><div class="history-note-topics">${(item.topics || []).map((topic) => `<span>#${escapeHtml(topic)}</span>`).join('')}</div></article>`).join('') || '<article class="history-note-card empty-cell">暂无笔记样本</article>';
+  }
+
+  async function refreshHistoryAnalysis() {
+    try {
+      const sourcePayload = await requestJson('/api/history-analysis/sources');
+      const select = $('#historySourceSelect');
+      const sourceOptions = sourcePayload.sources || [];
+      const selected = sourceOptions.some((item) => item.key === select.value) ? select.value : (sourceOptions[0]?.key || '');
+      select.innerHTML = sourceOptions.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)} · ${formatMetric(item.sample_count)} 条</option>`).join('');
+      select.value = selected;
+      if (selected) {
+        const params = new URLSearchParams({ source: selected });
+        renderHistoryAnalysis(await requestJson(`/api/history-analysis?${params.toString()}`));
+      } else {
+        $('#historyAnalysisStatus').textContent = '暂无可用历史样本';
+        setEmptyChart(charts.historyFollowersChart, '暂无可用样本');
+        setEmptyChart(charts.historyPerformanceChart, '暂无可用样本');
+      }
+      renderHistoryNoteSamples(await requestJson('/api/history-analysis/note-samples'));
+    } catch (error) {
+      $('#historyAnalysisStatus').textContent = error.message;
+      setEmptyChart(charts.historyFollowersChart, '历史数据暂不可用');
+      setEmptyChart(charts.historyPerformanceChart, '历史数据暂不可用');
+      $('#historyFieldBody').innerHTML = '<tr><td colspan="4" class="empty-cell">暂无样本</td></tr>';
+      $('#historyRecordBody').innerHTML = '<tr><td colspan="4" class="empty-cell">暂无样本</td></tr>';
+      renderHistoryNoteSamples({ samples: [], sample_count: 0 });
+    }
   }
 
   async function refreshDataViews() {
@@ -798,13 +887,14 @@
 
   async function refreshAll() {
     try {
-      await Promise.all([refreshDataViews(), refreshTasks(), refreshBrowserStatus()]);
+      await Promise.all([refreshDataViews(), refreshTasks(), refreshBrowserStatus(), refreshHistoryAnalysis()]);
     } catch (error) {
       toast(`本地服务暂不可用：${error.message}`, true);
     }
   }
 
   function bindEvents() {
+    $('#historySourceSelect').addEventListener('change', () => refreshHistoryAnalysis().catch((error) => toast(error.message, true)));
     elements.importButton.addEventListener('click', () => submitTask('/api/tasks/import-baseline', '已提交历史基线导入任务'));
     elements.uploadButton.addEventListener('click', () => elements.uploadInput.click());
     elements.uploadInput.addEventListener('change', async () => {

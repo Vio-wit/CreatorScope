@@ -20,6 +20,38 @@
 .demo-mode-banner strong { white-space: nowrap; }
 .task-state.waiting_user{background:#fff4e4;color:#a87435}
 
+/* ---------- 精简工作区导航与历史分析 ---------- */
+.nav-more{margin:4px 0 0;padding:0 0 5px;border-top:1px solid #f0f2f0;border-bottom:1px solid #f0f2f0}
+.nav-more summary{list-style:none;cursor:pointer;padding:12px 13px;color:#87918a;font-size:10px}
+.nav-more summary::-webkit-details-marker{display:none}
+.nav-more summary::after{content:'＋';float:right;color:#a7b0a9}
+.nav-more[open] summary::after{content:'−'}
+.nav-more .nav-item{height:32px;margin:0 0 2px 8px;padding-left:13px;font-size:10px}
+.history-analysis-panel{margin:0 0 20px;padding:16px;background:#f8faf8;border:1px solid #e7ede8;border-radius:12px}
+.history-panel-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:2px 2px 12px}
+.history-panel-heading h2{margin:0;font-size:16px;color:#2d3b32}
+.history-panel-heading .subheading{margin-top:5px}
+.history-panel-heading .select-wrap{min-width:190px}
+.history-status{margin:0 2px 12px;color:#7c8980;font-size:9px}
+.history-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 10px}
+.history-kpi-grid .kpi-card{min-height:88px}
+.history-kpi-grid .kpi-value{font-size:19px;margin-top:9px}
+.history-chart-grid{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:10px}
+.history-chart-grid .chart-card{min-width:0;min-height:195px}
+.history-fields-card,.history-records-card{margin-top:10px}
+.history-note-section{margin-top:12px;padding:14px;background:#fff;border:1px solid #e9ede9;border-radius:10px}
+.history-note-section .card-heading{align-items:center;margin-bottom:10px}
+.history-note-section h3,.history-fields-card h3,.history-records-card h3{margin:0;font-size:12px;color:#364039}
+.history-note-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.history-note-card{min-width:0;padding:12px;border:1px solid #edf0ed;border-radius:8px;background:#fcfdfc}
+.history-note-card h4{margin:0 0 8px;color:#39463e;font-size:10px;line-height:1.6}
+.history-note-body{max-height:245px;overflow:auto;margin:0;color:#67736b;font-size:9px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.history-note-topics{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.history-note-topics span{padding:3px 7px;border-radius:12px;background:#edf5ef;color:#4e765e;font-size:8px}
+.history-records-card .table-scroll{max-height:300px}
+@media(max-width:1120px){.history-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.history-note-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.nav-more{display:none}.history-analysis-panel{padding:10px}.history-panel-heading{align-items:flex-start;flex-direction:column}.history-panel-heading .select-wrap{width:100%}.history-panel-heading .select-wrap select{max-width:none}.history-kpi-grid,.history-chart-grid,.history-note-grid{grid-template-columns:1fr}.history-note-section{padding:10px}}
+
 /* ---------- 数据质量看板 ---------- */
 .quality-batch-card{margin-top:14px}
 .quality-batch-card table{font-size:10px}

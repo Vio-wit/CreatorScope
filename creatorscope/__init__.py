@@ -19,6 +19,7 @@ from .browser import PgyVisibleBrowser
 from .db import SCHEMA_VERSION, connection, initialize_database, schema_version_readonly, verify_database_readonly
 from .domain import field_dictionary
 from .ingest import MAX_UPLOAD_BYTES
+from .history_analytics import HistoryAnalyticsError, analysis_data as history_analysis_data, list_sources as history_source_options, note_samples as history_note_samples
 from .news import NEWS_FEEDS, append_news_items, correlate_news_notes, fetch_feed, load_news_items
 from .quality import batch_quality_report, quality_overview
 from .report import build_report, render_docx, render_markdown, report_filename
@@ -52,6 +53,12 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         NEWS_DATA_PATH=instance_dir / "news_items.jsonl",
         MIGRATION_BACKUP_DIR=project_root / "_backup",
         BASELINE_PATH=project_root / "data" / "baseline" / "pgy_live_sample_2026-11-19.json",
+        HISTORY_EVIDENCE_DB=Path(
+            os.environ.get(
+                "CREATORSCOPE_HISTORY_DB",
+                str(project_root / "_preview" / "v22_s3_history_final_20261123.sqlite3"),
+            )
+        ),
         MAX_CONTENT_LENGTH=MAX_UPLOAD_BYTES + 64 * 1024,
         DEMO_MODE=os.environ.get("CREATORSCOPE_DEMO_MODE", "0").strip().casefold() in {"1", "true", "yes"},
     )
@@ -64,6 +71,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     # All CreatorScope modules share one local database, including comment analysis.
     app.config["COMMENT_ANALYSIS_DATABASE_PATH"] = app.config["DATABASE_PATH"]
     app.config["BASELINE_PATH"] = Path(app.config["BASELINE_PATH"])
+    if app.config["HISTORY_EVIDENCE_DB"] is not None:
+        app.config["HISTORY_EVIDENCE_DB"] = Path(app.config["HISTORY_EVIDENCE_DB"])
     if app.config["DEMO_MODE"]:
         verify_database_readonly(app.config["DATABASE_PATH"])
     else:
@@ -353,6 +362,31 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             query=request.args.get("q", "").strip(),
             word_kind=request.args.get("word_kind", "body").strip(),
         ))
+
+    @app.get("/api/history-analysis/sources")
+    def api_history_analysis_sources():
+        try:
+            return jsonify(history_source_options(app.config["HISTORY_EVIDENCE_DB"]))
+        except HistoryAnalyticsError as exc:
+            return jsonify({"error": str(exc)}), 503
+
+    @app.get("/api/history-analysis")
+    def api_history_analysis():
+        try:
+            return jsonify(history_analysis_data(
+                app.config["HISTORY_EVIDENCE_DB"],
+                source_key=request.args.get("source", "EPT").strip() or "EPT",
+            ))
+        except HistoryAnalyticsError as exc:
+            status = 400 if str(exc) == "请选择有效的数据来源" else 503
+            return jsonify({"error": str(exc)}), status
+
+    @app.get("/api/history-analysis/note-samples")
+    def api_history_analysis_note_samples():
+        try:
+            return jsonify(history_note_samples(app.config["HISTORY_EVIDENCE_DB"]))
+        except HistoryAnalyticsError as exc:
+            return jsonify({"error": str(exc)}), 503
 
     @app.get("/api/wordcloud.png")
     def api_wordcloud():
