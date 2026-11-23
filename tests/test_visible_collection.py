@@ -398,6 +398,32 @@ class VisibleCollectionTests(unittest.TestCase):
         with self.assertRaisesRegex(PauseForUser, "目标为 5 位.*仅 4 位"):
             run_case(5, 0, row_order=[1, 2, 3, 4])
 
+    def test_resume_selects_unique_matching_list_without_navigation(self) -> None:
+        class Page:
+            url = "https://pgy.xiaohongshu.com/solar/pre-trade/note/kol"
+
+            def __init__(self, refs):
+                self.refs = refs
+
+            def is_closed(self):
+                return False
+
+        original = Page(["pgy:one", "pgy:two"])
+        other = Page(["pgy:other"])
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        browser._context = SimpleNamespace(pages=[original, other])
+        browser._page = other
+        browser._capture_list_rows = lambda page: [{"creator_ref": ref} for ref in page.refs]
+        targets = [{"kind": "creator_ref", "value": ref} for ref in original.refs]
+        self.assertIs(browser._select_collection_page(targets), original)
+        original.refs = ["pgy:wrong"]
+        with self.assertRaises(PauseForUser):
+            browser._select_collection_page(targets)
+        original.refs = ["pgy:one", "pgy:two"]
+        other.refs = list(original.refs)
+        with self.assertRaises(PauseForUser):
+            browser._select_collection_page(targets)
+
     def test_creator_checkpoint_resolves_reordered_visible_rows_by_stable_identity(self) -> None:
         browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
         original = {
