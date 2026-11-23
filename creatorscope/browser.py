@@ -1913,7 +1913,10 @@ class PgyVisibleBrowser:
             body = page.locator("body").inner_text(timeout=5000)
         except Exception:
             body = ""
-        if re.search(r"验证码|安全验证|访问异常|请完成验证|人机验证", body):
+        if re.search(
+            r"安全验证|访问异常|请完成验证|人机验证|滑动验证|拖动滑块|操作频繁|账号异常",
+            body,
+        ):
             raise PauseForUser("页面要求验证码或安全验证，任务已暂停；请在可见浏览器中按正常流程处理")
         if pgy and re.search(r"请先登录|登录后查看|账号登录", body):
             raise PauseForUser("蒲公英需要正常登录后才能采集；请在可见浏览器中登录后恢复任务")

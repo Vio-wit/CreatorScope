@@ -724,6 +724,20 @@ class VisibleCollectionTests(unittest.TestCase):
         with self.assertRaisesRegex(PauseForUser, "验证码或安全验证"):
             browser._check_page_blocker(Page(), pgy=True)
 
+    def test_phone_login_sms_code_label_is_not_a_security_challenge(self) -> None:
+        class BodyLocator:
+            def inner_text(self, timeout):
+                assert timeout == 5000
+                return "手机号登录 请输入手机号 输入验证码 获取验证码 登录"
+
+        class Page:
+            def locator(self, selector):
+                assert selector == "body"
+                return BodyLocator()
+
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        browser._check_page_blocker(Page(), pgy=False)
+
     def test_waiting_for_manual_close_can_be_stopped(self) -> None:
         browser = ManualDismissBrowser()
         manager = TaskManager(self.db_path, self.root / "unused-baseline.json", browser)
