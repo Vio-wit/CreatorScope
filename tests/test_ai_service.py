@@ -79,6 +79,41 @@ class AIServiceTests(unittest.TestCase):
             with self.assertRaisesRegex(AIServiceError, "未配置密钥"):
                 test_connection(provider="openai_compatible", model="local-model", base_url="https://api.openai.com/v1")
 
+    def test_unified_creator_preview_uses_only_selected_projected_fields(self) -> None:
+        selected = [
+            {
+                "name": "课程达人甲", "platform": "xiaohongshu", "platform_id": "xhs-001",
+                "bucket_label": "五人课堂采集", "source_name": "蒲公英可见页面",
+                "captured_at": "2026-11-23T14:00:00+08:00",
+                "completeness": {"valid_fields": 8, "total_fields": 11, "percentage": 72.7},
+                "fields": {"followers": 10000, "daily_read_median": 1200, "daily_interaction_median": None,
+                           "likes_and_favorites": 3400, "published_notes": 12, "category": "美妆",
+                           "account_ip_location": "上海", "image_fixed_price": "¥1,000", "video_fixed_price": None},
+                "raw_fields": {"private_test_sentinel": "do not include"},
+                "details": [{"label": "body", "raw_value": "do not include note text"}],
+            },
+            {
+                "name": "课程达人乙", "platform": "xiaohongshu", "platform_id": "xhs-002",
+                "bucket_label": "五人课堂采集", "source_name": "蒲公英可见页面",
+                "captured_at": "2026-11-23T14:00:00+08:00",
+                "completeness": {"valid_fields": 6, "total_fields": 11, "percentage": 54.5},
+                "fields": {"followers": 0, "daily_read_median": 300, "daily_interaction_median": 20,
+                           "likes_and_favorites": None, "published_notes": None, "category": "美妆",
+                           "account_ip_location": None, "image_fixed_price": None, "video_fixed_price": None},
+            },
+        ]
+        preview = build_preview(self.db_path, analysis_type="unified_creator_compare", unified_creator_records=selected)
+        serialized = json.dumps(preview["data"], ensure_ascii=False)
+        self.assertEqual(len(preview["data"]["creators"]), 2)
+        self.assertEqual(preview["data"]["creators"][0]["metrics"]["daily_interaction_median"], None)
+        self.assertEqual(preview["data"]["creators"][1]["metrics"]["followers"], 0)
+        self.assertIn("蒲公英可见页面", serialized)
+        self.assertIn("comparison_notice", preview["data"])
+        self.assertNotIn("do not include", serialized)
+        self.assertNotIn("details", serialized)
+        with self.assertRaisesRegex(AIServiceError, "2 至 4"):
+            build_preview(self.db_path, analysis_type="unified_creator_compare", unified_creator_records=selected[:1])
+
     def test_note_preview_preserves_direct_contact_url_and_full_body(self) -> None:
         body = "联系 me@example.com 或 13800138000，链接 https://example.test/private " + ("正文" * 1800)
         with connection(self.db_path) as conn:

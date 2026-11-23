@@ -6,7 +6,7 @@
   <div class="nav-label">工作区</div>
   <a class="nav-item" data-primary-section="creators" href="/#creators"><span class="nav-icon">◎</span>达人库</a>
   <a class="nav-item {% if request.path == '/' %}active{% endif %}" data-primary-section="analytics" href="/#analytics"><span class="nav-icon">◷</span>数据分析</a>
-  <a class="nav-item {% if request.path == '/ai' %}active{% endif %}" data-primary-section="smart" href="/#collection"><span class="nav-icon">✦</span>智能筛选与采集</a>
+  <a class="nav-item {% if request.path == '/ai' %}active{% endif %}" data-primary-section="smart" href="/ai"><span class="nav-icon">✦</span>智能筛选与采集</a>
   <details class="nav-more" {% if request.path in ['/comments', '/quality', '/report', '/news'] %}open{% endif %}>
     <summary>更多工具</summary>
     <a class="nav-item {% if request.path == '/quality' %}active{% endif %}" href="/quality">数据质量</a>

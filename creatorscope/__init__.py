@@ -228,14 +228,26 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @app.post("/api/ai/preview")
     def api_ai_preview():
         payload = request.get_json(silent=True) or {}
+        analysis_type = str(payload.get("analysis_type") or "")
+        unified_records = None
+        if analysis_type == "unified_creator_compare":
+            refs = payload.get("unified_creator_refs") if isinstance(payload.get("unified_creator_refs"), list) else []
+            try:
+                unified_records = unified_creator_records_by_refs(
+                    app.config["DATABASE_PATH"], app.config["COURSE_SAMPLE_DATABASE"],
+                    app.config["HISTORY_EVIDENCE_DB"], refs,
+                )
+            except ValueError as exc:
+                return jsonify({"error": str(exc)}), 400
         try:
             result = build_preview(
                 app.config["DATABASE_PATH"],
-                analysis_type=str(payload.get("analysis_type") or ""),
+                analysis_type=analysis_type,
                 creator_ids=payload.get("creator_ids") if isinstance(payload.get("creator_ids"), list) else [],
                 note_ids=payload.get("note_ids") if isinstance(payload.get("note_ids"), list) else [],
                 batch_id=str(payload.get("batch_id") or ""),
                 include_raw_text=payload.get("include_raw_text") is True,
+                unified_creator_records=unified_records,
             )
         except AIServiceError as exc:
             return jsonify({"error": str(exc)}), 400
@@ -288,16 +300,25 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         if not status["model_configured"]:
             return jsonify({"status": "incomplete", "message": "请填写服务商支持的模型 ID"})
         try:
+            analysis_type = str(payload.get("analysis_type") or "")
+            unified_records = None
+            if analysis_type == "unified_creator_compare":
+                refs = payload.get("unified_creator_refs") if isinstance(payload.get("unified_creator_refs"), list) else []
+                unified_records = unified_creator_records_by_refs(
+                    app.config["DATABASE_PATH"], app.config["COURSE_SAMPLE_DATABASE"],
+                    app.config["HISTORY_EVIDENCE_DB"], refs,
+                )
             preview = build_preview(
                 app.config["DATABASE_PATH"],
-                analysis_type=str(payload.get("analysis_type") or ""),
+                analysis_type=analysis_type,
                 creator_ids=payload.get("creator_ids") if isinstance(payload.get("creator_ids"), list) else [],
                 note_ids=payload.get("note_ids") if isinstance(payload.get("note_ids"), list) else [],
                 batch_id=str(payload.get("batch_id") or ""),
                 include_raw_text=payload.get("include_raw_text") is True,
+                unified_creator_records=unified_records,
             )
             output = run_analysis(provider=provider, model=model, base_url=base_url, preview=preview)
-        except AIServiceError as exc:
+        except (AIServiceError, ValueError) as exc:
             return jsonify({"error": str(exc)}), 503
         analysis_at = generated_at()
         report = {
@@ -308,6 +329,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             "model": status["model"],
             "input_batch_id": str(payload.get("batch_id") or ""),
             "input_creator_ids": payload.get("creator_ids") if isinstance(payload.get("creator_ids"), list) else [],
+            "input_creator_refs": payload.get("unified_creator_refs") if isinstance(payload.get("unified_creator_refs"), list) else [],
             "input_note_ids": payload.get("note_ids") if isinstance(payload.get("note_ids"), list) else [],
             "include_raw_text": preview["include_raw_text"],
             "analysis_at": analysis_at,

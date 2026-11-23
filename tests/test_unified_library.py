@@ -144,6 +144,21 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
             compare = app.test_client().get(f"/api/unified-creators/compare?{compare_query}")
             self.assertEqual(compare.status_code, 200)
             self.assertEqual(compare.get_json()["count"], 2)
+            hashes_before_preview = [self._hash(path) for path in (self.main_db, self.course_db, self.history_db)]
+            preview = app.test_client().post("/api/ai/preview", json={
+                "analysis_type": "unified_creator_compare",
+                "unified_creator_refs": refs,
+            })
+            self.assertEqual(preview.status_code, 200, preview.get_data(as_text=True))
+            preview_data = preview.get_json()
+            self.assertEqual(len(preview_data["data"]["creators"]), 2)
+            self.assertIn("comparison_notice", preview_data["data"])
+            self.assertNotIn("raw_fields", preview.get_data(as_text=True))
+            self.assertEqual(
+                hashes_before_preview,
+                [self._hash(path) for path in (self.main_db, self.course_db, self.history_db)],
+            )
+            self.assertEqual(app.test_client().post("/api/ai/analyze", json={}).status_code, 409)
             self.assertEqual(
                 app.test_client().get("/api/unified-creators/compare?ref=missing&ref=also-missing").status_code,
                 400,
