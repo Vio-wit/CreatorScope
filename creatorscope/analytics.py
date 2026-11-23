@@ -356,12 +356,17 @@ def _source_field(fields: dict[str, Any], names: tuple[str, ...]) -> Any:
     return None
 
 
-def _creator_snapshots(db_path: Path, batch_id: str | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    with connection(db_path) as conn:
+def _creator_snapshots(
+    db_path: Path,
+    batch_id: str | None = None,
+    *,
+    read_only: bool = False,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    with connection(db_path, readonly=read_only) as conn:
         sql = """
             SELECT r.record_id, r.batch_id, r.record_type, r.captured_at,
                    r.fields_json, r.creator_id, r.note_id, c.pseudonym,
-                   c.creator_name, c.platform_creator_id,
+                   c.creator_name, c.platform, c.platform_creator_id,
                    c.location, b.captured_at AS batch_captured_at,
                    COALESCE(NULLIF(r.source, ''), b.source) AS batch_source
             FROM records r
@@ -416,16 +421,21 @@ def _merge_creator_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "pseudonym": row["pseudonym"],
                 "creator_name": row["creator_name"],
                 "platform_creator_id": row["platform_creator_id"],
+                "platform": row.get("platform"),
                 "location": row.get("location") or "",
                 "fields": {},
                 "record_types": set(),
                 "last_seen_at": row["batch_captured_at"],
+                "last_batch_id": row.get("batch_id"),
+                "last_source": row.get("batch_source"),
             },
         )
         creator["record_types"].add(record_type)
         creator["fields"].update(row["fields"])
         if row["batch_captured_at"] > creator["last_seen_at"]:
             creator["last_seen_at"] = row["batch_captured_at"]
+            creator["last_batch_id"] = row.get("batch_id")
+            creator["last_source"] = row.get("batch_source")
 
     output = []
     for creator in creators.values():
@@ -485,8 +495,9 @@ def creator_library(
     batch_id: str | None = None,
     source: str = "",
     creator_ids: list[str] | None = None,
+    read_only: bool = False,
 ) -> dict[str, Any]:
-    rows, _batches = _creator_snapshots(db_path, batch_id=batch_id)
+    rows, _batches = _creator_snapshots(db_path, batch_id=batch_id, read_only=read_only)
     if source:
         rows = [row for row in rows if row["batch_source"] == source]
     creators = _merge_creator_rows(rows)
@@ -516,6 +527,7 @@ def creator_library(
                 "pseudonym": creator["pseudonym"],
                 "creator_name": creator["pseudonym"],
                 "platform_creator_id": creator["platform_creator_id"],
+                "platform": creator.get("platform"),
                 "location": creator.get("location") or "",
                 "followers": creator["followers"],
                 "quote": creator["quote"],
@@ -527,6 +539,9 @@ def creator_library(
                 "categories": creator["categories"],
                 "record_types": creator["record_types"],
                 "last_seen_at": creator["last_seen_at"],
+                "last_batch_id": creator.get("last_batch_id"),
+                "last_source": creator.get("last_source"),
+                "fields": creator["fields"],
             }
         )
     sort_fields = {"pseudonym": "pseudonym", "followers": "followers", "quote": "quote", "reading": "reading", "engagement": "engagement"}
