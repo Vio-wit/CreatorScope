@@ -947,7 +947,12 @@ class PgyVisibleBrowser:
             opened_new_page = False
             creator_stage = "打开创作者详情"
             try:
-                list_record = creator_list_records[creator_index]
+                # The visible list can reorder while a batch is running. Resolve
+                # the saved identity again immediately before opening its row.
+                current_list_records = self._capture_list_rows(page)
+                list_record = self._resolve_creator_targets(
+                    current_list_records, [creator_targets[creator_index]]
+                )[0]
                 list_row_index = int(list_record.get("visible_row_index", creator_index + 1))
                 detail_page, opened_new_page = self._open_creator_row(
                     page, list_row_index, expected_record=list_record

@@ -314,23 +314,39 @@ class VisibleCollectionTests(unittest.TestCase):
             def get_by_role(self, role):
                 return RowLocator(self.row_count) if role == "row" else RowLocator(0)
 
-        def run_case(creator_count, checkpoint_creator_index, *, row_order=None, creator_targets=None):
+        def run_case(
+            creator_count,
+            checkpoint_creator_index,
+            *,
+            row_order=None,
+            creator_targets=None,
+            reorder_during_collection=None,
+        ):
             ordered_creators = row_order or list(range(1, creator_count + 1))
             list_page = Page("https://pgy.xiaohongshu.com/solar/pre-trade/note/kol", len(ordered_creators) + 1)
-            list_records = [
-                {
-                    "type": "blogger_list_sample",
-                    "creator_ref": f"pgy:id:creator-{creator_number}",
-                    "visible_row_index": index + 1,
-                    "fields": {"创作者名称": f"creator-{creator_number}"},
-                }
-                for index, creator_number in enumerate(ordered_creators)
-            ]
+            capture_calls = 0
+
+            def capture_rows(_page):
+                nonlocal capture_calls
+                capture_calls += 1
+                current_order = ordered_creators
+                if reorder_during_collection and capture_calls >= 3:
+                    current_order = reorder_during_collection
+                return [
+                    {
+                        "type": "blogger_list_sample",
+                        "creator_ref": f"pgy:id:creator-{creator_number}",
+                        "visible_row_index": index + 1,
+                        "fields": {"创作者名称": f"creator-{creator_number}"},
+                    }
+                    for index, creator_number in enumerate(current_order)
+                ]
+
             browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
             browser._context = SimpleNamespace(pages=[list_page])
             browser._page = list_page
             browser._check_page_blocker = lambda _page, **_kwargs: None
-            browser._capture_list_rows = lambda _page: list_records
+            browser._capture_list_rows = capture_rows
             opened_rows = []
 
             def open_creator_row(_page, row_index, expected_record=None):
@@ -387,6 +403,13 @@ class VisibleCollectionTests(unittest.TestCase):
             row_order=[2, 1],
             creator_targets=one_checkpoints[0]["creator_targets"],
         )
+        reordered_during, reordered_records, reordered_during_rows, _ = run_case(
+            1,
+            0,
+            row_order=[1, 2, 3],
+            creator_targets=one_checkpoints[0]["creator_targets"],
+            reorder_during_collection=[2, 1, 3],
+        )
         self.assertEqual(one["creators_visited"], 1)
         self.assertEqual(len(one_records), 2)
         self.assertEqual(ten["creators_visited"], 10)
@@ -395,6 +418,12 @@ class VisibleCollectionTests(unittest.TestCase):
         self.assertEqual(len(resumed_records), 12)
         self.assertEqual(reordered["creators_visited"], 1)
         self.assertEqual(reordered_rows, [2])
+        self.assertEqual(reordered_during["creators_visited"], 1)
+        self.assertEqual(reordered_during_rows, [2])
+        self.assertEqual(
+            next(record["fields"]["创作者名称"] for record in reordered_records if record["type"] == "blogger_list_sample"),
+            "creator-1",
+        )
         with self.assertRaisesRegex(PauseForUser, "目标为 5 位.*仅 4 位"):
             run_case(5, 0, row_order=[1, 2, 3, 4])
 
