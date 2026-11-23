@@ -6,12 +6,9 @@
   <div class="nav-label">工作区</div>
   <a class="nav-item" data-primary-section="creators" href="/#creators"><span class="nav-icon">◎</span>达人库</a>
   <a class="nav-item {% if request.path == '/' %}active{% endif %}" data-primary-section="analytics" href="/#analytics"><span class="nav-icon">◷</span>数据分析</a>
-  <a class="nav-item" data-primary-section="smart" href="/#collection"><span class="nav-icon">✦</span>智能筛选与采集</a>
-  <details class="nav-more" {% if request.path in ['/ai', '/comments', '/quality', '/report', '/news'] %}open{% endif %}>
+  <a class="nav-item {% if request.path == '/ai' %}active{% endif %}" data-primary-section="smart" href="/#collection"><span class="nav-icon">✦</span>智能筛选与采集</a>
+  <details class="nav-more" {% if request.path in ['/comments', '/quality', '/report', '/news'] %}open{% endif %}>
     <summary>更多工具</summary>
-    <a class="nav-item" href="/#notes">笔记管理</a>
-    <a class="nav-item" href="/#records">样本与任务</a>
-    <a class="nav-item {% if request.path == '/ai' %}active{% endif %}" href="/ai">AI 分析</a>
     <a class="nav-item {% if request.path == '/comments' %}active{% endif %}" href="/comments">评论分析</a>
     <a class="nav-item {% if request.path == '/quality' %}active{% endif %}" href="/quality">数据质量</a>
     <a class="nav-item {% if request.path == '/report' %}active{% endif %}" href="/report">实训报告</a>
