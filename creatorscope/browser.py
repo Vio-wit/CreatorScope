@@ -729,6 +729,29 @@ class PgyVisibleBrowser:
             resolved.append(matches[0][1])
         return resolved
 
+    def _select_collection_page(self, targets: list[dict[str, Any]]):
+        pages = [page for page in (self._context.pages if self._context else [])
+                 if not page.is_closed() and urlparse(page.url).hostname == PGY_HOST
+                 and urlparse(page.url).path.endswith("/solar/pre-trade/note/kol")]
+        if not pages:
+            raise PauseForUser("未找到蒲公英博主广场，请打开原筛选列表后恢复任务")
+        if not targets:
+            if self._page in pages:
+                return self._page
+            if len(pages) == 1:
+                return pages[0]
+            raise PauseForUser("存在多个博主广场，请保留要采集的筛选列表后再新建任务")
+        matches = []
+        for page in pages:
+            try:
+                self._resolve_creator_targets(self._capture_list_rows(page), targets)
+            except Exception:
+                continue
+            matches.append(page)
+        if len(matches) != 1:
+            raise PauseForUser("保存的创作者身份不能唯一匹配一个博主广场标签页；请检查原筛选列表后恢复")
+        return matches[0]
+
     def collect_visible(
         self,
         settings: dict[str, Any],
@@ -842,27 +865,11 @@ class PgyVisibleBrowser:
     ) -> dict[str, Any]:
         if self._context is None or self._page is None or self._page.is_closed():
             self._open()
-        pgy_pages = [
-            item
-            for item in (self._context.pages if self._context else [])
-            if not item.is_closed() and urlparse(item.url).hostname == PGY_HOST
-        ]
-        if pgy_pages and (
-            self._page is None
-            or self._page.is_closed()
-            or urlparse(self._page.url).hostname != PGY_HOST
-        ):
-            self._page = pgy_pages[-1]
-        page = self._page
-        if page is None:
-            raise CaptureError("无法打开蒲公英可见浏览器")
-        if urlparse(page.url).hostname != PGY_HOST:
-            raise PauseForUser("请在蒲公英窗口中正常登录，并停留在博主广场后恢复任务")
-        if not urlparse(page.url).path.endswith("/solar/pre-trade/note/kol"):
-            try:
-                page.goto(PGY_START_URL, wait_until="domcontentloaded", timeout=45000)
-            except Exception:
-                pass
+        planned_targets = checkpoint.get("creator_targets")
+        if not isinstance(planned_targets, list):
+            raise PauseForUser("此任务断点没有保存创作者身份；为避免列表重排后采错对象，请新建批次继续")
+        page = self._select_collection_page(planned_targets)
+        self._page = page
         self._check_page_blocker(page, pgy=True)
         row_locator = page.get_by_role("row")
         total_rows = row_locator.count()
@@ -877,11 +884,6 @@ class PgyVisibleBrowser:
         visible_creator_records = self._capture_list_rows(page)
         if not visible_creator_records:
             raise CaptureError("当前列表没有可按表头识别的创作者记录；未启动批量采集")
-        planned_targets = checkpoint.get("creator_targets")
-        if not isinstance(planned_targets, list):
-            raise PauseForUser(
-                "此任务断点没有保存创作者身份；为避免列表重排后采错对象，请新建批次继续"
-            )
         if planned_targets:
             creator_targets = planned_targets
             creator_list_records = self._resolve_creator_targets(
