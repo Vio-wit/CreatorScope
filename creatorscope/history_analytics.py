@@ -5,9 +5,11 @@ import json
 import math
 import re
 import sqlite3
+import ast
 from pathlib import Path
 from statistics import mean, median
 from typing import Any
+from urllib.parse import urlsplit
 
 from .history_evidence import MARKER
 
@@ -88,6 +90,7 @@ def _connection(path: Path | str | None) -> sqlite3.Connection:
     try:
         conn = sqlite3.connect(f"{database.as_uri()}?mode=ro", uri=True)
         conn.row_factory = sqlite3.Row
+        conn.create_function("is_musinsa_product_record", 1, _is_musinsa_product_record)
         conn.execute("PRAGMA query_only=ON")
         marker = conn.execute("SELECT value FROM metadata WHERE key='application'").fetchone()
         if marker is None or marker["value"] != MARKER:
@@ -102,6 +105,62 @@ def _connection(path: Path | str | None) -> sqlite3.Connection:
         raise HistoryAnalyticsError("无法读取历史样本库") from exc
 
 
+def _is_musinsa_product_record(raw_json: str | None) -> int:
+    """Exclude records whose captured creator/profile URL is a known product page."""
+    try:
+        raw = json.loads(raw_json) if raw_json else None
+    except (TypeError, json.JSONDecodeError):
+        return 0
+
+    def contains_product_url(value: Any) -> bool:
+        if isinstance(value, dict):
+            return any(contains_product_url(item) for item in value.values())
+        if isinstance(value, (list, tuple)):
+            return any(contains_product_url(item) for item in value)
+        if not isinstance(value, str) or "musinsa.com" not in value.casefold():
+            return False
+        for candidate in re.findall(r"https?://[^\s<>\"']+", value, flags=re.IGNORECASE):
+            parsed = urlsplit(candidate.rstrip(".,);]"))
+            host = (parsed.hostname or "").casefold()
+            path = parsed.path.casefold().rstrip("/")
+            if host == "musinsa.com" or host.endswith(".musinsa.com"):
+                if path == "/products" or path.startswith("/products/"):
+                    return True
+        return False
+
+    return int(contains_product_url(raw))
+
+
+def _parse_topics(value: Any) -> list[str]:
+    """Read JSON arrays, Python list literals, or visible hashtag text."""
+    if value is None:
+        return []
+    text = str(value).strip()
+    if not text:
+        return []
+    parsed: Any = None
+    try:
+        parsed = json.loads(text)
+    except (TypeError, json.JSONDecodeError):
+        try:
+            parsed = ast.literal_eval(text)
+        except (ValueError, SyntaxError):
+            parsed = re.findall(r"#([^\s#]+)", text)
+    if isinstance(parsed, str):
+        candidates = [parsed]
+    elif isinstance(parsed, (list, tuple)):
+        candidates = list(parsed)
+    else:
+        candidates = []
+
+    normalized: list[str] = []
+    for candidate in candidates:
+        name = re.sub(r"\[\s*话题\s*\]", "", str(candidate), flags=re.IGNORECASE).strip().lstrip("#").strip()
+        if name and name.casefold() not in {"话题", "正文", "无", "none", "null"} and name not in normalized:
+            normalized.append(name)
+    return normalized
+
+
 def _group(key: str) -> tuple[str, str, str]:
     group = SOURCE_GROUPS.get(key)
     if group is None:
@@ -113,7 +172,8 @@ def _source_files(conn: sqlite3.Connection, where: str, match: str) -> list[dict
     rows = conn.execute(
         f"""
         SELECT s.source_id, s.source_name, s.sha256, s.source_capture_time,
-               s.record_count, COUNT(DISTINCT sr.record_id) AS saved_records
+               s.record_count,
+               COUNT(DISTINCT CASE WHEN is_musinsa_product_record(sr.raw_json)=0 THEN sr.record_id END) AS saved_records
         FROM sources s
         LEFT JOIN source_records sr ON sr.source_id=s.source_id
         WHERE {where}
@@ -122,7 +182,7 @@ def _source_files(conn: sqlite3.Connection, where: str, match: str) -> list[dict
         """,
         (match,),
     ).fetchall()
-    return [dict(row) for row in rows]
+    return [dict(row) for row in rows if int(row["saved_records"] or 0) > 0]
 
 
 def _eligible_value(row: sqlite3.Row) -> bool:
@@ -219,6 +279,7 @@ def list_library_sources(path: Path | str | None) -> dict[str, Any]:
                        {entity_count_sql} AS entities
                 FROM source_records sr
                 WHERE sr.source_id IN ({marks}) AND sr.identity_status <> 'index_only'
+                  AND is_musinsa_product_record(sr.raw_json)=0
                 """,
                 source_ids,
             ).fetchone()
@@ -281,6 +342,7 @@ def _field_coverage(conn: sqlite3.Connection, source_ids: list[str], total: int)
         FROM source_records sr
         JOIN field_evidence fe ON fe.record_id=sr.record_id
         WHERE sr.source_id IN ({placeholders})
+          AND is_musinsa_product_record(sr.raw_json)=0
         ORDER BY fe.target_field, sr.record_id, fe.original_field
         """,
         source_ids,
@@ -564,6 +626,7 @@ def history_creator_library(
             LEFT JOIN field_evidence fe ON fe.record_id=sr.record_id
                 AND fe.target_field IN ({','.join('?' for _ in FIELD_LABELS)})
             WHERE sr.source_id IN ({marks}) AND sr.identity_status <> 'index_only'
+              AND is_musinsa_product_record(sr.raw_json)=0
             ORDER BY s.source_name, sr.row_number, fe.target_field
             """,
             (*FIELD_LABELS.keys(), *source_ids),
@@ -802,7 +865,7 @@ def analysis_data(path: Path | str | None, source_key: str = "EPT") -> dict[str,
         placeholders = ",".join("?" for _ in source_ids)
         records = conn.execute(
             f"""
-            SELECT sr.record_id, sr.row_number, sr.capture_time,
+            SELECT sr.record_id, sr.row_number, sr.capture_time, sr.raw_json,
                    s.source_name, s.sha256, fe.target_field, fe.numeric_value,
                    fe.unit, fe.period, fe.parse_status
             FROM source_records sr
@@ -810,6 +873,7 @@ def analysis_data(path: Path | str | None, source_key: str = "EPT") -> dict[str,
             LEFT JOIN field_evidence fe ON fe.record_id=sr.record_id
                 AND fe.target_field IN ({','.join('?' for _ in METRIC_KEYS)})
             WHERE sr.source_id IN ({placeholders})
+              AND is_musinsa_product_record(sr.raw_json)=0
             ORDER BY s.source_name, sr.row_number, fe.target_field
             """,
             (*sorted(METRIC_KEYS), *source_ids),
@@ -940,17 +1004,7 @@ def note_samples(path: Path | str | None) -> dict[str, Any]:
                 body = re.sub(r"(?<!\w)@[^\s，。；;]+", "", body)
                 sample["body"] = re.sub(r"\[\s*话题\s*\]", "", body, flags=re.IGNORECASE).strip()
             elif field == "note_topics_candidate":
-                try:
-                    topics = json.loads(value)
-                except (TypeError, json.JSONDecodeError):
-                    topics = re.findall(r"#([^\s#]+)", value)
-                if isinstance(topics, list):
-                    clean_topics = []
-                    for topic in topics:
-                        name = re.sub(r"\[\s*话题\s*\]", "", str(topic), flags=re.IGNORECASE).strip().lstrip("#")
-                        if name and name.casefold() != "话题" and name not in clean_topics:
-                            clean_topics.append(name)
-                    sample["topics"] = clean_topics
+                sample["topics"] = _parse_topics(value)
         selected = [samples[digest] for digest in NOTE_SAMPLE_SHA256 if digest in samples and samples[digest]["title"] and samples[digest]["body"]]
         return {"sample_count": len(selected), "samples": selected}
     finally:
@@ -1004,19 +1058,7 @@ def history_note_library(
                 body = re.sub(r"\[\s*话题\s*\]", "", body, flags=re.IGNORECASE)
                 note["body"] = body.strip()
             elif field in {"note_topics", "note_topics_candidate"} and not note["topics"]:
-                try:
-                    topics = json.loads(value)
-                except (TypeError, json.JSONDecodeError):
-                    topics = re.findall(r"#([^\s#]+)", str(value))
-                if isinstance(topics, str):
-                    topics = [topics]
-                if isinstance(topics, list):
-                    normalized = []
-                    for topic in topics:
-                        name = re.sub(r"\[\s*话题\s*\]", "", str(topic), flags=re.IGNORECASE).strip().lstrip("#")
-                        if name and name.casefold() not in {"话题", "正文", "无"} and name not in normalized:
-                            normalized.append(name)
-                    note["topics"] = normalized
+                note["topics"] = _parse_topics(value)
 
         notes_list = list(notes.values())
         title_count = sum(bool(note["title"]) for note in notes_list)
