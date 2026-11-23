@@ -9,10 +9,7 @@
   <a class="nav-item {% if request.path == '/ai' %}active{% endif %}" data-primary-section="smart" href="/#collection"><span class="nav-icon">✦</span>智能筛选与采集</a>
   <details class="nav-more" {% if request.path in ['/comments', '/quality', '/report', '/news'] %}open{% endif %}>
     <summary>更多工具</summary>
-    <a class="nav-item {% if request.path == '/comments' %}active{% endif %}" href="/comments">评论分析</a>
     <a class="nav-item {% if request.path == '/quality' %}active{% endif %}" href="/quality">数据质量</a>
-    <a class="nav-item {% if request.path == '/report' %}active{% endif %}" href="/report">实训报告</a>
-    <a class="nav-item {% if request.path == '/news' %}active{% endif %}" href="/news">新闻关联</a>
   </details>
   <div class="sidebar-bottom">
     <span class="local-dot"></span>

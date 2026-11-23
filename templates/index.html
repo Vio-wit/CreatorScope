@@ -24,7 +24,7 @@
       <div class="demo-mode-banner" role="status"><strong>本地离线演示</strong><span>只读使用本机真实历史采集数据；无需登录或联网，可筛选、分析并导出。</span></div>
       {% endif %}
 
-      <section class="page-heading" id="overview">
+      <section class="page-heading" id="overview" data-primary-view="analytics">
         <div>
           <p class="eyebrow">CREATOR DATA · LOCAL LAB</p>
           <h1>数据看板</h1>
@@ -42,21 +42,21 @@
         </div>
       </section>
 
-      <section class="section-heading" aria-label="数据总览">
+      <section class="section-heading" aria-label="数据总览" data-primary-view="analytics">
         <div><p class="eyebrow">DATA OVERVIEW</p><h2>本地采集库总览</h2><p class="subheading">只统计本地采集库；历史候选数据集在下方分开展示。</p></div>
         <span class="analysis-count" id="overviewUpdatedAt">最近更新 —</span>
       </section>
-      <section class="kpi-grid overview-kpis">
+      <section class="kpi-grid overview-kpis" data-primary-view="analytics">
         <article class="kpi-card"><div class="kpi-label">本地库达人总数<span class="kpi-symbol">◎</span></div><div class="kpi-value" id="overviewCreators">—</div><div class="kpi-foot">主采集库中的创作者实体</div></article>
         <article class="kpi-card"><div class="kpi-label">笔记总数<span class="kpi-symbol green">▧</span></div><div class="kpi-value" id="overviewNotes">—</div><div class="kpi-foot">去重后的笔记实体</div></article>
         <article class="kpi-card"><div class="kpi-label">评论总数<span class="kpi-symbol blue">↳</span></div><div class="kpi-value" id="overviewComments">—</div><div class="kpi-foot">已保存评论快照行</div></article>
         <article class="kpi-card"><div class="kpi-label">采集批次数<span class="kpi-symbol amber">▤</span></div><div class="kpi-value" id="overviewBatches">—</div><div class="kpi-foot">导入与采集批次</div></article>
       </section>
-      <section class="charts-grid overview-source-grid">
+      <section class="charts-grid overview-source-grid" data-primary-view="analytics">
         <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>数据来源占比</h2><p id="sourceShareScope">记录行与评论行</p></div></div><div class="chart" id="sourceShareChart"></div></article>
       </section>
 
-      <section class="collection-panel" id="collection">
+      <section class="collection-panel" id="collection" data-primary-view="smart">
         <div class="panel-copy">
           <div class="panel-icon">↗</div>
           <div>
@@ -65,7 +65,7 @@
           </div>
         </div>
         <div class="collection-controls">
-          <a class="button button-secondary download-link" href="/ai">AI 智能选人</a>
+          <a class="button button-secondary download-link" href="/ai">智能选人与达人对比</a>
           <button class="button button-primary" id="importButton" {% if demo_mode %}hidden{% endif %}><span>＋</span>导入基线样本</button>
           <button class="button button-secondary" id="uploadButton" {% if demo_mode %}hidden{% endif %}>导入 JSON / CSV</button>
           <input id="uploadInput" type="file" accept=".json,.csv,application/json,text/csv" hidden>
@@ -95,14 +95,14 @@
         <div class="browser-hint" id="browserHint"><span class="status-dot muted"></span><span>{% if demo_mode %}离线演示不会打开浏览器或发起网络请求。{% else %}新建隔离浏览器配置；请在窗口内正常登录并手动打开要验证的页面。应用只读取蒲公英域名下当前可见页面的少量字段。{% endif %}</span></div>
       </section>
 
-      <section class="kpi-grid" aria-label="数据概览">
+      <section class="kpi-grid" aria-label="数据概览" data-primary-view="smart">
         <article class="kpi-card"><div class="kpi-label">所选范围记录<span class="kpi-symbol">▤</span></div><div class="kpi-value" id="recordCount">—</div><div class="kpi-foot" id="batchCount">历史批次 0</div></article>
         <article class="kpi-card"><div class="kpi-label">字段覆盖率<span class="kpi-symbol green">◉</span></div><div class="kpi-value" id="coverageRate">—</div><div class="kpi-foot" id="fieldCount">—</div></article>
         <article class="kpi-card"><div class="kpi-label">粉丝规模<span class="kpi-symbol blue">◎</span></div><div class="kpi-value compact" id="followersValue">—</div><div class="kpi-foot">当前可用博主样本</div></article>
         <article class="kpi-card"><div class="kpi-label">阅读中位数<span class="kpi-symbol amber">⌁</span></div><div class="kpi-value compact" id="readingValue">—</div><div class="kpi-foot">按页面显示值保留单位</div></article>
       </section>
 
-      <section class="charts-grid">
+      <section class="charts-grid" data-primary-view="analytics">
         <article class="chart-card chart-card-wide">
           <div class="card-heading"><div><h2>样本结构</h2><p>按当前批次的数据类型统计</p></div><span class="card-menu">···</span></div>
           <div class="chart" id="typeChart"></div>
@@ -111,7 +111,7 @@
           <div class="card-heading"><div><h2>笔记互动指标</h2><p>采集值转换为数值后展示</p></div><span class="card-menu">···</span></div>
           <div class="chart" id="noteChart"></div>
         </article>
-        <article class="chart-card">
+        <article class="chart-card" hidden>
           <div class="card-heading"><div><h2>粉丝画像比例</h2><p>使用页面当前显示的统计周期</p></div><span class="card-menu">···</span></div>
           <div class="chart" id="fanChart"></div>
         </article>
@@ -129,11 +129,11 @@
         </article>
       </section>
 
-      <section class="section-heading" id="analytics">
+      <section class="section-heading" id="analytics" data-primary-view="analytics">
         <div><p class="eyebrow">DATA ANALYSIS</p><h2>实际数据分析</h2><p class="subheading" id="analysisScope">基于已保存的创作者快照；字段不足时明确提示。</p></div>
         <span class="analysis-count" id="analysisCount">—</span>
       </section>
-      <section class="history-analysis-panel" id="historyAnalysis" aria-labelledby="historyAnalysisTitle">
+      <section class="history-analysis-panel" id="historyAnalysis" aria-labelledby="historyAnalysisTitle" data-primary-view="analytics">
         <div class="history-panel-heading">
           <div>
             <p class="eyebrow">HISTORICAL DATA</p>
@@ -173,84 +173,42 @@
           <div class="history-library-pager"><button class="button" id="historyNotePrev" type="button">上一页</button><span id="historyNoteCoverage">—</span><button class="button" id="historyNoteNext" type="button">下一页</button></div>
         </section>
       </section>
-      <section class="charts-grid analytics-grid">
+      <section class="charts-grid analytics-grid" data-primary-view="analytics">
         <article class="chart-card"><div class="card-heading"><div><h2>粉丝数量分布</h2><p id="followerDistStatus">每位创作者取最新可用粉丝值</p></div></div><div class="chart" id="followerDistChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>精确商业报价分布</h2><p id="quoteDistStatus">起价和区间单独统计，不转换成精确金额</p></div></div><div class="chart" id="quoteDistChart"></div></article>
+        <article class="chart-card" hidden><div class="card-heading"><div><h2>精确商业报价分布</h2><p id="quoteDistStatus">报价单位与口径未全部核对</p></div></div><div class="chart" id="quoteDistChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>报价类型</h2><p id="quoteTypeStatus">精确值、起价、区间分别统计</p></div></div><div class="chart" id="quoteTypeChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>粉丝与报价</h2><p id="followerPriceStatus">等待样本</p></div></div><div class="chart" id="followerPriceChart"></div></article>
+        <article class="chart-card" hidden><div class="card-heading"><div><h2>粉丝与报价</h2><p id="followerPriceStatus">报价单位与口径未全部核对</p></div></div><div class="chart" id="followerPriceChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>阅读与互动</h2><p id="readingStatus">等待样本</p></div></div><div class="chart" id="readingEngagementChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>创作者地域分布</h2><p id="locationStatus">当前筛选下的有效地域</p></div></div><div class="chart" id="locationChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>粉丝画像均值</h2><p>按可用创作者取均值，标注有效样本数</p></div></div><div class="chart" id="fanAggregateChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>指标相关性</h2><p id="correlationStatus">等待样本</p></div></div><div class="chart" id="correlationChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>多批次粉丝趋势</h2><p id="trendStatus">等待快照</p></div></div><div class="chart" id="trendChart"></div></article>
+        <article class="chart-card" hidden><div class="card-heading"><div><h2>蒲公英账号 IP 属地</h2><p id="locationStatus">只有确认来源字段为蒲公英账号 IP 后才纳入统计</p></div></div><div class="chart" id="locationChart"></div></article>
+        <article class="chart-card" hidden><div class="card-heading"><div><h2>粉丝画像均值</h2><p>当前只展示单达人摘要，不做完整分类比例汇总</p></div></div><div class="chart" id="fanAggregateChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>笔记案例指标</h2><p>当前记录中的可用笔记值</p></div></div><div class="chart" id="noteMetricsChart"></div></article>
       </section>
 
-      <section class="section-heading" id="audienceProfiles">
-        <div><p class="eyebrow">AUDIENCE PROFILE</p><h2>受众画像分布与对比</h2><p class="subheading" id="audienceScope">等待实际画像字段</p></div>
-        <label class="select-wrap"><span>兼容来源 / 周期</span><select id="audienceGroupSelect"><option value="">选择兼容来源与周期</option></select></label>
+      <section class="section-heading" id="creators" data-primary-view="creators">
+        <div><p class="eyebrow">CREATOR LIBRARY</p><h2>达人库</h2><p class="subheading">统一查看新采集、五人课堂样本与本地历史资料；缺失字段保留为空。</p></div>
       </section>
-      <section class="charts-grid analytics-grid">
-        <article class="chart-card"><div class="card-heading"><div><h2>主要性别画像</h2><p id="audienceGenderStatus">只汇总实际采集到的字段</p></div></div><div class="chart" id="audienceGenderChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>年龄画像</h2><p id="audienceAgeStatus">缺失字段不补比例</p></div></div><div class="chart" id="audienceAgeChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>粉丝地域 Top 10</h2><p id="audienceRegionStatus">按来源和周期分组</p></div></div><div class="chart" id="audienceRegionChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>粉丝兴趣</h2><p id="audienceInterestStatus">按页面提供标签统计</p></div></div><div class="chart" id="audienceInterestChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>设备品牌占比</h2><p id="audienceDeviceStatus">只展示已采集品牌</p></div></div><div class="chart" id="audienceDeviceChart"></div></article>
-      </section>
-
-      <section class="section-heading" id="creators">
-        <div><p class="eyebrow">CREATOR LIBRARY</p><h2>达人库</h2><p class="subheading">搜索正式库达人，并按来源查看历史候选记录。</p></div>
-      </section>
-      <section class="creator-filter-panel">
+      <section class="creator-filter-panel" data-primary-view="creators">
         <label>名称 / ID 搜索<input id="creatorQuery" type="search" placeholder="输入名称或平台 ID"></label>
         <label>领域<select id="categoryFilter"><option value="">全部领域</option></select></label>
-        <label>地域<select id="locationFilter"><option value="">全部地域</option></select></label>
-        <label>排序<select id="creatorSort"><option value="followers">粉丝数</option><option value="quote">报价</option><option value="reading">阅读</option><option value="engagement">互动</option><option value="pseudonym">名称 / ID</option></select></label>
+        <label>蒲公英账号 IP 属地<select id="locationFilter"><option value="">全部 IP 属地</option></select></label>
+        <label>数据分组<select id="creatorBucketFilter"><option value="all">全部数据</option><option value="recent">基线后新采集</option><option value="course">五人课堂采集</option><option value="historical">既有采集与历史资料</option></select></label>
         <label>粉丝下限<input id="followersMin" inputmode="numeric" placeholder="人"></label>
         <label>粉丝上限<input id="followersMax" inputmode="numeric" placeholder="人"></label>
-        <label>报价下限<input id="quoteMin" inputmode="numeric" placeholder="元"></label>
-        <label>报价上限<input id="quoteMax" inputmode="numeric" placeholder="元"></label>
-        <button class="button button-primary" id="filterCreators">筛选</button>
-        <span id="creatorCount">0 位博主</span>
+        <button class="button button-primary" id="filterCreators">筛选达人</button>
+        <span id="creatorCount">读取中…</span>
+        <button class="button button-secondary" id="compareSelectedCreators" type="button" disabled>去智能分析对比（0/4）</button>
       </section>
-      <section class="table-card creator-table-card">
-        <div class="table-scroll"><table><thead><tr><th>创作者名称</th><th>平台 ID</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价原始值 / 类型</th><th>阅读中位数</th><th>互动中位数</th><th>数据类型</th><th>最新批次</th></tr></thead><tbody id="creatorBody"><tr><td colspan="10" class="empty-cell">暂无创作者记录</td></tr></tbody></table></div>
-      </section>
-
-      <section class="history-library-panel" aria-labelledby="historyLibraryTitle">
-        <div class="card-heading history-library-heading"><div><h3 id="historyLibraryTitle">历史达人库</h3><p>汇总本地 rednote 历史资料；有相同平台标识的来源会合并展示，指标仍按来源查看。</p></div><span class="table-count" id="historyLibraryCount">加载中…</span></div>
-        <section class="creator-filter-panel history-library-filters">
-          <label>历史数据范围<select id="historyLibrarySourceSelect"><option value="">加载中…</option></select></label>
-          <label>关键词<input id="historyLibraryQuery" type="search" placeholder="名称、公开账号或内容领域"></label>
-          <label>粉丝下限<input id="historyLibraryFollowersMin" inputmode="numeric" placeholder="人"></label>
-          <label>粉丝上限<input id="historyLibraryFollowersMax" inputmode="numeric" placeholder="人"></label>
-          <button class="button button-primary" id="filterHistoryLibrary">筛选历史记录</button>
-          <details class="history-advanced-filters"><summary>更多条件</summary><div class="history-advanced-fields">
-            <label>日常阅读下限<input id="historyLibraryDailyReadMin" inputmode="numeric" placeholder="次"></label>
-            <label>日常阅读上限<input id="historyLibraryDailyReadMax" inputmode="numeric" placeholder="次"></label>
-            <label>日常互动下限<input id="historyLibraryDailyInteractionMin" inputmode="numeric" placeholder="次"></label>
-            <label>日常互动上限<input id="historyLibraryDailyInteractionMax" inputmode="numeric" placeholder="次"></label>
-            <label>领域<input id="historyLibraryCategory" type="search" placeholder="领域关键词"></label>
-            <label>地域<input id="historyLibraryLocation" type="search" placeholder="地域关键词"></label>
-          </div></details>
-        </section>
-        <div class="table-card creator-table-card"><div class="table-scroll"><table><thead><tr><th>名称</th><th>小红书公开账号</th><th>小红书主页 ID</th><th>蒲公英 ID</th><th>地域</th><th>领域</th><th>粉丝数</th><th>日常阅读</th><th>日常互动</th><th>获赞与收藏</th><th>发布笔记</th><th>报价原值</th><th>其他字段</th></tr></thead><tbody id="historyLibraryBody"><tr><td colspan="13" class="empty-cell">读取中…</td></tr></tbody></table></div></div>
-        <div class="history-library-pager"><button class="button" id="historyLibraryPrev" type="button">上一页</button><span id="historyLibraryPageStatus">—</span><button class="button" id="historyLibraryNext" type="button">下一页</button></div>
+      <section class="table-card creator-table-card unified-creator-table-card" data-primary-view="creators">
+        <div class="card-heading table-heading"><div><h3>统一达人清单</h3><p>新采集 → 五人课堂采集 → 既有资料；组内按字段完整度排序。筛选后共 <span id="unifiedCreatorCount">—</span> 条展示记录。</p></div><span class="table-count" id="unifiedCreatorGroups">—</span></div>
+        <div class="table-scroll"><table><thead><tr><th>创作者 / 平台标识</th><th>粉丝数</th><th>日常阅读中位数</th><th>日常互动中位数</th><th>领域</th><th>蒲公英账号 IP</th><th>字段完整度</th><th>来源与时间</th><th>详情 / 对比</th></tr></thead><tbody id="unifiedCreatorBody"><tr><td colspan="9" class="empty-cell">读取中…</td></tr></tbody></table></div>
+        <div class="history-library-pager"><button class="button" id="unifiedCreatorPrev" type="button">上一页</button><span id="unifiedCreatorPageStatus">—</span><button class="button" id="unifiedCreatorNext" type="button">下一页</button></div>
       </section>
 
-      <section class="creator-comparison-panel">
-        <div class="comparison-controls"><div><strong>创作者对比</strong><small>选择具体批次后，选择 2 至 4 位</small></div><select id="creatorCompareSelect" multiple size="4" aria-label="选择 2 至 4 位创作者"></select><button class="button button-primary" id="compareCreators">对比所选</button><label class="comparison-metric-label">柱状图指标<select id="creatorCompareMetric" class="comparison-metric-select"><option value="followers">粉丝数</option><option value="quote">精确报价</option><option value="reading">阅读中位数</option><option value="engagement">互动中位数</option><option value="publish_frequency_30d">本批次可见 30 日发文数</option></select></label><span id="creatorCompareStatus">只并列展示同一批次内可用指标</span></div>
-        <div class="table-scroll"><table><thead><tr><th>创作者名称</th><th>平台 ID</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价原始值 / 类型</th><th>阅读中位数</th><th>互动中位数</th><th>数据时间</th><th>本批次可见 30 日发文数</th></tr></thead><tbody id="creatorCompareBody"><tr><td colspan="10" class="empty-cell">选择创作者后查看并列对比</td></tr></tbody></table></div>
-        <section class="charts-grid comparison-chart-grid"><article class="chart-card"><div class="card-heading"><div><h2>创作者单指标对比</h2><p>单位保持原始口径</p></div></div><div class="chart" id="creatorCompareBarChart"></div></article><article class="chart-card"><div class="card-heading"><div><h2>创作者相对表现雷达</h2><p>仅显示所有入选创作者都有精确值的指标，按组内最大值归一到 100</p></div></div><div class="chart" id="creatorCompareRadarChart"></div></article></section>
-        <div class="card-heading table-heading"><div><h2>兼容口径受众画像对比</h2><p>同采集来源、统计周期和页面字段口径内对比；空白表示来源未提供</p></div></div>
-        <div class="table-scroll"><table><thead><tr><th>创作者</th><th>来源</th><th>周期</th><th>性别</th><th>年龄</th><th>地域（原值）</th><th>兴趣（原值）</th><th>设备（原值）</th><th>粉丝比例（原值）</th></tr></thead><tbody id="audienceCompareBody"><tr><td colspan="9" class="empty-cell">选择创作者后显示兼容画像</td></tr></tbody></table></div>
-      </section>
-
-      <section class="section-heading" id="notes">
-        <div><p class="eyebrow">NOTE MANAGEMENT</p><h2>笔记管理与分析</h2><p class="subheading">筛选条件同步作用于笔记列表、排行、发布时间分布和指标趋势。</p></div>
+      <section class="section-heading" id="notes" data-primary-view="analytics">
+        <div><p class="eyebrow">NOTE MANAGEMENT</p><h2>笔记案例与内容分析</h2><p class="subheading">展示已保存的笔记标题、正文、话题及可用互动指标。</p></div>
         <div class="heading-actions"><a class="button button-primary download-link" id="exportNotes" href="/api/notes/export.csv">导出筛选笔记 CSV</a></div>
       </section>
-      <section class="note-filter-panel">
+      <section class="note-filter-panel" data-primary-view="analytics">
         <label>创作者<select id="noteCreatorFilter"><option value="">全部创作者</option></select></label>
         <label>具体笔记<select id="noteIdFilter"><option value="">全部笔记</option></select></label>
         <label>发布时间起<input id="noteDateFrom" type="date"></label>
@@ -261,7 +219,7 @@
         <button class="button button-primary" id="filterNotes">筛选</button>
         <span id="noteCountLabel">0 篇笔记</span>
       </section>
-      <section class="charts-grid note-chart-grid">
+      <section class="charts-grid note-chart-grid" data-primary-view="analytics">
         <article class="chart-card"><div class="card-heading"><div><h2>阅读量排行</h2><p id="noteReadStatus">按来源分组</p></div></div><div class="chart" id="noteReadRankChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>点赞收藏评论分享</h2><p>同一来源内汇总各笔记最新值</p></div></div><div class="chart" id="noteInteractionRankChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>指标分布直方图</h2><p id="metricDistributionStatus">逐来源分组，标注有效样本数</p></div><select id="noteMetricSelect" aria-label="选择笔记指标"><option value="阅读量">阅读量</option><option value="点赞量">点赞量</option><option value="收藏量">收藏量</option><option value="评论量">评论量</option><option value="曝光量">曝光量</option><option value="分享量">分享量</option><option value="新增关注">新增关注</option></select></div><div class="chart" id="metricDistributionChart"></div></article>
@@ -269,16 +227,16 @@
         <article class="chart-card"><div class="card-heading"><div><h2>曝光与阅读</h2><p id="exposureReadStatus">有效共同样本 n=0</p></div></div><div class="chart" id="exposureReadChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>阅读与互动</h2><p id="readingInteractionStatus">有效共同样本 n=0</p></div></div><div class="chart" id="readingInteractionChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>发布时间分布</h2><p>按笔记记录的年月统计</p></div></div><div class="chart" id="notePublishChart"></div></article>
-        <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>笔记指标历史趋势</h2><p id="noteTrendStatus">等待同来源同周期重复快照</p></div></div><div class="chart" id="noteTrendChart"></div></article>
+        <article class="chart-card chart-card-wide" hidden><div class="card-heading"><div><h2>笔记指标历史趋势</h2><p id="noteTrendStatus">本阶段暂不展示长期趋势</p></div></div><div class="chart" id="noteTrendChart"></div></article>
       </section>
-      <section class="table-card note-table-card"><div class="table-scroll"><table><thead><tr><th>创作者</th><th>笔记标题</th><th>发布时间</th><th>内容类型</th><th>话题</th><th>来源 / 批次</th><th>阅读</th><th>点赞</th><th>收藏</th><th>评论</th><th>分享</th><th>保存评论</th></tr></thead><tbody id="noteRows"><tr><td colspan="12" class="empty-cell">加载笔记…</td></tr></tbody></table></div></section>
-      <section class="creator-comparison-panel note-comparison-panel">
+      <section class="table-card note-table-card" data-primary-view="analytics"><div class="table-scroll"><table><thead><tr><th>创作者</th><th>笔记标题</th><th>发布时间</th><th>内容类型</th><th>话题</th><th>来源 / 批次</th><th>阅读</th><th>点赞</th><th>收藏</th><th>评论</th><th>分享</th><th>保存评论</th></tr></thead><tbody id="noteRows"><tr><td colspan="12" class="empty-cell">加载笔记…</td></tr></tbody></table></div></section>
+      <section class="creator-comparison-panel note-comparison-panel" hidden>
         <div class="comparison-controls"><div><strong>笔记表现对比</strong><small>按精确 note_id 选择同批次的 2 至 4 篇</small></div><select id="noteCompareSelect" multiple size="4" aria-label="选择 2 至 4 篇笔记"></select><button class="button button-primary" id="compareNotes">对比所选笔记</button><label class="comparison-metric-label">柱状图指标<select id="noteCompareMetric" class="comparison-metric-select"><option value="read_count">阅读量</option><option value="like_count">点赞量</option><option value="favorite_count">收藏量</option><option value="interaction_comment_count">评论量</option><option value="share_count">分享量</option><option value="interaction_rate">互动率</option><option value="followers">创作者粉丝数</option><option value="quote">创作者精确报价</option><option value="publish_frequency_30d">本批次可见 30 日发文数</option></select></label><span id="noteCompareStatus">仅比较同批次、同来源下的精确笔记记录</span></div>
         <div class="table-scroll"><table><thead><tr><th>创作者 / 平台 ID</th><th>笔记标题 / ID</th><th>来源 / 批次</th><th>粉丝数</th><th>精确报价</th><th>阅读</th><th>点赞</th><th>收藏</th><th>评论指标</th><th>分享</th><th>互动率</th><th>本批次可见 30 日发文数</th><th>本地保存评论行</th></tr></thead><tbody id="noteCompareBody"><tr><td colspan="13" class="empty-cell">选择笔记后查看数据表、柱状图和雷达图</td></tr></tbody></table></div>
         <section class="charts-grid comparison-chart-grid"><article class="chart-card"><div class="card-heading"><div><h2>笔记单指标对比</h2><p>不同单位分开展示，缺失值不补零</p></div></div><div class="chart" id="noteCompareBarChart"></div></article><article class="chart-card"><div class="card-heading"><div><h2>笔记相对表现雷达</h2><p>只纳入所有入选笔记都有精确值的互动指标，按组内最大值归一</p></div></div><div class="chart" id="noteCompareRadarChart"></div></article></section>
       </section>
 
-      <section class="data-grid" id="records">
+      <section class="data-grid" id="records" data-primary-view="smart">
         <article class="table-card">
           <div class="card-heading table-heading"><div><h2>当前样本字段</h2><p>原始显示值与字段覆盖情况</p></div><span class="table-count" id="tableCount">0 条记录</span></div>
           <div class="table-scroll"><table><thead><tr><th>数据类型</th><th>字段数</th><th>有效字段</th><th>覆盖率</th><th>采集时间</th></tr></thead><tbody id="coverageBody"><tr><td colspan="5" class="empty-cell">导入基线样本后显示字段覆盖</td></tr></tbody></table></div>
@@ -289,12 +247,12 @@
         </article>
       </section>
 
-      <section class="record-detail-card">
+      <section class="record-detail-card" data-primary-view="smart">
         <div class="card-heading table-heading"><div><h2>样本字段值</h2><p>保留来源页面显示值，数值清洗结果单独存储</p></div></div>
         <div class="record-detail-grid" id="recordDetails"><div class="empty-cell">当前批次暂无样本字段</div></div>
       </section>
 
-      <section class="table-card field-dictionary-card">
+      <section class="table-card field-dictionary-card" data-primary-view="smart">
         <div class="card-heading table-heading"><div><h2>蒲公英字段目录</h2><p>字段名称、单位与页面统计口径</p></div><span class="table-count" id="dictionaryCount">—</span></div>
         <div class="table-scroll"><table><thead><tr><th>分组</th><th>字段名称</th><th>页面/存储单位</th><th>统计周期</th></tr></thead><tbody id="dictionaryBody"><tr><td colspan="4" class="empty-cell">加载字段目录…</td></tr></tbody></table></div>
       </section>

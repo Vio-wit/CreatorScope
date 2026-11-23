@@ -39,7 +39,7 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
                 source = "蒲公英与小红书公开可见页面"
             else:
                 entries = [
-                    ("new-creator", "新采集达人", "shared-id", "2026-11-24T09:00:00+08:00", {"粉丝数": "15000", "阅读中位数（日常）": "350", "互动中位数（日常）": "30", "内容类目": "美妆", "获赞与收藏": "5000", "发布笔记数": "44"}),
+                    ("new-creator", "新采集达人", "shared-id", "2026-11-24T09:00:00+08:00", {"粉丝数": "15000", "阅读中位数（日常）": "350", "互动中位数（日常）": "30", "内容类目": "美妆", "获赞与收藏": "5000", "发布笔记数": "44", "账号IP属地": "上海"}),
                     ("old-creator", "早期采集达人", "", "2026-11-20T09:00:00+08:00", {"粉丝数": "2000"}),
                 ]
                 batch_id = "batch-main"
@@ -93,6 +93,9 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
         self.assertNotIn("误入商品", [record["name"] for record in page["records"]])
         self.assertEqual(sum(record["name"] == "完整课堂达人" for record in page["records"]), 2)
         self.assertEqual(page["records"][0]["fields"]["image_fixed_price"], "¥1,000")
+        self.assertEqual(page["records"][0]["fields"]["account_ip_location"], "上海")
+        course_record = next(record for record in page["records"] if record["bucket"] == "course")
+        self.assertEqual(course_record["fields"]["account_ip_location"], "")
         with connection(self.main_db, readonly=True) as conn:
             with self.assertRaises(sqlite3.OperationalError):
                 conn.execute("UPDATE creators SET pseudonym='must-not-write' WHERE creator_id='new-creator'")
@@ -133,7 +136,23 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
             payload = response.get_json()
             self.assertEqual(payload["total_count"], 4)
             self.assertEqual(payload["all_group_counts"]["course"], 1)
+            self.assertIn("美妆", payload["categories"])
+            self.assertIn("上海", payload["ip_locations"])
             self.assertEqual(app.test_client().get("/api/unified-creators?limit=201").status_code, 400)
+            refs = [item["ref"] for item in payload["records"][:2]]
+            compare_query = "&".join(f"ref={ref}" for ref in refs)
+            compare = app.test_client().get(f"/api/unified-creators/compare?{compare_query}")
+            self.assertEqual(compare.status_code, 200)
+            self.assertEqual(compare.get_json()["count"], 2)
+            self.assertEqual(
+                app.test_client().get("/api/unified-creators/compare?ref=missing&ref=also-missing").status_code,
+                400,
+            )
+            home = app.test_client().get("/").get_data(as_text=True)
+            self.assertIn("统一达人清单", home)
+            self.assertNotIn("历史达人库", home)
+            self.assertNotIn('href="/report"', home)
+            self.assertNotIn('href="/news"', home)
         finally:
             app.extensions["creatorscope_tasks"].shutdown()
 
