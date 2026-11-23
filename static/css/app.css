@@ -39,6 +39,37 @@
 .history-chart-grid{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:10px}
 .history-chart-grid .chart-card{min-width:0;min-height:195px}
 .history-fields-card,.history-records-card{margin-top:10px}
+.history-coverage-card{margin-top:10px}
+.history-coverage-card table{min-width:1650px}
+.history-library-panel{margin:12px 0 16px;padding:13px;background:#f8faf8;border:1px solid #e7ede8;border-radius:12px}
+.history-library-heading{align-items:center;margin:2px 2px 10px}
+.history-library-heading h3{margin:0;font-size:13px;color:#364039}
+.history-library-heading p{margin:5px 0 0;color:#89948d;font-size:9px}
+.history-library-filters{margin-bottom:10px}
+.history-library-panel .creator-table-card{margin:0}
+.history-library-panel table{min-width:1450px}
+.history-library-panel .table-scroll{max-height:520px}
+.history-row-details summary{cursor:pointer;color:#36805e;font-size:8px}
+.history-row-details dl{display:grid;grid-template-columns:minmax(90px,auto) minmax(160px,1fr);gap:3px 8px;min-width:360px;max-width:620px;margin:7px 0;padding:8px;background:#f8faf8;border-radius:6px;white-space:normal}
+.history-row-details dt{color:#7b877f;font-size:8px}
+.history-row-details dd{margin:0;color:#4a564e;font-size:8px;overflow-wrap:anywhere}
+.history-row-details small{color:#98a29b;font-size:7px}
+.coverage-tier-high{background:#e5f3e9;color:#28764f}
+.coverage-tier-partial{background:#edf2e3;color:#75823f}
+.coverage-tier-low{background:#f7eee3;color:#a06b32}
+.coverage-tier-unverified{background:#f0f1f0;color:#818a83}
+.dashboard-filter-details{position:relative}
+.dashboard-filter-details>summary{height:34px;display:flex;align-items:center;padding:0 12px;border:1px solid #e5eae5;border-radius:7px;background:#fff;color:#5f6d63;font-size:9px;cursor:pointer;white-space:nowrap}
+.dashboard-filter-popover{position:absolute;top:calc(100% + 6px);right:0;z-index:20;display:grid;gap:8px;min-width:290px;padding:11px;background:#fff;border:1px solid #e5eae5;border-radius:9px;box-shadow:0 8px 24px #21352918}
+.dashboard-filter-popover .select-wrap{width:100%;justify-content:space-between}
+.dashboard-filter-popover .select-wrap select{max-width:190px}
+.dashboard-content-details{margin-top:7px;padding-top:7px;border-top:1px solid #f0f2f0}
+.dashboard-content-details>summary{color:#698171;font-size:9px;cursor:pointer}
+.dashboard-note-samples{display:grid;gap:8px;margin-top:8px}
+.dashboard-note-sample{padding:9px;background:#fafcfa;border:1px solid #edf1ed;border-radius:7px}
+.dashboard-note-sample h3{margin:0 0 5px;color:#46544a;font-size:9px;line-height:1.5}
+.dashboard-note-sample p{max-height:110px;overflow:auto;margin:0;color:#68746b;font-size:8px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+.dashboard-note-sample small{display:block;margin-top:6px;color:#98a29b;font-size:7px}
 .history-note-section{margin-top:12px;padding:14px;background:#fff;border:1px solid #e9ede9;border-radius:10px}
 .history-note-section .card-heading{align-items:center;margin-bottom:10px}
 .history-note-section h3,.history-fields-card h3,.history-records-card h3{margin:0;font-size:12px;color:#364039}
@@ -51,6 +82,7 @@
 .history-records-card .table-scroll{max-height:300px}
 @media(max-width:1120px){.history-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.history-note-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.nav-more{display:none}.history-analysis-panel{padding:10px}.history-panel-heading{align-items:flex-start;flex-direction:column}.history-panel-heading .select-wrap{width:100%}.history-panel-heading .select-wrap select{max-width:none}.history-kpi-grid,.history-chart-grid,.history-note-grid{grid-template-columns:1fr}.history-note-section{padding:10px}}
+@media(max-width:760px){.sidebar{flex-direction:row;align-items:center}.sidebar .brand{flex:0 0 100%;padding:0}.sidebar .nav-item[data-primary-section]{display:flex;flex:1 1 30%;justify-content:center;height:34px;margin:8px 0 0;padding:0 5px;font-size:9px;gap:5px}}
 
 /* ---------- 数据质量看板 ---------- */
 .quality-batch-card{margin-top:14px}
