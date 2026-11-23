@@ -8,11 +8,28 @@ from pathlib import Path
 
 from creatorscope import create_app
 from creatorscope.db import connection, initialize_database, record_field_statuses
-from creatorscope.quality import coverage_by_field, quality_overview
+from creatorscope.quality import _five_creator_field_grade, coverage_by_field, quality_overview
 from creatorscope.report import build_report, render_docx, render_markdown, report_charts, report_filename
 
 
 class ReportAndQualityTests(unittest.TestCase):
+    def test_five_creator_grade_requires_complete_unique_identity_and_parsed_metrics(self) -> None:
+        rows = {
+            str(i): [{"platform_creator_id": str(i), "status": "captured", "metric_unit": "count", "normalization_status": "parsed", "field_name": "粉丝数"}]
+            for i in range(5)
+        }
+        self.assertEqual(_five_creator_field_grade(rows), "stable")
+        rows["0"][0]["normalization_status"] = "not_numeric"
+        self.assertEqual(_five_creator_field_grade(rows), "stable")
+        rows["1"][0]["status"] = "not_displayed"
+        self.assertEqual(_five_creator_field_grade(rows), "partial")
+        rows["2"][0]["status"] = "access_denied"
+        self.assertEqual(_five_creator_field_grade(rows), "unstable")
+        rows["2"][0]["status"] = "not_attempted"
+        self.assertEqual(_five_creator_field_grade(rows), "incomplete")
+        del rows["2"]
+        self.assertEqual(_five_creator_field_grade(rows), "incomplete")
+
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory(prefix="creatorscope-report-")
         self.root = Path(self.temp_dir.name)
