@@ -92,7 +92,11 @@ class HistoryAnalyticsTests(unittest.TestCase):
             values = {
                 "note_title": (f"展示标题 {index}", "text"),
                 "note_body_candidate": (f"正文内容 {index} [话题]", "text"),
-                "note_topics_candidate": (json.dumps(["课程展示", "[话题]", f"话题{index}"], ensure_ascii=False), "text"),
+                "note_topics_candidate": (
+                    str(["课程展示", "[话题]", f"话题{index}"]) if index == 2
+                    else json.dumps(["课程展示", "[话题]", f"话题{index}"], ensure_ascii=False),
+                    "text",
+                ),
             }
             for target, (value, unit) in values.items():
                 conn.execute(
@@ -155,6 +159,31 @@ class HistoryAnalyticsTests(unittest.TestCase):
         self.assertEqual(history_creator_library(db, "history_all", query="同名无编号")["result_count"], 1)
         self.assertEqual(history_creator_library(db, "history_all", query="达人名单")["result_count"], 0)
 
+    def test_product_records_are_excluded_from_library_counts_and_analysis(self) -> None:
+        conn = sqlite3.connect(self.history_db)
+        conn.execute(
+            "INSERT INTO source_records (record_id,source_id,row_number,raw_json,raw_text,row_digest,duplicate_content,identity_status,capture_time,parse_status) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            ("musinsa-product", "musinsa", 2,
+             json.dumps({"creator_name": "抓绒图案连帽衫-灰色", "xhs_profile_url": "https://www.musinsa.com/products/6257477"}, ensure_ascii=False),
+             None, "digest-musinsa-product", 0, "pending", None, "parsed"),
+        )
+        conn.execute(
+            "INSERT INTO field_evidence (record_id,original_field,target_field,raw_json,numeric_value,text_value,unit,period,parse_status,mapping_version) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            ("musinsa-product", "latest_known_followers", "followers", json.dumps("16825067"), 16_825_067, None, "count", None, "parsed", "test"),
+        )
+        conn.commit()
+        conn.close()
+
+        option = next(item for item in list_library_sources(self.history_db)["sources"] if item["key"] == "MUSINSA")
+        page = history_creator_library(self.history_db, "MUSINSA", limit=10)
+        analysis = analysis_data(self.history_db, "MUSINSA")
+        self.assertEqual(option["sample_count"], 1)
+        self.assertEqual(page["result_count"], 1)
+        self.assertEqual([item["name"] for item in page["records"]], ["未命名记录"])
+        self.assertEqual(analysis["source"]["sample_count"], 1)
+        self.assertEqual(analysis["metrics"]["followers"]["valid_count"], 1)
+        self.assertEqual(analysis["field_coverage"]["record_count"], 1)
+
     def test_library_source_counts_match_visible_rows_with_sparse_records(self) -> None:
         conn = sqlite3.connect(self.history_db)
         conn.execute(
@@ -202,6 +231,8 @@ class HistoryAnalyticsTests(unittest.TestCase):
         self.assertEqual(len(page["samples"]), 2)
         self.assertNotIn("[话题]", page["samples"][0]["body"])
         self.assertNotIn("话题", page["samples"][0]["topics"])
+        python_literal = next(item for item in page["samples"] if item["title"] == "展示标题 2")
+        self.assertEqual(python_literal["topics"], ["课程展示", "话题2"])
         self.assertEqual(history_note_library(self.history_db, query="不存在")["result_count"], 0)
 
     def test_invalid_source_and_unmarked_database_are_rejected(self) -> None:
