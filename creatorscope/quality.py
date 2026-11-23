@@ -4,11 +4,20 @@ import json
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
+from math import ceil
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 from .domain import FIELD_CATALOG
+
+_CORE_METRIC_GROUPS = {
+    "粉丝数": "followers",
+    "阅读中位数（日常）": "reading", "阅读中位数": "reading",
+    "互动中位数（日常）": "interaction", "互动中位数": "interaction",
+    "全部报价": "price", "合作报价": "price", "图文报价": "price",
+    "视频报价": "price", "图文笔记一口价": "price", "视频笔记一口价": "price",
+}
 
 
 @contextmanager
@@ -160,6 +169,19 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
                 (batch_id,),
             ).fetchone()[0]
         )
+        creator_metrics = conn.execute(
+            """SELECT r.creator_id, c.platform_creator_id, r.source, r.captured_at,
+                      m.metric_key, m.raw_value, m.parse_status,
+                      EXISTS(SELECT 1 FROM collection_field_observations o
+                             JOIN records p ON p.record_id=o.record_id
+                             WHERE p.batch_id=r.batch_id AND p.creator_id=r.creator_id
+                               AND p.record_type='creator_profile_sample'
+                               AND o.field_name='平台公开ID' AND o.status='captured'
+                               AND o.raw_value=c.platform_creator_id) AS identity_observed
+               FROM records r JOIN creators c ON c.creator_id=r.creator_id
+               JOIN metric_values m ON m.record_id=r.record_id
+               WHERE r.batch_id=? AND r.note_id IS NULL""", (batch_id,),
+        ).fetchall()
 
     try:
         task_result = json.loads(batch["result_json"] or "{}")
@@ -173,6 +195,26 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
     settings = parameters.get("settings") if isinstance(parameters, dict) else {}
     five_creator_task = (batch["task_type"] == "visible_collection" and isinstance(settings, dict)
                          and settings.get("creator_count") == 5)
+
+    creator_acceptance = None
+    if five_creator_task:
+        by_identity: dict[str, dict[str, Any]] = {}
+        for row in creator_metrics:
+            identity = str(row["platform_creator_id"] or "").strip()
+            group = _CORE_METRIC_GROUPS.get(str(row["metric_key"]))
+            if not identity or not row["identity_observed"] or not row["source"] or not row["captured_at"]:
+                continue
+            entry = by_identity.setdefault(identity, {"creator_ids": set(), "groups": set()})
+            entry["creator_ids"].add(str(row["creator_id"]))
+            if group and row["raw_value"] not in (None, "") and row["parse_status"] == "parsed":
+                entry["groups"].add(group)
+        success = sum(len(item["creator_ids"]) == 1 and len(item["groups"]) >= 2 for item in by_identity.values())
+        creator_acceptance = {
+            "target": 5, "success": success, "minimum_success": ceil(5 * 0.7),
+            "success_pct": round(success * 100 / 5, 1),
+            "passed": success >= ceil(5 * 0.7) if batch["status"] == "completed" and success <= 5 else None,
+            "note": "只统计本批明确观察到平台 ID、来源和时间齐全且至少两类核心指标成功解析的唯一达人；身份冲突不计。",
+        }
 
     records_by_type = {str(row["record_type"]): int(row["row_count"]) for row in record_rows}
     grouped_fields: dict[tuple[str, str], dict[str, Any]] = {}
@@ -229,6 +271,7 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
         "source": str(batch["source"] or ""),
         "status": str(batch["status"] or ""),
         "task_status": str(batch["task_status"] or ""),
+        "creator_acceptance": creator_acceptance,
         "started_at": batch["started_at"],
         "completed_at": batch["completed_at"],
         "elapsed_seconds": _elapsed_seconds(batch["started_at"], batch["completed_at"]),

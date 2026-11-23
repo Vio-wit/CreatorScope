@@ -8,7 +8,7 @@ from pathlib import Path
 
 from creatorscope import create_app
 from creatorscope.db import connection, initialize_database, record_field_statuses
-from creatorscope.quality import _five_creator_field_grade, coverage_by_field, quality_overview
+from creatorscope.quality import _five_creator_field_grade, batch_quality_report, coverage_by_field, quality_overview
 from creatorscope.report import build_report, render_docx, render_markdown, report_charts, report_filename
 
 
@@ -121,6 +121,25 @@ class ReportAndQualityTests(unittest.TestCase):
         )
 
     # ------------------------------------------------------------------ quality
+
+    def test_five_creator_acceptance_uses_batch_identity_and_fixed_denominator(self) -> None:
+        with connection(self.db_path) as conn:
+            conn.execute("UPDATE tasks SET task_type='visible_collection', parameters_json=? WHERE task_id='task-batch-q'",
+                         (json.dumps({"settings": {"creator_count": 5}}),))
+            conn.execute("UPDATE records SET source='test source' WHERE batch_id='batch-q'")
+            for creator_id, platform_id in (("creator-a", "platform-creator-a"), ("creator-b", "platform-creator-b")):
+                record_id = conn.execute("SELECT record_id FROM records WHERE creator_id=? AND record_type='creator_profile_sample'", (creator_id,)).fetchone()[0]
+                conn.execute("""INSERT INTO collection_field_observations
+                    (batch_id,record_id,entity_type,entity_ref,record_type,field_name,raw_value,source,captured_at,status)
+                    VALUES ('batch-q',?,'creator',?,'creator_profile_sample','平台公开ID',?,'test','2026-11-21','captured')""",
+                    (record_id, creator_id, platform_id))
+        report = batch_quality_report(self.db_path, "batch-q")
+        self.assertEqual(report["creator_acceptance"]["target"], 5)
+        self.assertEqual(report["creator_acceptance"]["success"], 2)
+        self.assertFalse(report["creator_acceptance"]["passed"])
+        with connection(self.db_path) as conn:
+            conn.execute("UPDATE batches SET status='paused' WHERE batch_id='batch-q'")
+        self.assertIsNone(batch_quality_report(self.db_path, "batch-q")["creator_acceptance"]["passed"])
 
     def test_quality_overview_summarizes_saved_batches(self) -> None:
         overview = quality_overview(self.db_path)
