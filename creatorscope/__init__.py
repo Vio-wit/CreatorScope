@@ -19,7 +19,7 @@ from .browser import PgyVisibleBrowser
 from .db import SCHEMA_VERSION, connection, initialize_database, schema_version_readonly, verify_database_readonly
 from .domain import field_dictionary
 from .ingest import MAX_UPLOAD_BYTES
-from .history_analytics import HistoryAnalyticsError, analysis_data as history_analysis_data, list_sources as history_source_options, note_samples as history_note_samples
+from .history_analytics import HistoryAnalyticsError, analysis_data as history_analysis_data, history_creator_library, list_sources as history_source_options, note_samples as history_note_samples
 from .news import NEWS_FEEDS, append_news_items, correlate_news_notes, fetch_feed, load_news_items
 from .quality import batch_quality_report, quality_overview
 from .report import build_report, render_docx, render_markdown, report_filename
@@ -387,6 +387,53 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             return jsonify(history_note_samples(app.config["HISTORY_EVIDENCE_DB"]))
         except HistoryAnalyticsError as exc:
             return jsonify({"error": str(exc)}), 503
+
+    @app.get("/api/history-analysis/library")
+    def api_history_analysis_library():
+        def optional_number(name: str) -> float | None:
+            raw = request.args.get(name, "").strip()
+            if not raw:
+                return None
+            try:
+                value = float(raw)
+                if not math.isfinite(value):
+                    raise ValueError
+                return value
+            except ValueError as exc:
+                raise ValueError(f"筛选参数 {name} 必须是数字") from exc
+
+        try:
+            numeric_filters = {
+                name: optional_number(name)
+                for name in (
+                    "followers_min", "followers_max", "daily_read_min", "daily_read_max",
+                    "daily_interaction_min", "daily_interaction_max",
+                )
+            }
+            if any(value is not None and value < 0 for value in numeric_filters.values()):
+                raise ValueError("数值筛选范围不能小于 0")
+            for low_key, high_key in (
+                ("followers_min", "followers_max"),
+                ("daily_read_min", "daily_read_max"),
+                ("daily_interaction_min", "daily_interaction_max"),
+            ):
+                low, high = numeric_filters[low_key], numeric_filters[high_key]
+                if low is not None and high is not None and low > high:
+                    raise ValueError("筛选下限不能大于上限")
+            data = history_creator_library(
+                app.config["HISTORY_EVIDENCE_DB"],
+                source_key=request.args.get("source", "EPT").strip() or "EPT",
+                query=request.args.get("q", ""),
+                category=request.args.get("category", ""),
+                location=request.args.get("location", ""),
+                **numeric_filters,
+            )
+        except HistoryAnalyticsError as exc:
+            status = 400 if str(exc) == "请选择有效的数据来源" else 503
+            return jsonify({"error": str(exc)}), status
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        return jsonify(data)
 
     @app.get("/api/wordcloud.png")
     def api_wordcloud():

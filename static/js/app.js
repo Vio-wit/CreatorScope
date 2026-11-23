@@ -48,7 +48,7 @@
       'exposureReadChart', 'readingInteractionChart', 'notePublishChart', 'noteTrendChart',
       'audienceGenderChart', 'audienceAgeChart', 'audienceRegionChart', 'audienceInterestChart', 'audienceDeviceChart',
       'creatorCompareBarChart', 'creatorCompareRadarChart', 'noteCompareBarChart', 'noteCompareRadarChart',
-      'historyFollowersChart', 'historyPerformanceChart',
+      'historyFollowersChart', 'historyPerformanceChart', 'historyCoverageChart',
     ].forEach((id) => {
       const element = document.getElementById(id);
       if (element && window.echarts) charts[id] = echarts.init(element);
@@ -479,8 +479,16 @@
     return params;
   }
 
+  function renderDashboardNoteSamples(rows) {
+    const withBody = rows.filter((row) => String(row.body || '').trim());
+    const samples = (withBody.length ? withBody : rows.filter((row) => (row.topics || []).length)).slice(0, 3);
+    $('#dashboardNoteSamplesSummary').textContent = `展开真实笔记内容（${samples.length} 条）`;
+    $('#dashboardNoteSamples').innerHTML = samples.map((row) => `<article class="dashboard-note-sample"><h3>${escapeHtml(row.title || '（无标题）')}</h3><p>${escapeHtml(row.body || '暂无正文')}</p><div class="history-note-topics">${(row.topics || []).map((topic) => `<span>${escapeHtml(topic)}</span>`).join('')}</div><small>${escapeHtml(row.creator_name || '未知创作者')} · ${escapeHtml(row.source || '未知来源')} · ${escapeHtml(row.batch_id || '未知批次')}</small></article>`).join('') || '<p class="empty-cell">当前筛选没有可展示的正文或话题</p>';
+  }
+
   function renderNotes(data) {
     lastNotesData = data;
+    renderDashboardNoteSamples(data.notes || []);
     $('#noteCountLabel').textContent = `${data.count || 0} 篇笔记`;
     const fill = (selector, rows, valueKey, labelFn, emptyLabel, current) => {
       const node = $(selector);
@@ -659,6 +667,7 @@
   async function refreshCreatorLibrary() {
     const params = new URLSearchParams();
     const values = {
+      q: $('#creatorQuery').value.trim(),
       category: $('#categoryFilter').value,
       location: $('#locationFilter').value,
       followers_min: $('#followersMin').value.trim(),
@@ -714,6 +723,11 @@
     renderTasks(data.tasks || []);
   }
 
+  function syncDashboardFilterSummary() {
+    const activeCount = [$('#sourceSelect').value, $('#typeSelect').value].filter(Boolean).length;
+    $('#dashboardExtraFiltersSummary').textContent = activeCount ? `更多筛选 · ${activeCount}` : '更多筛选';
+  }
+
   async function refreshDashboard() {
     const params = new URLSearchParams();
     if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
@@ -721,6 +735,7 @@
     if (elements.typeSelect.value) params.set('record_type', elements.typeSelect.value);
     const data = await requestJson(`/api/dashboard?${params.toString()}`);
     renderDashboard(data);
+    syncDashboardFilterSummary();
   }
 
   async function refreshAnalytics() {
@@ -748,6 +763,28 @@
     $('#historyFollowerScope').textContent = `粉丝数，有效样本 ${followers.valid_count || 0}`;
     $('#historyPerformanceScope').textContent = `共同样本 ${data.performance_pairs?.length || 0} 条`;
     $('#historyRecordCount').textContent = `${data.records?.length || 0} 条记录`;
+
+    const coverage = data.field_coverage || {};
+    const coverageFields = coverage.fields || [];
+    const coverageDistribution = coverage.distribution || [];
+    $('#historyCoverageScope').textContent = `${coverage.record_count || 0} 条记录 · ${coverage.field_count || 0} 个字段 · 覆盖率按已取得原值统计`;
+    $('#historyCoverageFieldCount').textContent = `${coverage.field_count || 0} 个字段`;
+    if (coverageDistribution.some((item) => item.count > 0)) {
+      charts.historyCoverageChart?.setOption({
+        ...baseChart,
+        grid: { left: 48, right: 16, top: 12, bottom: 38 },
+        tooltip: { trigger: 'axis', formatter: (items) => `${escapeHtml(items[0]?.name || '')}<br>${formatMetric(items[0]?.value || 0)} 个字段` },
+        xAxis: { type: 'category', data: coverageDistribution.map((item) => item.label), axisTick: { show: false }, axisLabel: { color: '#929c95', fontSize: 8, interval: 0 } },
+        yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        series: [{ type: 'bar', data: coverageDistribution.map((item) => item.count), barMaxWidth: 38, itemStyle: { color: '#638d75', borderRadius: [4, 4, 0, 0] } }],
+      }, true);
+    } else setEmptyChart(charts.historyCoverageChart, '暂无字段记录');
+    $('#historyCoverageBody').innerHTML = coverageFields.map((item) => {
+      const unitPeriod = [...(item.units || []), ...(item.periods || [])].join(' / ') || item.unit || '—';
+      const original = (item.original_fields || []).join(' / ') || '—';
+      const parseSuccess = item.parse_success_pct === null || item.parse_success_pct === undefined ? '—' : `${formatMetric(item.parse_success_pct)}%`;
+      return `<tr><td>${escapeHtml(item.label)}</td><td>${formatMetric(item.collected_count || 0)} / ${formatMetric(item.total_count || 0)}</td><td>${formatMetric(item.coverage_pct || 0)}%</td><td>${parseSuccess}</td><td>${formatMetric(item.numeric_success_count || 0)}</td><td>${formatMetric(item.text_count || 0)}</td><td>${formatMetric(item.starting_price_count || 0)}</td><td>${formatMetric(item.displayed_unavailable_count || 0)}</td><td>${formatMetric(item.empty_count || 0)}</td><td>${formatMetric(item.not_read_count || 0)}</td><td>${formatMetric(item.parse_failed_count || 0)}</td><td>${formatMetric(item.other_raw_count || 0)}</td><td><span class="coverage-pill coverage-tier-${escapeHtml(item.tier)}">${escapeHtml(item.tier_label)}</span></td><td>${escapeHtml(original)}</td><td>${escapeHtml(unitPeriod)}</td></tr>`;
+    }).join('') || '<tr><td colspan="15" class="empty-cell">暂无字段证据</td></tr>';
 
     const bucketRows = data.follower_distribution || [];
     if (bucketRows.some((item) => item.count > 0)) {
@@ -791,6 +828,56 @@
     $('#historyNoteSamples').innerHTML = samples.map((item) => `<article class="history-note-card"><h4>${escapeHtml(item.title)}</h4><p class="history-note-body">${escapeHtml(item.body)}</p><div class="history-note-topics">${(item.topics || []).map((topic) => `<span>#${escapeHtml(topic)}</span>`).join('')}</div></article>`).join('') || '<article class="history-note-card empty-cell">暂无笔记样本</article>';
   }
 
+  function renderHistoryLibrary(payload) {
+    const source = payload.source || {};
+    $('#historyLibraryCount').textContent = `${formatMetric(payload.result_count || 0)} 条结果 / ${formatMetric(source.sample_count || 0)} 条来源记录`;
+    const statuses = {
+      parsed: '已解析', text: '文本取得', starting_price: '起价解析',
+      displayed_unavailable: '页面显示无值', empty: '页面空白',
+      unparsed: '原值待解析', unresolved: '尚未解析', error: '解析错误',
+    };
+    const body = $('#historyLibraryBody');
+    body.innerHTML = (payload.records || []).map((row) => {
+      const prices = (row.prices || []).map((price) => `${escapeHtml(price.label)}：${escapeHtml(price.raw_value || '—')}`).join('<br>') || '—';
+      const detailList = (row.details || []).map((item) => {
+        const state = statuses[item.parse_status] || item.parse_status || '—';
+        const original = item.original_field ? ` · ${escapeHtml(item.original_field)}` : '';
+        const parsed = item.numeric_value === null || item.numeric_value === undefined ? '' : `（解析值 ${formatMetric(item.numeric_value)}${item.unit ? ` ${escapeHtml(item.unit)}` : ''}）`;
+        const raw = item.raw_value ? escapeHtml(item.raw_value) : (item.text_value ? escapeHtml(item.text_value) : '—');
+        return `<dt>${escapeHtml(item.label)}${original}<small> · ${escapeHtml(state)}</small></dt><dd>${raw}${parsed}${item.period ? `<small> · ${escapeHtml(item.period)}</small>` : ''}</dd>`;
+      }).join('');
+      const details = `<details class="history-row-details"><summary>查看字段（${(row.details || []).length}）</summary><dl>${detailList || '<dd>暂无字段详情</dd>'}</dl></details>`;
+      return `<tr><td>${escapeHtml(row.name || '未命名记录')}</td><td>${escapeHtml(row.xiaohongshu_account || '—')}</td><td>${escapeHtml(row.xiaohongshu_profile_id || '—')}</td><td>${escapeHtml(row.pgy_creator_id || '—')}</td><td>${escapeHtml(row.region || '—')}</td><td>${escapeHtml(row.category || '—')}</td><td>${row.followers === null || row.followers === undefined ? '—' : formatMetric(row.followers)}</td><td>${row.daily_read_median === null || row.daily_read_median === undefined ? '—' : formatMetric(row.daily_read_median)}</td><td>${row.daily_interaction_median === null || row.daily_interaction_median === undefined ? '—' : formatMetric(row.daily_interaction_median)}</td><td>${row.likes_and_favorites === null || row.likes_and_favorites === undefined ? '—' : formatMetric(row.likes_and_favorites)}</td><td>${row.published_notes === null || row.published_notes === undefined ? '—' : formatMetric(row.published_notes)}</td><td>${prices}</td><td>${details}</td></tr>`;
+    }).join('') || '<tr><td colspan="13" class="empty-cell">当前条件下没有历史记录</td></tr>';
+  }
+
+  async function refreshHistoryLibrary() {
+    const sourcePayload = await requestJson('/api/history-analysis/sources');
+    const select = $('#historyLibrarySourceSelect');
+    const sources = sourcePayload.sources || [];
+    const selected = sources.some((item) => item.key === select.value) ? select.value : (sources[0]?.key || '');
+    select.innerHTML = sources.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)} · ${formatMetric(item.sample_count)} 条</option>`).join('');
+    select.value = selected;
+    if (!selected) {
+      $('#historyLibraryCount').textContent = '暂无历史记录';
+      $('#historyLibraryBody').innerHTML = '<tr><td colspan="13" class="empty-cell">暂无可用历史记录</td></tr>';
+      return;
+    }
+    const params = new URLSearchParams({
+      source: selected,
+      q: $('#historyLibraryQuery').value.trim(),
+      category: $('#historyLibraryCategory').value.trim(),
+      location: $('#historyLibraryLocation').value.trim(),
+      followers_min: $('#historyLibraryFollowersMin').value.trim(),
+      followers_max: $('#historyLibraryFollowersMax').value.trim(),
+      daily_read_min: $('#historyLibraryDailyReadMin').value.trim(),
+      daily_read_max: $('#historyLibraryDailyReadMax').value.trim(),
+      daily_interaction_min: $('#historyLibraryDailyInteractionMin').value.trim(),
+      daily_interaction_max: $('#historyLibraryDailyInteractionMax').value.trim(),
+    });
+    renderHistoryLibrary(await requestJson(`/api/history-analysis/library?${params.toString()}`));
+  }
+
   async function refreshHistoryAnalysis() {
     try {
       const sourcePayload = await requestJson('/api/history-analysis/sources');
@@ -806,13 +893,16 @@
         $('#historyAnalysisStatus').textContent = '暂无可用历史样本';
         setEmptyChart(charts.historyFollowersChart, '暂无可用样本');
         setEmptyChart(charts.historyPerformanceChart, '暂无可用样本');
+        setEmptyChart(charts.historyCoverageChart, '暂无可用样本');
       }
       renderHistoryNoteSamples(await requestJson('/api/history-analysis/note-samples'));
     } catch (error) {
       $('#historyAnalysisStatus').textContent = error.message;
       setEmptyChart(charts.historyFollowersChart, '历史数据暂不可用');
       setEmptyChart(charts.historyPerformanceChart, '历史数据暂不可用');
+      setEmptyChart(charts.historyCoverageChart, '历史数据暂不可用');
       $('#historyFieldBody').innerHTML = '<tr><td colspan="4" class="empty-cell">暂无样本</td></tr>';
+      $('#historyCoverageBody').innerHTML = '<tr><td colspan="15" class="empty-cell">暂无字段证据</td></tr>';
       $('#historyRecordBody').innerHTML = '<tr><td colspan="4" class="empty-cell">暂无样本</td></tr>';
       renderHistoryNoteSamples({ samples: [], sample_count: 0 });
     }
@@ -887,14 +977,27 @@
 
   async function refreshAll() {
     try {
-      await Promise.all([refreshDataViews(), refreshTasks(), refreshBrowserStatus(), refreshHistoryAnalysis()]);
+      await Promise.all([refreshDataViews(), refreshTasks(), refreshBrowserStatus(), refreshHistoryAnalysis(), refreshHistoryLibrary()]);
     } catch (error) {
       toast(`本地服务暂不可用：${error.message}`, true);
     }
   }
 
+  function syncPrimaryNavigation() {
+    const hash = window.location.hash;
+    const activeSection = hash === '#creators' ? 'creators' : hash === '#collection' ? 'smart' : 'analytics';
+    document.querySelectorAll('[data-primary-section]').forEach((link) => {
+      link.classList.toggle('active', link.dataset.primarySection === activeSection);
+    });
+  }
+
   function bindEvents() {
     $('#historySourceSelect').addEventListener('change', () => refreshHistoryAnalysis().catch((error) => toast(error.message, true)));
+    $('#historyLibrarySourceSelect').addEventListener('change', () => refreshHistoryLibrary().catch((error) => toast(error.message, true)));
+    $('#filterHistoryLibrary').addEventListener('click', () => refreshHistoryLibrary().catch((error) => toast(error.message, true)));
+    $('#historyLibraryQuery').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') refreshHistoryLibrary().catch((error) => toast(error.message, true));
+    });
     elements.importButton.addEventListener('click', () => submitTask('/api/tasks/import-baseline', '已提交历史基线导入任务'));
     elements.uploadButton.addEventListener('click', () => elements.uploadInput.click());
     elements.uploadInput.addEventListener('change', async () => {
@@ -948,6 +1051,9 @@
     });
     elements.typeSelect.addEventListener('change', refreshDashboard);
     $('#filterCreators').addEventListener('click', () => refreshCreatorLibrary().catch((error) => toast(error.message, true)));
+    $('#creatorQuery').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') refreshCreatorLibrary().catch((error) => toast(error.message, true));
+    });
     ['#categoryFilter', '#locationFilter', '#creatorSort'].forEach((selector) => $(selector).addEventListener('change', () => {
       Promise.all([refreshCreatorLibrary(), refreshAnalytics(), refreshNotes()]).catch((error) => toast(error.message, true));
     }));
@@ -1023,6 +1129,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    syncPrimaryNavigation();
+    window.addEventListener('hashchange', syncPrimaryNavigation);
     initCharts();
     bindEvents();
     refreshAll();

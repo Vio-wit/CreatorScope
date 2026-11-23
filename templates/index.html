@@ -32,17 +32,22 @@
         </div>
         <div class="heading-actions">
           <label class="select-wrap" aria-label="选择批次"><span>批次</span><select id="batchSelect"><option value="__all__">全部批次</option></select></label>
-          <label class="select-wrap" aria-label="按采集来源筛选"><span>来源</span><select id="sourceSelect"><option value="">全部来源</option></select></label>
-          <label class="select-wrap" aria-label="筛选记录类型"><span>数据类型</span><select id="typeSelect"><option value="">全部数据</option></select></label>
+          <details class="dashboard-filter-details">
+            <summary id="dashboardExtraFiltersSummary">更多筛选</summary>
+            <div class="dashboard-filter-popover">
+              <label class="select-wrap" aria-label="按采集来源筛选"><span>来源</span><select id="sourceSelect"><option value="">全部来源</option></select></label>
+              <label class="select-wrap" aria-label="筛选记录类型"><span>数据类型</span><select id="typeSelect"><option value="">全部数据</option></select></label>
+            </div>
+          </details>
         </div>
       </section>
 
       <section class="section-heading" aria-label="数据总览">
-        <div><p class="eyebrow">DATA OVERVIEW</p><h2>统一数据总览</h2><p class="subheading">按本地统一数据库中的实体与采集来源统计。</p></div>
+        <div><p class="eyebrow">DATA OVERVIEW</p><h2>本地采集库总览</h2><p class="subheading">只统计本地采集库；历史候选数据集在下方分开展示。</p></div>
         <span class="analysis-count" id="overviewUpdatedAt">最近更新 —</span>
       </section>
       <section class="kpi-grid overview-kpis">
-        <article class="kpi-card"><div class="kpi-label">创作者总数<span class="kpi-symbol">◎</span></div><div class="kpi-value" id="overviewCreators">—</div><div class="kpi-foot">保留来源中采集到的名称与平台 ID</div></article>
+        <article class="kpi-card"><div class="kpi-label">本地库达人总数<span class="kpi-symbol">◎</span></div><div class="kpi-value" id="overviewCreators">—</div><div class="kpi-foot">主采集库中的创作者实体</div></article>
         <article class="kpi-card"><div class="kpi-label">笔记总数<span class="kpi-symbol green">▧</span></div><div class="kpi-value" id="overviewNotes">—</div><div class="kpi-foot">去重后的笔记实体</div></article>
         <article class="kpi-card"><div class="kpi-label">评论总数<span class="kpi-symbol blue">↳</span></div><div class="kpi-value" id="overviewComments">—</div><div class="kpi-foot">已保存评论快照行</div></article>
         <article class="kpi-card"><div class="kpi-label">采集批次数<span class="kpi-symbol amber">▤</span></div><div class="kpi-value" id="overviewBatches">—</div><div class="kpi-foot">导入与采集批次</div></article>
@@ -116,6 +121,10 @@
         <article class="chart-card">
           <div class="card-heading"><div><h2>笔记词频与词云</h2><p id="wordStatus">等待可用标题、正文或话题</p></div><select id="wordKindSelect" aria-label="选择词云文本类型"><option value="body">正文</option><option value="title">标题</option><option value="topics">话题</option></select></div>
           <div class="chart" id="wordChart"></div><img class="wordcloud-image" id="wordCloudImage" alt="笔记内容词云" hidden>
+          <details class="dashboard-content-details">
+            <summary id="dashboardNoteSamplesSummary">展开真实笔记内容</summary>
+            <div class="dashboard-note-samples" id="dashboardNoteSamples"><p class="empty-cell">读取中…</p></div>
+          </details>
         </article>
       </section>
 
@@ -128,7 +137,7 @@
           <div>
             <p class="eyebrow">HISTORICAL DATA</p>
             <h2 id="historyAnalysisTitle">历史数据分析</h2>
-            <p class="subheading">按数据集查看粉丝规模与日常阅读、互动表现。</p>
+            <p class="subheading">历史来源单独分析，不并入本地库；样本数是来源记录数，不代表去重人数。</p>
           </div>
           <label class="select-wrap"><span>数据集</span><select id="historySourceSelect" aria-label="选择历史数据集"><option value="">加载中…</option></select></label>
         </div>
@@ -142,10 +151,15 @@
         <section class="charts-grid history-chart-grid">
           <article class="chart-card"><div class="card-heading"><div><h3>粉丝规模分布</h3><p id="historyFollowerScope">按粉丝数区间统计</p></div></div><div class="chart" id="historyFollowersChart"></div></article>
           <article class="chart-card"><div class="card-heading"><div><h3>日常阅读与互动</h3><p id="historyPerformanceScope">仅对比两项都有数值的样本</p></div></div><div class="chart" id="historyPerformanceChart"></div></article>
+          <article class="chart-card"><div class="card-heading"><div><h3>字段覆盖程度</h3><p id="historyCoverageScope">按已取得原值统计，页面无值和未读取单列</p></div></div><div class="chart" id="historyCoverageChart"></div></article>
         </section>
         <article class="table-card history-fields-card">
           <div class="card-heading table-heading"><div><h3>字段样本覆盖</h3><p>数值按原字段单位统计</p></div></div>
           <div class="table-scroll"><table><thead><tr><th>字段</th><th>有效样本</th><th>单位</th><th>统计口径</th></tr></thead><tbody id="historyFieldBody"><tr><td colspan="4" class="empty-cell">读取中…</td></tr></tbody></table></div>
+        </article>
+        <article class="table-card history-coverage-card">
+          <div class="card-heading table-heading"><div><h3>采集成果与字段明细</h3><p>覆盖率按已取得原值计算；页面显示无值、空白、未读到和解析失败分别计数</p></div><span class="table-count" id="historyCoverageFieldCount">—</span></div>
+          <div class="table-scroll"><table><thead><tr><th>字段</th><th>原值已取得 / 总数</th><th>原值覆盖率</th><th>解析成功率</th><th>数值解析</th><th>文本取得</th><th>起价解析</th><th>页面显示无值</th><th>空白 / NULL</th><th>未读取到</th><th>解析失败</th><th>其他状态</th><th>完成度</th><th>原始字段名</th><th>单位 / 周期</th></tr></thead><tbody id="historyCoverageBody"><tr><td colspan="15" class="empty-cell">读取中…</td></tr></tbody></table></div>
         </article>
         <article class="table-card history-records-card">
           <div class="card-heading table-heading"><div><h3>样本横向比较</h3><p>每行对应一条来源记录；空值保持为空</p></div><span class="table-count" id="historyRecordCount">—</span></div>
@@ -182,9 +196,10 @@
       </section>
 
       <section class="section-heading" id="creators">
-        <div><p class="eyebrow">CREATOR LIBRARY</p><h2>达人库</h2><p class="subheading">按领域、地域和表现指标筛选并横向比较。</p></div>
+        <div><p class="eyebrow">CREATOR LIBRARY</p><h2>达人库</h2><p class="subheading">搜索正式库达人，并按来源查看历史候选记录。</p></div>
       </section>
       <section class="creator-filter-panel">
+        <label>名称 / ID 搜索<input id="creatorQuery" type="search" placeholder="输入名称或平台 ID"></label>
         <label>领域<select id="categoryFilter"><option value="">全部领域</option></select></label>
         <label>地域<select id="locationFilter"><option value="">全部地域</option></select></label>
         <label>排序<select id="creatorSort"><option value="followers">粉丝数</option><option value="quote">报价</option><option value="reading">阅读</option><option value="engagement">互动</option><option value="pseudonym">名称 / ID</option></select></label>
@@ -197,6 +212,24 @@
       </section>
       <section class="table-card creator-table-card">
         <div class="table-scroll"><table><thead><tr><th>创作者名称</th><th>平台 ID</th><th>地域</th><th>领域</th><th>粉丝数</th><th>报价原始值 / 类型</th><th>阅读中位数</th><th>互动中位数</th><th>数据类型</th><th>最新批次</th></tr></thead><tbody id="creatorBody"><tr><td colspan="10" class="empty-cell">暂无创作者记录</td></tr></tbody></table></div>
+      </section>
+
+      <section class="history-library-panel" aria-labelledby="historyLibraryTitle">
+        <div class="card-heading history-library-heading"><div><h3 id="historyLibraryTitle">历史候选库</h3><p>按来源独立检索；记录数是来源记录数，不代表去重人数。</p></div><span class="table-count" id="historyLibraryCount">加载中…</span></div>
+        <section class="creator-filter-panel history-library-filters">
+          <label>历史数据集<select id="historyLibrarySourceSelect"><option value="">加载中…</option></select></label>
+          <label>关键词<input id="historyLibraryQuery" type="search" placeholder="名称、公开账号或内容领域"></label>
+          <label>粉丝下限<input id="historyLibraryFollowersMin" inputmode="numeric" placeholder="人"></label>
+          <label>粉丝上限<input id="historyLibraryFollowersMax" inputmode="numeric" placeholder="人"></label>
+          <label>日常阅读下限<input id="historyLibraryDailyReadMin" inputmode="numeric" placeholder="次"></label>
+          <label>日常阅读上限<input id="historyLibraryDailyReadMax" inputmode="numeric" placeholder="次"></label>
+          <label>日常互动下限<input id="historyLibraryDailyInteractionMin" inputmode="numeric" placeholder="次"></label>
+          <label>日常互动上限<input id="historyLibraryDailyInteractionMax" inputmode="numeric" placeholder="次"></label>
+          <label>领域<input id="historyLibraryCategory" type="search" placeholder="领域关键词"></label>
+          <label>地域<input id="historyLibraryLocation" type="search" placeholder="地域关键词"></label>
+          <button class="button button-primary" id="filterHistoryLibrary">筛选历史记录</button>
+        </section>
+        <div class="table-card creator-table-card"><div class="table-scroll"><table><thead><tr><th>名称</th><th>小红书公开账号</th><th>小红书主页 ID</th><th>蒲公英 ID</th><th>地域</th><th>领域</th><th>粉丝数</th><th>日常阅读</th><th>日常互动</th><th>获赞与收藏</th><th>发布笔记</th><th>报价原值</th><th>其他字段</th></tr></thead><tbody id="historyLibraryBody"><tr><td colspan="13" class="empty-cell">读取中…</td></tr></tbody></table></div></div>
       </section>
 
       <section class="creator-comparison-panel">

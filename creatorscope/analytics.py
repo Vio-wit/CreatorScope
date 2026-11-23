@@ -623,7 +623,8 @@ def _note_text_analysis(notes: list[dict[str, Any]]) -> dict[str, dict[str, Any]
             if not value.strip():
                 continue
             sample_count += 1
-            frequencies.update(tokenize(value, stopwords))
+            token_value = re.sub(r"\[话题\]", " ", value) if kind == "body" else value
+            frequencies.update(tokenize(token_value, stopwords))
         result[kind] = {
             "sample_count": sample_count,
             "token_count": sum(frequencies.values()),
