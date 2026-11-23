@@ -217,6 +217,8 @@ def _value(value: Any, kind: str, target: str) -> tuple[float | None, str | None
     suffix = 1.0
     if raw.lower().endswith("w") or raw.endswith("万"):
         raw, suffix = raw[:-1], 10000.0
+    if target == "published_notes" and raw.endswith("篇"):
+        raw = raw[:-1].strip()
     unit = "count" if kind == "count" else ("CNY" if "¥" in raw or "￥" in raw or "元" in raw else None)
     is_start = bool(re.search(r"起\s*$", raw))
     if kind == "price":
@@ -270,12 +272,12 @@ def _records(data: bytes, suffix: str) -> list[tuple[int, dict[str, Any], str | 
         anchors = [i for i, line in enumerate(lines) if i >= 3 and title and line.strip() == title]
         if len(anchors) == 1:
             start = anchors[0] + 1
-            end = next((i for i in range(start, len(lines)) if re.fullmatch(r"共\s*\d+\s*条评论", lines[i].strip())), None)
+            end = next((i for i in range(start, len(lines)) if lines[i].strip() == "猜你想搜" or re.fullmatch(r"共\s*\d+\s*条评论", lines[i].strip())), None)
             if end is not None and end > start:
                 body = "\n".join(lines[start:end]).strip()
                 if body:
-                    fields["body_candidate"] = body
-                    topics = re.findall(r"(?<!\w)#([^\s#]+)", body)
+                    fields["body_candidate"] = re.sub(r"https?://\S+", "[链接]", body)
+                    topics = re.findall(r"#([^\s#]+)", fields["body_candidate"])
                     if topics:
                         fields["topics_candidate"] = topics
         return [(1, fields, text, None if title else "未识别标题")]
@@ -361,8 +363,14 @@ def quality_report(db_path: Path) -> dict[str, Any]:
             "identity_by_source": rows("SELECT source_id,identity_status,COUNT(*) AS count FROM source_records GROUP BY source_id,identity_status"),
             "duplicate_rows_by_source": rows("SELECT source_id,SUM(duplicate_content) AS duplicate_rows FROM source_records GROUP BY source_id"),
             "identities": rows("SELECT status,COUNT(*) AS count FROM identities GROUP BY status"),
-            "fields": rows("SELECT target_field,parse_status,COUNT(*) AS count FROM field_evidence GROUP BY target_field,parse_status ORDER BY target_field,parse_status"),
+            "fields": rows("SELECT e.target_field,e.parse_status,COUNT(*) AS count FROM field_evidence e JOIN source_records r ON r.record_id=e.record_id WHERE r.identity_status<>'index_only' GROUP BY e.target_field,e.parse_status ORDER BY e.target_field,e.parse_status"),
             "fields_by_source": rows("SELECT r.source_id,e.target_field,e.parse_status,COUNT(*) AS count FROM field_evidence e JOIN source_records r ON r.record_id=e.record_id GROUP BY r.source_id,e.target_field,e.parse_status ORDER BY r.source_id,e.target_field,e.parse_status"),
+            "source_field_coverage": rows("""SELECT r.source_id,e.target_field,s.record_count AS source_records,
+                COUNT(DISTINCT e.record_id) AS observed_records,
+                COUNT(DISTINCT CASE WHEN e.parse_status IN ('parsed','starting_price','text') THEN e.record_id END) AS available_records,
+                ROUND(100.0 * COUNT(DISTINCT CASE WHEN e.parse_status IN ('parsed','starting_price','text') THEN e.record_id END) / NULLIF(s.record_count,0), 2) AS coverage_pct
+                FROM field_evidence e JOIN source_records r ON r.record_id=e.record_id JOIN sources s ON s.source_id=r.source_id
+                GROUP BY r.source_id,e.target_field,s.record_count ORDER BY r.source_id,e.target_field"""),
             "conflicts": rows("SELECT source_id,row_number,record_id FROM source_records WHERE identity_status='conflict' ORDER BY source_id,row_number"),
             "errors": rows("SELECT source_id,row_number,error FROM source_records WHERE parse_status='error' ORDER BY source_id,row_number"),
             "index_hint_records": conn.execute("""SELECT COUNT(DISTINCT c.record_id) FROM identity_claims c JOIN source_records r ON r.record_id=c.record_id WHERE r.identity_status<>'index_only' AND EXISTS (SELECT 1 FROM identity_claims i JOIN source_records ir ON ir.record_id=i.record_id WHERE ir.identity_status='index_only' AND i.platform=c.platform AND i.key_type=c.key_type AND i.value=c.value)""").fetchone()[0],
@@ -383,9 +391,32 @@ def trace_record(db_path: Path, record_id: str) -> dict[str, Any]:
         record = conn.execute("SELECT * FROM source_records WHERE record_id=?", (record_id,)).fetchone()
         if not record:
             raise ValueError("未找到来源记录")
+        hints = conn.execute("""SELECT DISTINCT ir.source_id,ir.row_number,ir.record_id
+            FROM identity_claims c JOIN identity_claims i
+              ON i.platform=c.platform AND i.key_type=c.key_type AND i.value=c.value
+            JOIN source_records ir ON ir.record_id=i.record_id
+            WHERE c.record_id=? AND ir.identity_status='index_only' ORDER BY ir.source_id,ir.row_number""", (record_id,)).fetchall()
         return {"record": dict(record), "paths": [dict(x) for x in conn.execute("SELECT path FROM source_paths WHERE source_id=?", (record['source_id'],))],
                 "claims": [dict(x) for x in conn.execute("SELECT platform,key_type,value FROM identity_claims WHERE record_id=?", (record_id,))],
-                "fields": [dict(x) for x in conn.execute("SELECT * FROM field_evidence WHERE record_id=?", (record_id,))]}
+                "fields": [dict(x) for x in conn.execute("SELECT * FROM field_evidence WHERE record_id=?", (record_id,))],
+                "index_candidates": [dict(x) for x in hints]}
+    finally:
+        conn.close()
+
+
+def list_records(db_path: Path, source_id: str, *, limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
+    if not 1 <= limit <= 500 or offset < 0:
+        raise ValueError("limit 必须为 1–500，offset 不能为负")
+    conn = sqlite3.connect(f"{db_path.expanduser().resolve(strict=True).as_uri()}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    try:
+        marker = conn.execute("SELECT value FROM metadata WHERE key='application'").fetchone()
+        if not marker or marker[0] != MARKER:
+            raise ValueError("不是隔离历史证据库")
+        return [dict(row) for row in conn.execute(
+            "SELECT record_id,row_number,identity_status,parse_status,error FROM source_records WHERE source_id=? ORDER BY row_number LIMIT ? OFFSET ?",
+            (source_id, limit, offset),
+        )]
     finally:
         conn.close()
 
@@ -401,9 +432,15 @@ def main() -> None:
     sub.add_parser("report")
     trace = sub.add_parser("trace")
     trace.add_argument("record_id")
+    listing = sub.add_parser("list-records")
+    listing.add_argument("source_id")
+    listing.add_argument("--limit", type=int, default=100)
+    listing.add_argument("--offset", type=int, default=0)
     args = parser.parse_args()
     result = (import_file(args.db,args.path,args.name,identity_index_only=args.identity_index_only) if args.action == "import"
-              else trace_record(args.db,args.record_id) if args.action == "trace" else quality_report(args.db))
+              else trace_record(args.db,args.record_id) if args.action == "trace"
+              else list_records(args.db,args.source_id,limit=args.limit,offset=args.offset) if args.action == "list-records"
+              else quality_report(args.db))
     print(json.dumps(result,ensure_ascii=False,indent=2))
 
 
