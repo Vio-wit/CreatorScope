@@ -25,6 +25,10 @@ EXPECTED_FIELDS = (
     "category", "account_ip_location",
 )
 EMPTY_TEXT = {"", "-", "--", "—", "–", "null", "none", "n/a", "暂无", "未获取", "未知"}
+ACCOUNT_IP_FIELD_NAMES = (
+    "蒲公英账号IP属地", "蒲公英账号 IP 属地", "账号IP属地", "账号 IP 属地",
+    "小红书账号IP属地", "小红书账号 IP 属地", "IP属地", "IP 属地",
+)
 
 
 def _stamp(path: Path | None) -> tuple[Any, ...]:
@@ -95,7 +99,7 @@ def _app_record(creator: dict[str, Any], scope: str) -> dict[str, Any]:
     source = str(creator.get("last_source") or "CreatorScope 本地采集").strip()
     category_values = creator.get("categories") or []
     category = "、".join(str(item).strip() for item in category_values if str(item).strip())
-    ip_location = str(creator.get("location") or "").strip() if "蒲公英" in source else ""
+    ip_location = str(_first(raw_fields, ACCOUNT_IP_FIELD_NAMES) or "").strip()
     quote_fields = creator.get("quote_fields") or {}
     image_quote = quote_fields.get("图文笔记一口价", {})
     video_quote = quote_fields.get("视频笔记一口价", {})
@@ -352,6 +356,10 @@ def unified_creator_library(
     ip_location: str = "",
     followers_min: float | None = None,
     followers_max: float | None = None,
+    daily_read_min: float | None = None,
+    daily_read_max: float | None = None,
+    daily_interaction_min: float | None = None,
+    daily_interaction_max: float | None = None,
     offset: int = 0,
     limit: int = 50,
 ) -> dict[str, Any]:
@@ -361,6 +369,17 @@ def unified_creator_library(
         raise ValueError("分页范围无效（每页最多 200 条）")
     main_path, course_path, history_path, fingerprint = _database_paths(main_db, course_db, history_db)
     counts, warnings, cached_records = _load_records(main_path, course_path, history_path, fingerprint)
+    categories = sorted({
+        value.strip()
+        for record in cached_records
+        for value in str(record["fields"].get("category") or "").split("、")
+        if value.strip()
+    }, key=str.casefold)
+    ip_locations = sorted({
+        str(record["fields"].get("account_ip_location") or "").strip()
+        for record in cached_records
+        if str(record["fields"].get("account_ip_location") or "").strip()
+    }, key=str.casefold)
     records = []
     q = query.strip().casefold()
     category_query = category.strip().casefold()
@@ -385,6 +404,16 @@ def unified_creator_library(
             continue
         if followers_max is not None and (followers is None or followers > followers_max):
             continue
+        daily_read = fields.get("daily_read_median")
+        if daily_read_min is not None and (daily_read is None or daily_read < daily_read_min):
+            continue
+        if daily_read_max is not None and (daily_read is None or daily_read > daily_read_max):
+            continue
+        daily_interaction = fields.get("daily_interaction_median")
+        if daily_interaction_min is not None and (daily_interaction is None or daily_interaction < daily_interaction_min):
+            continue
+        if daily_interaction_max is not None and (daily_interaction is None or daily_interaction > daily_interaction_max):
+            continue
         records.append(record)
     page = records[offset:offset + limit]
     return {
@@ -396,8 +425,29 @@ def unified_creator_library(
             {"key": key, "label": label, "count": counts[key]}
             for key, label in BUCKETS
         ],
+        "categories": categories,
+        "ip_locations": ip_locations,
         "all_group_counts": counts,
         "total_entry_count": sum(counts.values()),
         "cross_source_identity_note": "仅在 CreatorScope 内部平台 ID 类型一致或历史库已有强 ID 关联时合并；不同系统间的名称相同不会自动合并。",
         "warnings": warnings,
     }
+
+
+def unified_creator_records_by_refs(
+    main_db: Path,
+    course_db: Path | None,
+    history_db: Path | None,
+    refs: list[str],
+) -> list[dict[str, Any]]:
+    """Return selected records from the same read-only projection used by the library."""
+    selected_refs = list(dict.fromkeys(str(ref).strip() for ref in refs if str(ref).strip()))
+    if not 2 <= len(selected_refs) <= 4:
+        raise ValueError("请选择 2 至 4 位达人进行对比")
+    main_path, course_path, history_path, fingerprint = _database_paths(main_db, course_db, history_db)
+    _counts, _warnings, cached_records = _load_records(main_path, course_path, history_path, fingerprint)
+    by_ref = {record["ref"]: record for record in cached_records}
+    missing = [ref for ref in selected_refs if ref not in by_ref]
+    if missing:
+        raise ValueError("部分达人不在当前只读数据集中，请重新搜索后选择")
+    return [by_ref[ref] for ref in selected_refs]

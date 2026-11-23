@@ -20,7 +20,7 @@ from .db import SCHEMA_VERSION, connection, initialize_database, schema_version_
 from .domain import field_dictionary
 from .ingest import MAX_UPLOAD_BYTES
 from .history_analytics import HistoryAnalyticsError, analysis_data as history_analysis_data, history_creator_library, history_note_library, list_library_sources as history_library_source_options, list_sources as history_source_options, note_samples as history_note_samples
-from .unified_library import unified_creator_library
+from .unified_library import unified_creator_library, unified_creator_records_by_refs
 from .news import NEWS_FEEDS, append_news_items, correlate_news_notes, fetch_feed, load_news_items
 from .quality import batch_quality_report, quality_overview
 from .report import build_report, render_docx, render_markdown, report_filename
@@ -121,7 +121,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.before_request
     def block_demo_writes():
-        if app.config["DEMO_MODE"] and request.method not in {"GET", "HEAD", "OPTIONS"}:
+        demo_read_only_post = request.method == "POST" and request.path == "/api/ai/preview"
+        if app.config["DEMO_MODE"] and request.method not in {"GET", "HEAD", "OPTIONS"} and not demo_read_only_post:
             return jsonify({"error": "离线演示数据库只读；请使用筛选、分析和导出"}), 409
         return None
 
@@ -569,6 +570,13 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             lower, upper = optional_nonnegative("followers_min"), optional_nonnegative("followers_max")
             if lower is not None and upper is not None and lower > upper:
                 raise ValueError("粉丝下限不能大于上限")
+            read_min, read_max = optional_nonnegative("daily_read_min"), optional_nonnegative("daily_read_max")
+            if read_min is not None and read_max is not None and read_min > read_max:
+                raise ValueError("日常阅读下限不能大于上限")
+            interaction_min = optional_nonnegative("daily_interaction_min")
+            interaction_max = optional_nonnegative("daily_interaction_max")
+            if interaction_min is not None and interaction_max is not None and interaction_min > interaction_max:
+                raise ValueError("日常互动下限不能大于上限")
             data = unified_creator_library(
                 app.config["DATABASE_PATH"],
                 app.config["COURSE_SAMPLE_DATABASE"],
@@ -579,12 +587,30 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 ip_location=request.args.get("ip_location", ""),
                 followers_min=lower,
                 followers_max=upper,
+                daily_read_min=read_min,
+                daily_read_max=read_max,
+                daily_interaction_min=interaction_min,
+                daily_interaction_max=interaction_max,
                 offset=offset,
                 limit=limit,
             )
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
         return jsonify(data)
+
+    @app.get("/api/unified-creators/compare")
+    def api_unified_creators_compare():
+        refs = request.args.getlist("ref")
+        try:
+            records = unified_creator_records_by_refs(
+                app.config["DATABASE_PATH"],
+                app.config["COURSE_SAMPLE_DATABASE"],
+                app.config["HISTORY_EVIDENCE_DB"],
+                refs,
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        return jsonify({"records": records, "count": len(records)})
 
     @app.get("/api/creators/compare")
     def api_creator_compare():

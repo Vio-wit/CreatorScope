@@ -18,8 +18,9 @@
   let lastAnalyticsData = null;
   let lastCreatorCompareRows = [];
   let lastNoteCompareRows = [];
-  let historyLibraryOffset = 0;
-  const HISTORY_LIBRARY_PAGE_SIZE = 50;
+  const selectedUnifiedCreators = new Map();
+  let unifiedCreatorOffset = 0;
+  const UNIFIED_CREATOR_PAGE_SIZE = 50;
   let historyNoteOffset = 0;
   const HISTORY_NOTE_PAGE_SIZE = 12;
 
@@ -314,6 +315,7 @@
 
   function renderAudienceProfiles(groups) {
     const select = $('#audienceGroupSelect');
+    if (!select) return;
     const current = select.value;
     select.innerHTML = '<option value="">选择兼容来源与周期</option>' + groups.map((group) => `<option value="${group.group_id}">${escapeHtml(group.label)}</option>`).join('');
     if (groups.some((group) => String(group.group_id) === current)) select.value = current;
@@ -668,42 +670,87 @@
     if ((data.creators || []).some((creator) => creator.creator_id === current)) elements.creatorSelect.value = current;
   }
 
+  function updateUnifiedCompareButton() {
+    const count = selectedUnifiedCreators.size;
+    const button = $('#compareSelectedCreators');
+    button.textContent = `去智能分析对比（${count}/4）`;
+    button.disabled = count < 2 || count > 4;
+  }
+
+  function unifiedDetailMarkup(record) {
+    const labels = {
+      name: '名称', platform_id: '平台 ID', followers: '粉丝数',
+      daily_read_median: '日常阅读中位数', daily_interaction_median: '日常互动中位数',
+      likes_and_favorites: '获赞与收藏', published_notes: '发布笔记数',
+      image_fixed_price: '图文报价原值', video_fixed_price: '视频报价原值',
+      category: '领域', account_ip_location: '蒲公英账号 IP 属地', historical_region: '历史地域原值',
+    };
+    const values = Object.entries(record.fields || {}).map(([key, value]) => {
+      if (value === null || value === undefined || value === '') return '';
+      return `<div><dt>${escapeHtml(labels[key] || key)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+    }).filter(Boolean).join('');
+    const identifiers = Object.entries(record.identifiers || {}).map(([key, value]) => `<div><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('');
+    const raw = (record.details || []).map((item) => {
+      const label = item.label || item.key || item.original_field || '原始字段';
+      const rawValue = item.raw_value ?? item.text_value ?? item.value ?? '';
+      const meta = [item.original_field && `字段名 ${item.original_field}`, item.parse_status, item.unit, item.period].filter(Boolean).join(' · ');
+      return `<div><dt>${escapeHtml(label)}${meta ? `<small> · ${escapeHtml(meta)}</small>` : ''}</dt><dd>${escapeHtml(rawValue || '—')}${item.numeric_value !== null && item.numeric_value !== undefined ? ` <small>解析值 ${formatMetric(item.numeric_value)}</small>` : ''}</dd></div>`;
+    }).join('');
+    const sources = (record.source_records || []).map((item) => {
+      const paths = (item.source_paths || []).map((value) => `<small class="unified-source-path">${escapeHtml(value)}</small>`).join('');
+      const facts = [item.source_name || record.source_name, item.row_number && `第 ${formatMetric(item.row_number)} 行`, item.batch_id && `批次 ${item.batch_id}`, item.captured_at || item.capture_time].filter(Boolean).join(' · ');
+      return `<li>${escapeHtml(facts)}${paths}</li>`;
+    }).join('');
+    const prices = (record.prices || []).map((item) => `<div><dt>${escapeHtml(item.label || '报价')}</dt><dd>${escapeHtml(item.raw_value || '—')}</dd></div>`).join('');
+    return `<details class="unified-row-details"><summary>查看全部字段与来源</summary><p class="unified-record-meta">${escapeHtml(record.bucket_label || '')} · ${escapeHtml(record.source_name || '来源未知')} · ${escapeHtml(record.captured_at || '采集时间未知')}</p><dl>${values}${identifiers}${prices}${raw || '<div><dd>没有额外原始字段</dd></div>'}</dl><ul class="history-lineage-list">${sources || '<li>暂无来源行信息</li>'}</ul></details>`;
+  }
+
   async function refreshCreatorLibrary() {
-    const params = new URLSearchParams();
-    const values = {
+    const params = new URLSearchParams({
       q: $('#creatorQuery').value.trim(),
+      bucket: $('#creatorBucketFilter').value,
       category: $('#categoryFilter').value,
-      location: $('#locationFilter').value,
+      ip_location: $('#locationFilter').value,
       followers_min: $('#followersMin').value.trim(),
       followers_max: $('#followersMax').value.trim(),
-      quote_min: $('#quoteMin').value.trim(),
-      quote_max: $('#quoteMax').value.trim(),
-      sort_by: $('#creatorSort').value,
-    };
-    Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, value); });
-    if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
-    if (elements.sourceSelect.value) params.set('source', elements.sourceSelect.value);
-    const data = await requestJson(`/api/creators?${params.toString()}`);
-    const currentCategory = $('#categoryFilter').value;
-    const currentLocation = $('#locationFilter').value;
-    const compareSelection = Array.from($('#creatorCompareSelect').selectedOptions).map((option) => option.value);
-    const categories = data.categories || [];
-    $('#categoryFilter').innerHTML = '<option value="">全部领域</option>' + categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
-    if (categories.includes(currentCategory)) $('#categoryFilter').value = currentCategory;
-    const locations = data.locations || [];
-    $('#locationFilter').innerHTML = '<option value="">全部地域</option>' + locations.map((location) => `<option value="${escapeHtml(location)}">${escapeHtml(location)}</option>`).join('');
-    if (locations.includes(currentLocation)) $('#locationFilter').value = currentLocation;
-    $('#creatorCount').textContent = `${data.count || 0} 位博主`;
-    const body = $('#creatorBody');
-    if (!data.creators?.length) {
-      body.innerHTML = '<tr><td colspan="10" class="empty-cell">当前筛选条件下没有创作者</td></tr>';
-      $('#creatorCompareSelect').innerHTML = '';
-      return;
+      offset: String(unifiedCreatorOffset),
+      limit: String(UNIFIED_CREATOR_PAGE_SIZE),
+    });
+    const data = await requestJson(`/api/unified-creators?${params.toString()}`);
+    const categorySelect = $('#categoryFilter');
+    const locationSelect = $('#locationFilter');
+    const previousCategory = categorySelect.value;
+    const previousLocation = locationSelect.value;
+    categorySelect.innerHTML = '<option value="">全部领域</option>' + (data.categories || []).map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+    locationSelect.innerHTML = '<option value="">全部 IP 属地</option>' + (data.ip_locations || []).map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+    if ((data.categories || []).includes(previousCategory)) categorySelect.value = previousCategory;
+    if ((data.ip_locations || []).includes(previousLocation)) locationSelect.value = previousLocation;
+    const groups = data.groups || [];
+    $('#creatorCount').textContent = `${formatMetric(data.total_count || 0)} 条匹配记录`;
+    $('#unifiedCreatorCount').textContent = formatMetric(data.total_count || 0);
+    $('#unifiedCreatorGroups').textContent = groups.map((item) => `${item.label} ${formatMetric(item.count || 0)}`).join(' · ');
+    const body = $('#unifiedCreatorBody');
+    const records = data.records || [];
+    if (!records.length) {
+      body.innerHTML = '<tr><td colspan="9" class="empty-cell">当前筛选下没有达人资料</td></tr>';
+    } else {
+      body.innerHTML = records.map((record) => {
+        const fields = record.fields || {};
+        const selected = selectedUnifiedCreators.has(record.ref) ? ' checked' : '';
+        const name = record.name || '未命名记录';
+        const identifier = record.platform_id || Object.values(record.identifiers || {})[0] || '无平台 ID';
+        const completeness = record.completeness || {};
+        const source = [record.bucket_label, record.source_name, record.captured_at || '采集时间未知'].filter(Boolean).join(' · ');
+        return `<tr><td><strong>${escapeHtml(name)}</strong><br><small>${escapeHtml(identifier)}</small>${unifiedDetailMarkup(record)}</td><td>${formatMetric(fields.followers, ' 人')}</td><td>${formatMetric(fields.daily_read_median, ' 次')}</td><td>${formatMetric(fields.daily_interaction_median, ' 次')}</td><td>${escapeHtml(fields.category || '—')}</td><td>${escapeHtml(fields.account_ip_location || '—')}</td><td><span class="coverage-pill coverage-tier-${completeness.percentage >= 80 ? 'high' : completeness.percentage >= 40 ? 'partial' : 'low'}">${formatMetric(completeness.valid_fields || 0)} / ${formatMetric(completeness.total_fields || 0)} · ${formatMetric(completeness.percentage || 0)}%</span></td><td>${escapeHtml(source)}</td><td><label class="unified-compare-check"><input type="checkbox" data-unified-compare data-ref="${escapeHtml(record.ref)}"${selected}>加入对比</label></td></tr>`;
+      }).join('');
     }
-    const typeLabels = { blogger_list_sample: '列表', creator_profile_sample: '详情', creator_content_performance: '表现', fan_analysis: '画像', note_detail: '笔记' };
-    body.innerHTML = data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.platform_creator_id || '—')}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${escapeHtml(quoteDisplay(creator))}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml((creator.record_types || []).map((type) => typeLabels[type] || type).join(' / '))}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('');
-    $('#creatorCompareSelect').innerHTML = data.creators.map((creator) => `<option value="${escapeHtml(creator.creator_id)}">${escapeHtml(creator.pseudonym)}</option>`).join('');
-    Array.from($('#creatorCompareSelect').options).forEach((option) => { option.selected = compareSelection.includes(option.value); });
+    const offset = Number(data.offset || 0);
+    const limit = Number(data.limit || UNIFIED_CREATOR_PAGE_SIZE);
+    const total = Number(data.total_count || 0);
+    $('#unifiedCreatorPageStatus').textContent = `${total ? offset + 1 : 0}–${Math.min(offset + limit, total)} / ${formatMetric(total)} 条`;
+    $('#unifiedCreatorPrev').disabled = offset <= 0;
+    $('#unifiedCreatorNext').disabled = offset + limit >= total;
+    updateUnifiedCompareButton();
   }
 
   async function refreshFieldDictionary() {
@@ -850,70 +897,6 @@
     renderHistoryNoteSamples(await requestJson(`/api/history-analysis/note-library?${params.toString()}`));
   }
 
-  function renderHistoryLibrary(payload) {
-    const source = payload.source || {};
-    $('#historyLibraryCount').textContent = `${formatMetric(payload.result_count || 0)} 条匹配 / ${formatMetric(source.entity_count || 0)} 条历史条目 / ${formatMetric(source.sample_count || 0)} 条来源记录`;
-    const statuses = {
-      parsed: '已解析', text: '文本取得', starting_price: '起价解析',
-      displayed_unavailable: '页面显示无值', empty: '页面空白',
-      unparsed: '原值待解析', unresolved: '尚未解析', error: '解析错误',
-    };
-    const body = $('#historyLibraryBody');
-    body.innerHTML = (payload.records || []).map((row) => {
-      const prices = (row.prices || []).map((price) => `${escapeHtml(price.label)}：${escapeHtml(price.raw_value || '—')}`).join('<br>') || '—';
-      const detailList = (row.details || []).map((item) => {
-        const state = statuses[item.parse_status] || item.parse_status || '—';
-        const original = item.original_field ? ` · ${escapeHtml(item.original_field)}` : '';
-        const parsed = item.numeric_value === null || item.numeric_value === undefined ? '' : `（解析值 ${formatMetric(item.numeric_value)}${item.unit ? ` ${escapeHtml(item.unit)}` : ''}）`;
-        const raw = item.raw_value ? escapeHtml(item.raw_value) : (item.text_value ? escapeHtml(item.text_value) : '—');
-        return `<dt>${escapeHtml(item.label)}${original}<small> · ${escapeHtml(state)}</small></dt><dd>${raw}${parsed}${item.period ? `<small> · ${escapeHtml(item.period)}</small>` : ''}</dd>`;
-      }).join('');
-      const sourceRefs = (row.source_records || []).map((item) => {
-        const paths = (item.source_paths || []).map((path) => `<small>${escapeHtml(path)}</small>`).join('');
-        return `<li>${escapeHtml(item.source_name || '历史来源')} · 第 ${formatMetric(item.row_number || 0)} 行${item.capture_time ? ` · ${escapeHtml(item.capture_time)}` : ''}${paths}</li>`;
-      }).join('');
-      const details = `<details class="history-row-details"><summary>查看字段（${(row.details || []).length}）· 来源 ${formatMetric(row.source_file_count || 0)} 份</summary>${row.aliases?.length > 1 ? `<p>历史名称：${row.aliases.map(escapeHtml).join('、')}</p>` : ''}<ul class="history-lineage-list">${sourceRefs || '<li>来源记录见原始资料</li>'}</ul><dl>${detailList || '<dd>暂无字段详情</dd>'}</dl></details>`;
-      return `<tr><td>${escapeHtml(row.name || '未命名记录')}</td><td>${escapeHtml(row.xiaohongshu_account || '—')}</td><td>${escapeHtml(row.xiaohongshu_profile_id || '—')}</td><td>${escapeHtml(row.pgy_creator_id || '—')}</td><td>${escapeHtml(row.region || '—')}</td><td>${escapeHtml(row.category || '—')}</td><td>${row.followers === null || row.followers === undefined ? '—' : formatMetric(row.followers)}</td><td>${row.daily_read_median === null || row.daily_read_median === undefined ? '—' : formatMetric(row.daily_read_median)}</td><td>${row.daily_interaction_median === null || row.daily_interaction_median === undefined ? '—' : formatMetric(row.daily_interaction_median)}</td><td>${row.likes_and_favorites === null || row.likes_and_favorites === undefined ? '—' : formatMetric(row.likes_and_favorites)}</td><td>${row.published_notes === null || row.published_notes === undefined ? '—' : formatMetric(row.published_notes)}</td><td>${prices}</td><td>${details}</td></tr>`;
-    }).join('') || '<tr><td colspan="13" class="empty-cell">当前条件下没有历史记录</td></tr>';
-    const offset = Number(payload.offset || 0);
-    const limit = Number(payload.limit || HISTORY_LIBRARY_PAGE_SIZE);
-    const resultCount = Number(payload.result_count || 0);
-    const first = resultCount ? offset + 1 : 0;
-    const last = Math.min(offset + limit, resultCount);
-    $('#historyLibraryPageStatus').textContent = `${formatMetric(first)}–${formatMetric(last)} / ${formatMetric(resultCount)}`;
-    $('#historyLibraryPrev').disabled = offset <= 0;
-    $('#historyLibraryNext').disabled = offset + limit >= resultCount;
-  }
-
-  async function refreshHistoryLibrary() {
-    const sourcePayload = await requestJson('/api/history-analysis/library-sources');
-    const select = $('#historyLibrarySourceSelect');
-    const sources = sourcePayload.sources || [];
-    const selected = sources.some((item) => item.key === select.value) ? select.value : (sources.find((item) => item.key === 'history_all')?.key || sources[0]?.key || '');
-    select.innerHTML = sources.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)} · ${formatMetric(item.entity_count || 0)} 条资料</option>`).join('');
-    select.value = selected;
-    if (!selected) {
-      $('#historyLibraryCount').textContent = '暂无历史记录';
-      $('#historyLibraryBody').innerHTML = '<tr><td colspan="13" class="empty-cell">暂无可用历史记录</td></tr>';
-      return;
-    }
-    const params = new URLSearchParams({
-      source: selected,
-      q: $('#historyLibraryQuery').value.trim(),
-      category: $('#historyLibraryCategory').value.trim(),
-      location: $('#historyLibraryLocation').value.trim(),
-      followers_min: $('#historyLibraryFollowersMin').value.trim(),
-      followers_max: $('#historyLibraryFollowersMax').value.trim(),
-      daily_read_min: $('#historyLibraryDailyReadMin').value.trim(),
-      daily_read_max: $('#historyLibraryDailyReadMax').value.trim(),
-      daily_interaction_min: $('#historyLibraryDailyInteractionMin').value.trim(),
-      daily_interaction_max: $('#historyLibraryDailyInteractionMax').value.trim(),
-      offset: String(historyLibraryOffset),
-      limit: String(HISTORY_LIBRARY_PAGE_SIZE),
-    });
-    renderHistoryLibrary(await requestJson(`/api/history-analysis/library?${params.toString()}`));
-  }
-
   async function refreshHistoryAnalysis() {
     try {
       const sourcePayload = await requestJson('/api/history-analysis/sources');
@@ -1013,7 +996,7 @@
 
   async function refreshAll() {
     try {
-      await Promise.all([refreshDataViews(), refreshTasks(), refreshBrowserStatus(), refreshHistoryAnalysis(), refreshHistoryLibrary()]);
+      await Promise.all([refreshDataViews(), refreshTasks(), refreshBrowserStatus(), refreshHistoryAnalysis()]);
     } catch (error) {
       toast(`本地服务暂不可用：${error.message}`, true);
     }
@@ -1025,16 +1008,36 @@
     document.querySelectorAll('[data-primary-section]').forEach((link) => {
       link.classList.toggle('active', link.dataset.primarySection === activeSection);
     });
+    document.querySelectorAll('[data-primary-view]').forEach((section) => {
+      section.hidden = section.dataset.primaryView !== activeSection;
+    });
+    window.requestAnimationFrame(() => Object.values(charts).forEach((chart) => chart.resize()));
   }
 
   function bindEvents() {
     $('#historySourceSelect').addEventListener('change', () => refreshHistoryAnalysis().catch((error) => toast(error.message, true)));
-    $('#historyLibrarySourceSelect').addEventListener('change', () => { historyLibraryOffset = 0; refreshHistoryLibrary().catch((error) => toast(error.message, true)); });
-    $('#filterHistoryLibrary').addEventListener('click', () => { historyLibraryOffset = 0; refreshHistoryLibrary().catch((error) => toast(error.message, true)); });
-    $('#historyLibraryPrev').addEventListener('click', () => { historyLibraryOffset = Math.max(0, historyLibraryOffset - HISTORY_LIBRARY_PAGE_SIZE); refreshHistoryLibrary().catch((error) => toast(error.message, true)); });
-    $('#historyLibraryNext').addEventListener('click', () => { historyLibraryOffset += HISTORY_LIBRARY_PAGE_SIZE; refreshHistoryLibrary().catch((error) => toast(error.message, true)); });
-    $('#historyLibraryQuery').addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') { historyLibraryOffset = 0; refreshHistoryLibrary().catch((error) => toast(error.message, true)); }
+    $('#unifiedCreatorPrev').addEventListener('click', () => { unifiedCreatorOffset = Math.max(0, unifiedCreatorOffset - UNIFIED_CREATOR_PAGE_SIZE); refreshCreatorLibrary().catch((error) => toast(error.message, true)); });
+    $('#unifiedCreatorNext').addEventListener('click', () => { unifiedCreatorOffset += UNIFIED_CREATOR_PAGE_SIZE; refreshCreatorLibrary().catch((error) => toast(error.message, true)); });
+    $('#unifiedCreatorBody').addEventListener('change', (event) => {
+      const checkbox = event.target.closest('[data-unified-compare]');
+      if (!checkbox) return;
+      const ref = checkbox.dataset.ref;
+      if (checkbox.checked) {
+        if (selectedUnifiedCreators.size >= 4) {
+          checkbox.checked = false;
+          toast('横向对比最多选择 4 位达人', true);
+          return;
+        }
+        const name = checkbox.closest('tr')?.querySelector('strong')?.textContent || ref;
+        selectedUnifiedCreators.set(ref, name);
+      } else selectedUnifiedCreators.delete(ref);
+      updateUnifiedCompareButton();
+    });
+    $('#compareSelectedCreators').addEventListener('click', () => {
+      if (selectedUnifiedCreators.size < 2 || selectedUnifiedCreators.size > 4) return;
+      const params = new URLSearchParams();
+      selectedUnifiedCreators.forEach((_name, ref) => params.append('creator_ref', ref));
+      window.location.href = `/ai?${params.toString()}`;
     });
     $('#filterHistoryNotes').addEventListener('click', () => { historyNoteOffset = 0; refreshHistoryNoteLibrary().catch((error) => toast(error.message, true)); });
     $('#historyNoteQuery').addEventListener('keydown', (event) => {
@@ -1088,45 +1091,27 @@
       }
     });
     elements.batchSelect.addEventListener('change', () => {
-      Promise.all([refreshDashboard(), refreshAnalytics(), refreshCreatorLibrary(), refreshNotes()]).catch((error) => toast(error.message, true));
+      Promise.all([refreshDashboard(), refreshAnalytics(), refreshNotes()]).catch((error) => toast(error.message, true));
     });
     elements.sourceSelect.addEventListener('change', () => {
-      Promise.all([refreshDashboard(), refreshAnalytics(), refreshCreatorLibrary(), refreshNotes()]).catch((error) => toast(error.message, true));
+      Promise.all([refreshDashboard(), refreshAnalytics(), refreshNotes()]).catch((error) => toast(error.message, true));
     });
     elements.typeSelect.addEventListener('change', refreshDashboard);
-    $('#filterCreators').addEventListener('click', () => refreshCreatorLibrary().catch((error) => toast(error.message, true)));
+    $('#filterCreators').addEventListener('click', () => { unifiedCreatorOffset = 0; refreshCreatorLibrary().catch((error) => toast(error.message, true)); });
     $('#creatorQuery').addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') refreshCreatorLibrary().catch((error) => toast(error.message, true));
+      if (event.key === 'Enter') { unifiedCreatorOffset = 0; refreshCreatorLibrary().catch((error) => toast(error.message, true)); }
     });
-    ['#categoryFilter', '#locationFilter', '#creatorSort'].forEach((selector) => $(selector).addEventListener('change', () => {
+    $('#categoryFilter').addEventListener('change', () => {
+      unifiedCreatorOffset = 0;
       Promise.all([refreshCreatorLibrary(), refreshAnalytics(), refreshNotes()]).catch((error) => toast(error.message, true));
+    });
+    ['#locationFilter', '#creatorBucketFilter'].forEach((selector) => $(selector).addEventListener('change', () => {
+      unifiedCreatorOffset = 0;
+      refreshCreatorLibrary().catch((error) => toast(error.message, true));
     }));
-    $('#creatorCompareSelect').addEventListener('change', () => {
-      const selected = Array.from($('#creatorCompareSelect').selectedOptions);
-      if (selected.length > 4) { selected.at(-1).selected = false; $('#creatorCompareStatus').textContent = '最多选择 4 位创作者'; }
-      else $('#creatorCompareStatus').textContent = `${selected.length} 位已选择；请选 2 至 4 位`;
-    });
-    $('#audienceGroupSelect').addEventListener('change', () => {
-      if (lastAnalyticsData) renderAudienceProfiles(lastAnalyticsData.charts?.audience_groups || []);
-    });
-    $('#compareCreators').addEventListener('click', async () => {
-      if (elements.batchSelect.value === '__all__') {
-        $('#creatorCompareStatus').textContent = '请选择一个具体采集批次，以保证来源和时间口径一致';
-        return;
-      }
-      const params = new URLSearchParams();
-      Array.from($('#creatorCompareSelect').selectedOptions).forEach((option) => params.append('creator_id', option.value));
-      if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
-      if (elements.sourceSelect.value) params.set('source', elements.sourceSelect.value);
-      try {
-        const data = await requestJson(`/api/creators/compare?${params.toString()}`);
-        renderCreatorComparison(data);
-      } catch (error) { $('#creatorCompareStatus').textContent = error.message; }
-    });
-    $('#creatorCompareMetric').addEventListener('change', () => {
-      const option = $('#creatorCompareMetric').selectedOptions[0];
-      renderComparisonBar('creatorCompareBarChart', lastCreatorCompareRows, $('#creatorCompareMetric').value, 'pseudonym', option?.textContent || '指标');
-    });
+    ['#followersMin', '#followersMax'].forEach((selector) => $(selector).addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') { unifiedCreatorOffset = 0; refreshCreatorLibrary().catch((error) => toast(error.message, true)); }
+    }));
     $('#noteCompareSelect').addEventListener('change', () => {
       const selected = Array.from($('#noteCompareSelect').selectedOptions);
       if (selected.length > 4) { selected.at(-1).selected = false; $('#noteCompareStatus').textContent = '最多选择 4 篇笔记'; }

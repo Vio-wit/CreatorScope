@@ -94,6 +94,22 @@
 .history-note-topics{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
 .history-note-topics span{padding:3px 7px;border-radius:12px;background:#edf5ef;color:#4e765e;font-size:8px}
 .history-records-card .table-scroll{max-height:300px}
+.unified-creator-table-card .table-scroll{max-height:calc(100vh - 330px);min-height:260px}
+.unified-creator-table-card table{min-width:1180px}
+.unified-creator-table-card td{white-space:normal;vertical-align:top}
+.unified-creator-table-card td:first-child{min-width:210px;max-width:300px}
+.unified-creator-table-card td:nth-child(8){min-width:220px;max-width:340px;overflow-wrap:anywhere}
+.unified-row-details{margin-top:5px}
+.unified-row-details summary{cursor:pointer;color:#36805e;font-size:8px}
+.unified-row-details .unified-record-meta{margin:6px 0;color:#8a958d;font-size:8px}
+.unified-row-details dl{display:grid;grid-template-columns:minmax(100px,auto) minmax(160px,1fr);gap:3px 8px;min-width:360px;max-width:680px;margin:7px 0;padding:8px;background:#f8faf8;border-radius:6px;white-space:normal}
+.unified-row-details dt{color:#7b877f;font-size:8px}
+.unified-row-details dd{margin:0;color:#4a564e;font-size:8px;overflow-wrap:anywhere}
+.unified-row-details small{color:#98a29b;font-size:7px}
+.unified-source-path{display:block;overflow-wrap:anywhere;color:#8a958d;font-size:7px}
+.unified-compare-check{display:flex;align-items:center;gap:5px;color:#587263;font-size:8px;white-space:nowrap}
+.unified-compare-check input{accent-color:#187b5b}
+@media(max-width:760px){.unified-creator-table-card .table-scroll{max-height:calc(100vh - 300px)}.unified-creator-table-card table{min-width:1050px}}
 @media(max-width:1120px){.history-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.history-note-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.nav-more{display:none}.history-analysis-panel{padding:10px}.history-panel-heading{align-items:flex-start;flex-direction:column}.history-panel-heading .select-wrap{width:100%}.history-panel-heading .select-wrap select{max-width:none}.history-kpi-grid,.history-chart-grid,.history-note-grid{grid-template-columns:1fr}.history-note-section{padding:10px}.history-note-controls{align-items:stretch;flex-wrap:wrap}.history-note-controls label{min-width:100%;max-width:none}.history-note-controls button{flex:0 0 auto}.history-note-controls span{margin-left:0;align-self:center}.history-advanced-filters{grid-column:1/-1}.history-advanced-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.history-advanced-fields label,.history-advanced-fields input{width:100%;min-width:0}}
 @media(max-width:760px){.sidebar{flex-direction:row;align-items:center}.sidebar .brand{flex:0 0 100%;padding:0}.sidebar .nav-item[data-primary-section]{display:flex;flex:1 1 30%;justify-content:center;height:34px;margin:8px 0 0;padding:0 5px;font-size:9px;gap:5px}}
