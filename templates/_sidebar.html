@@ -1,0 +1,24 @@
+<aside class="sidebar">
+  <a class="brand" href="/" aria-label="CreatorScope 首页">
+    <span class="brand-mark">C</span>
+    <span><strong>CreatorScope</strong><small>课程数据工作台</small></span>
+  </a>
+  <div class="nav-label">工作区</div>
+  <a class="nav-item" href="/#creators"><span class="nav-icon">◎</span>达人库</a>
+  <a class="nav-item {% if request.path == '/' %}active{% endif %}" href="/#analytics"><span class="nav-icon">◷</span>数据分析</a>
+  <a class="nav-item {% if request.path == '/ai' %}active{% endif %}" href="/ai"><span class="nav-icon">✦</span>AI 辅助</a>
+  <a class="nav-item" href="/#collection"><span class="nav-icon">↧</span>采集任务</a>
+  <details class="nav-more" {% if request.path in ['/comments', '/quality', '/report', '/news'] %}open{% endif %}>
+    <summary>更多工具</summary>
+    <a class="nav-item" href="/#notes">笔记管理</a>
+    <a class="nav-item" href="/#records">样本与任务</a>
+    <a class="nav-item {% if request.path == '/comments' %}active{% endif %}" href="/comments">评论分析</a>
+    <a class="nav-item {% if request.path == '/quality' %}active{% endif %}" href="/quality">数据质量</a>
+    <a class="nav-item {% if request.path == '/report' %}active{% endif %}" href="/report">实训报告</a>
+    <a class="nav-item {% if request.path == '/news' %}active{% endif %}" href="/news">新闻关联</a>
+  </details>
+  <div class="sidebar-bottom">
+    <span class="local-dot"></span>
+    <div><strong>本地运行</strong><small>数据保存在本机</small></div>
+  </div>
+</aside>
