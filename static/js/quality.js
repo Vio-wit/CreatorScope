@@ -21,6 +21,7 @@
     not_applicable: '不适用',
   };
   const stateLabel = (key) => STATE_LABELS[key] || key;
+  const GRADE_LABELS = { stable: '小样本稳定', partial: '部分可用', unstable: '不稳定', incomplete: '测试不完整', not_verified: '未验证' };
   const STATUS_LABELS = {
     completed: '已完成',
     running: '运行中',
@@ -145,9 +146,10 @@
         <td>${number(item.expected_records)}</td>
         <td>${number(item.captured_records)}</td>
         <td><span class="quality-pill ${coverageClass(item.coverage_pct)}">${percent(item.coverage_pct)}</span></td>
+        <td>${escapeHtml(GRADE_LABELS[item.five_creator_grade] || '—')}</td>
         <td class="quality-states">${states || '—'}</td>
       </tr>`;
-    }).join('') : '<tr><td colspan="6" class="empty-cell">本批次没有字段观察记录</td></tr>';
+    }).join('') : '<tr><td colspan="7" class="empty-cell">本批次没有字段观察记录</td></tr>';
 
     const failures = report.failure_records || [];
     $('#failureCount').textContent = `${failures.length} 条`;
@@ -187,7 +189,7 @@
       $('#detailSection').hidden = false;
       $('#detailTitle').textContent = '批次明细';
       $('#detailScope').textContent = error.message;
-      $('#fieldRows').innerHTML = `<tr><td colspan="6" class="empty-cell">${escapeHtml(error.message)}</td></tr>`;
+      $('#fieldRows').innerHTML = `<tr><td colspan="7" class="empty-cell">${escapeHtml(error.message)}</td></tr>`;
     }
   }
 

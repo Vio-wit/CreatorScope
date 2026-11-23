@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from .domain import FIELD_CATALOG
+
 
 @contextmanager
 def _read_only_connection(db_path: Path):
@@ -55,11 +57,43 @@ def _coverage_target_key(row: sqlite3.Row) -> str:
     return f"{row['entity_type']}:{entity_ref}"
 
 
+def _five_creator_field_grade(target_rows: dict[str, list[sqlite3.Row]]) -> str:
+    """Grade only a fully observed sample with five distinct explicit platform IDs."""
+    if not target_rows:
+        return "not_verified"
+    if len(target_rows) != 5:
+        return "incomplete"
+    identities: set[str] = set()
+    successful = 0
+    for rows in target_rows.values():
+        ids = {str(row["platform_creator_id"]).strip() for row in rows if row["platform_creator_id"]}
+        if len(ids) != 1:
+            return "incomplete"
+        identities.update(ids)
+        statuses = {str(row["status"]) for row in rows}
+        if statuses <= {"not_attempted", "not_applicable"}:
+            return "incomplete"
+        def usable(row: sqlite3.Row) -> bool:
+            if row["status"] != "captured":
+                return False
+            spec = FIELD_CATALOG.get(str(row["field_name"]), {})
+            numeric = row["metric_unit"] not in (None, "", "text") or spec.get("unit") in {
+                "人", "次", "篇", "人民币元", "%", "秒"
+            }
+            return not numeric or row["normalization_status"] == "parsed"
+
+        if any(usable(row) for row in rows):
+            successful += 1
+    if len(identities) != 5:
+        return "incomplete"
+    return "stable" if successful >= 4 else "partial" if successful == 3 else "unstable"
+
+
 def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
     """Summarize only saved values and task counters for one collection batch."""
     with _read_only_connection(db_path) as conn:
         batch = conn.execute(
-            """SELECT b.*, t.result_json, t.status AS task_status
+            """SELECT b.*, t.result_json, t.parameters_json, t.task_type, t.status AS task_status
                FROM batches b LEFT JOIN tasks t ON t.task_id = b.task_id
                WHERE b.batch_id = ?""",
             (batch_id,),
@@ -76,9 +110,10 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
             """SELECT o.record_type, o.field_name, o.status, o.normalized_value_json,
                       o.normalization_status, o.entity_type, o.entity_ref, o.captured_at,
                       r.note_id AS record_note_id, r.creator_id AS record_creator_id,
-                      n.platform_note_id, n.source_url, c.platform_creator_id
+                      n.platform_note_id, n.source_url, c.platform_creator_id, m.unit AS metric_unit
                FROM collection_field_observations o
                LEFT JOIN records r ON r.record_id = o.record_id
+               LEFT JOIN metric_values m ON m.record_id = o.record_id AND m.metric_key = o.field_name
                LEFT JOIN notes n ON n.note_id = r.note_id
                LEFT JOIN creators c ON c.creator_id = r.creator_id
                WHERE o.batch_id = ?
@@ -131,6 +166,14 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
     except (json.JSONDecodeError, TypeError):
         task_result = {}
 
+    try:
+        parameters = json.loads(batch["parameters_json"] or "{}")
+    except (json.JSONDecodeError, TypeError):
+        parameters = {}
+    settings = parameters.get("settings") if isinstance(parameters, dict) else {}
+    five_creator_task = (batch["task_type"] == "visible_collection" and isinstance(settings, dict)
+                         and settings.get("creator_count") == 5)
+
     records_by_type = {str(row["record_type"]): int(row["row_count"]) for row in record_rows}
     grouped_fields: dict[tuple[str, str], dict[str, Any]] = {}
     targets_by_type: dict[str, set[str]] = {}
@@ -166,6 +209,14 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
         captured = int(item["states"].get("captured", 0))
         item["expected_records"] = denominator
         item["captured_records"] = captured
+        item["observed_records"] = len(targets_by_field[key])
+        item["unobserved_records"] = max(0, denominator - item["observed_records"])
+        item["five_creator_grade"] = (
+            _five_creator_field_grade(targets_by_field[key])
+            if five_creator_task and item["record_type"] in {
+                "blogger_list_sample", "creator_profile_sample", "creator_content_performance", "fan_analysis"
+            } else None
+        )
         item["coverage_pct"] = round(captured * 100 / denominator, 1) if denominator else None
         field_coverage.append(item)
     field_coverage.sort(key=lambda item: (item["record_type"], item["field_name"]))
@@ -204,6 +255,7 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
             "覆盖率按对应采集对象去重；同一对象后来成功捕获时，成功状态优先于此前失败状态。",
             "没有明确字段观察状态的记录不会被推定为页面未展示。",
             "comments 计数只包括本批次实际保存的可见评论，不代表全量评论。",
+            "五人字段分级仅限目标为五人的采集任务，且五个对象均有不同的明确平台 ID 和字段观察；仅表示本次小样本取得情况。",
         ],
     }
 
