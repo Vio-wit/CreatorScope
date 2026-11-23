@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from creatorscope.history_evidence import import_file, quality_report, trace_record
+from creatorscope.history_evidence import import_file, list_records, quality_report, trace_record
 
 
 class HistoryEvidenceTests(unittest.TestCase):
@@ -42,9 +42,13 @@ class HistoryEvidenceTests(unittest.TestCase):
         self.assertEqual(json.loads(self.rows("SELECT raw_json FROM source_records")[0][0])["粉丝数"], "1.2w")
         self.assertEqual(self.rows("SELECT numeric_value FROM field_evidence WHERE target_field='followers'")[0][0], 12000)
         self.assertEqual(sum(x['duplicate_records'] for x in quality_report(self.db)['runs']), 2)
+        coverage = next(x for x in quality_report(self.db)['source_field_coverage'] if x['target_field']=='followers')
+        self.assertEqual((coverage['available_records'], coverage['source_records'], coverage['coverage_pct']), (1,1,100.0))
         record_id = self.rows('SELECT record_id FROM source_records')[0][0]
         self.assertEqual(len(trace_record(self.db, record_id)['paths']), 2)
         self.assertEqual(trace_record(self.db, record_id)['record']['row_number'], 1)
+        source_id = self.rows('SELECT source_id FROM sources')[0][0]
+        self.assertEqual(list_records(self.db, source_id)[0]['record_id'], record_id)
 
     def test_different_files_preserve_duplicate_row_provenance(self):
         one = self.make_json('a.json', [{'博主昵称':'甲','小红书号':'a'}])
@@ -75,7 +79,7 @@ class HistoryEvidenceTests(unittest.TestCase):
         self.assertEqual(self.rows("SELECT COUNT(*) FROM identity_claims")[0][0], 8)
 
     def test_price_missing_null_zero_period_and_unknown_capture(self):
-        p = self.make_json("values.json", [{"博主昵称":"甲", "粉丝数":0, "粉丝数统计周期":"近30日", "阅读中位数（日常）":"--", "互动中位数（日常）":None, "全部报价":"¥1,100起", "图文笔记一口价":"¥3,000", "视频笔记一口价":"4000", "统计周期":"不能传播到其他字段"}])
+        p = self.make_json("values.json", [{"博主昵称":"甲", "粉丝数":0, "粉丝数统计周期":"近30日", "阅读中位数（日常）":"--", "互动中位数（日常）":None, "全部报价":"¥1,100起", "图文笔记一口价":"¥3,000", "视频笔记一口价":"4000", "发布笔记数":"7篇", "统计周期":"不能传播到其他字段"}])
         import_file(self.db, p, "values")
         rows = {r[0]: r[1:] for r in self.rows("SELECT target_field,numeric_value,unit,parse_status,period FROM field_evidence")}
         self.assertEqual(rows['followers'], (0.0, 'count', 'parsed', '近30日'))
@@ -85,6 +89,7 @@ class HistoryEvidenceTests(unittest.TestCase):
         self.assertEqual(rows['image_fixed_price'][:3], (3000.0, 'CNY', 'parsed'))
         self.assertEqual(rows['video_fixed_price'][1], None)
         self.assertIsNone(rows['video_fixed_price'][3])
+        self.assertEqual(rows['published_notes'][:3], (7.0, 'count', 'parsed'))
         self.assertEqual(self.rows("SELECT capture_time FROM source_records"), [(None,)])
 
     def test_jsonl_error_and_csv_multiline_preserve_positions(self):
@@ -102,14 +107,16 @@ class HistoryEvidenceTests(unittest.TestCase):
 
     def test_text_sample_only_yields_bounded_candidates_and_raw(self):
         p = self.root / 'note.txt'
-        original = '标题: 示例标题\nURL: https://example.invalid/?token=private\n关注\n示例标题\n正文\n#主题\n共 1 条评论\n评论文本'
+        original = '标题: 示例标题\nURL: https://example.invalid/?token=private\n关注\n示例标题\n正文\n#主题#另一个\n猜你想搜\n页面推荐\n共 1 条评论\n评论文本'
         p.write_text(original,encoding='utf-8')
         import_file(self.db,p,'note')
         self.assertEqual(self.rows('SELECT raw_text FROM source_records')[0][0], p.read_bytes().decode('utf-8'))
         values = dict(self.rows('SELECT target_field,text_value FROM field_evidence'))
         self.assertIn('正文',values['note_body_candidate'])
         self.assertNotIn('评论文本',values['note_body_candidate'])
+        self.assertNotIn('页面推荐',values['note_body_candidate'])
         self.assertIn('主题',values['note_topics_candidate'])
+        self.assertIn('另一个',values['note_topics_candidate'])
         self.assertNotIn('note_body',values)
 
     def test_reject_existing_other_database_and_backup_restore(self):
@@ -130,8 +137,10 @@ class HistoryEvidenceTests(unittest.TestCase):
         self.assertEqual(self.rows('SELECT identity_status FROM source_records')[0][0],'index_only')
         self.assertEqual(self.rows('SELECT COUNT(*) FROM identity_claims')[0][0],1)
         p=self.make_json('creator.json',[{'博主昵称':'甲','xhs_profile_id':'p123'}])
-        import_file(self.db,p,'creator')
+        result=import_file(self.db,p,'creator')
         self.assertEqual(quality_report(self.db)['index_hint_records'],1)
+        record_id=list_records(self.db,result['source_id'])[0]['record_id']
+        self.assertEqual(len(trace_record(self.db,record_id)['index_candidates']),1)
 
 
 if __name__ == '__main__':
