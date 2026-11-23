@@ -19,3 +19,30 @@
 .demo-mode-banner { display: flex; align-items: center; gap: 12px; margin: 18px 0; padding: 14px 18px; border: 1px solid #b7d8c5; border-radius: 12px; background: #edf7f0; color: #244d36; }
 .demo-mode-banner strong { white-space: nowrap; }
 .task-state.waiting_user{background:#fff4e4;color:#a87435}
+
+/* ---------- 数据质量看板 ---------- */
+.quality-batch-card{margin-top:14px}
+.quality-batch-card table{font-size:10px}
+.quality-batch-card th{white-space:nowrap}
+.quality-batch-card tbody tr{cursor:pointer}
+.quality-batch-card tbody tr:hover{background:#f6faf7}
+.quality-batch-card tbody tr.is-selected{background:#eef7f1}
+.quality-link{border:0;background:none;padding:0;color:var(--deep);font:inherit;font-size:9px;text-align:left;cursor:pointer;text-decoration:underline dotted}
+.quality-status{display:inline-block;padding:2px 7px;border-radius:20px;background:#f2f4f2;color:#78837c;font-size:8px;white-space:nowrap}
+.quality-status.completed,.quality-status.running{background:#e9f5ee;color:#2f7a54}
+.quality-status.failed,.quality-status.error{background:#fbeeec;color:#a5554b}
+.quality-status.paused,.quality-status.waiting_user{background:#fff4e4;color:#a87435}
+.quality-pill{display:inline-block;min-width:46px;padding:2px 7px;border-radius:5px;font-size:8px;text-align:center;background:#f2f4f2;color:#77827b}
+.quality-pill.good{background:#e9f5ee;color:#2f7a54}
+.quality-pill.warn{background:#fdf3e6;color:#a2702f}
+.quality-pill.bad{background:#fbeeec;color:#a5554b}
+.quality-detail{margin-top:6px}
+.quality-chart-grid{margin:8px 0 12px}
+.state-chip{display:inline-block;margin:1px 3px 1px 0;padding:1px 6px;border-radius:4px;background:#f2f5f3;color:#77827b;font-size:8px}
+.state-chip.captured{background:#e9f5ee;color:#2f7a54}
+.state-chip.access_denied,.state-chip.failed,.state-chip.not_loaded{background:#fbeeec;color:#a5554b}
+.state-chip.parse_failed{background:#fdf3e6;color:#a2702f}
+.quality-states{white-space:normal;max-width:260px}
+.quality-notes-card{margin-top:14px}
+.quality-notes{margin:0;padding:14px 18px 14px 32px;color:#6e7a72;font-size:9px;line-height:1.9}
+@media(max-width:760px){.quality-batch-card table{font-size:9px}.quality-states{max-width:none}}

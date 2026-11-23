@@ -19,7 +19,7 @@ from .db import SCHEMA_VERSION, connection, initialize_database, schema_version_
 from .domain import field_dictionary
 from .ingest import MAX_UPLOAD_BYTES
 from .news import NEWS_FEEDS, append_news_items, correlate_news_notes, fetch_feed, load_news_items
-from .quality import batch_quality_report
+from .quality import batch_quality_report, quality_overview
 from .tasks import TaskManager
 from .migrations import backup_database
 from research.r4_3_comment_analysis.comments_web import comment_analysis_bp
@@ -658,6 +658,18 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         if report is None:
             return jsonify({"error": "采集批次不存在"}), 404
         return jsonify(report)
+
+    @app.get("/quality")
+    def quality_board():
+        return render_template("quality.html", demo_mode=app.config["DEMO_MODE"])
+
+    @app.get("/api/quality/overview")
+    def api_quality_overview():
+        try:
+            limit = int(request.args.get("limit") or 20)
+        except ValueError:
+            return jsonify({"error": "limit 必须为整数"}), 400
+        return jsonify(quality_overview(app.config["DATABASE_PATH"], limit=limit))
 
     @app.get("/api/export/json")
     def api_export_json():
