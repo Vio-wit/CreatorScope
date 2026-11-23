@@ -86,3 +86,20 @@
 .report-limits li{margin-bottom:4px}
 .report-error{background:#fbeeec;border:1px solid #f0d5d0;border-radius:10px;padding:18px 20px;margin:24px 0;color:#8d4b42;font-size:11px}
 @media(max-width:900px){.report-sheet{padding:22px 18px}.report-two-col{grid-template-columns:1fr}}
+
+/* ---------- 图表导出按钮与打印 ---------- */
+.chart-export-button{margin-left:auto;flex:0 0 auto;height:20px;padding:0 7px;border:1px solid #e2e9e3;border-radius:5px;background:#fff;color:#8d978f;font:inherit;font-size:8px;letter-spacing:.4px;cursor:pointer;transition:color .15s,border-color .15s}
+.chart-export-button:hover{color:var(--green);border-color:#c4dbcd;background:#f5faf6}
+.export-fab{position:fixed;right:20px;bottom:20px;display:flex;gap:8px;z-index:12}
+.export-fab button{height:32px;padding:0 13px;border:1px solid #dbe5dd;border-radius:18px;background:#fff;color:#4f6257;font:inherit;font-size:10px;cursor:pointer;box-shadow:0 6px 18px rgba(23,58,40,.08)}
+.export-fab button:hover{border-color:#bcd6c5;color:var(--green)}
+.export-fab button:disabled{cursor:progress;color:#9aa39d}
+@media print{
+  .sidebar,.no-print,.export-fab,.chart-export-button,.toast-region,.demo-mode-banner,.heading-actions,.report-toolbar,.export-all-row{display:none!important}
+  body{background:#fff}
+  .main-content{margin:0;padding:0;max-width:none}
+  .chart-card,.table-card,.report-sheet{break-inside:avoid;box-shadow:none;border-color:#d9ded9}
+  .charts-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  a{color:inherit;text-decoration:none}
+  @page{size:A4;margin:12mm}
+}
