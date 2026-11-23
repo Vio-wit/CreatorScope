@@ -398,6 +398,28 @@ class VisibleCollectionTests(unittest.TestCase):
         with self.assertRaisesRegex(PauseForUser, "目标为 5 位.*仅 4 位"):
             run_case(5, 0, row_order=[1, 2, 3, 4])
 
+    def test_note_panel_escape_requires_closure_and_avoids_other_dialogs(self) -> None:
+        from playwright.sync_api import sync_playwright
+
+        browser_impl = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        browser_impl._check_page_blocker = lambda *_args, **_kwargs: None
+        with sync_playwright() as playwright:
+            chromium = playwright.chromium.launch(headless=True)
+            try:
+                page = chromium.new_page()
+                page.set_content("""<div id='panel'>复制小红书笔记链接</div>
+                    <script>document.addEventListener('keydown', e => {
+                    if (e.key === 'Escape') document.querySelector('#panel').remove();
+                    });</script>""")
+                browser_impl._close_visible_note_panel(page)
+                self.assertEqual(page.get_by_text("复制小红书笔记链接", exact=True).count(), 0)
+                page.set_content("<div>复制小红书笔记链接</div><div role='dialog'>其他对话框</div>")
+                with self.assertRaises(ManualDismissRequired):
+                    browser_impl._close_visible_note_panel(page)
+                self.assertEqual(page.get_by_text("复制小红书笔记链接", exact=True).count(), 1)
+            finally:
+                chromium.close()
+
     def test_failed_note_checkpoint_saved_before_manual_panel_close(self) -> None:
         class Locator:
             def __init__(self, count):
