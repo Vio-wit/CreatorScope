@@ -525,7 +525,10 @@ class VisibleCollectionTests(unittest.TestCase):
             self.assertTrue(browser.started.wait(3))
             self.assertTrue(manager.pause_task(task_id))
             self.assertEqual(self._read_task(task_id)["status"], "paused")
+            with connection(self.db_path) as conn:
+                conn.execute("UPDATE tasks SET progress=100 WHERE task_id=?", (task_id,))
             self.assertTrue(manager.resume_task(task_id))
+            self.assertEqual(self._read_task(task_id)["progress"], 0)
             browser.release.set()
             task = self._wait_for_status(task_id, {"completed", "failed"})
             self.assertEqual(task["status"], "completed", task["message"])
