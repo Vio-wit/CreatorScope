@@ -1951,6 +1951,13 @@ class PgyVisibleBrowser:
         copy_control = page.get_by_text("复制小红书笔记链接", exact=True)
         if copy_control.count() == 0 or not copy_control.first.is_visible():
             return
+
+        def panel_closed() -> bool:
+            try:
+                return copy_control.count() == 0 or not copy_control.first.is_visible()
+            except Exception:
+                return False
+
         for selector in (
             "button[aria-label*='关闭']:visible",
             "[role='button'][aria-label*='关闭']:visible",
@@ -1961,7 +1968,9 @@ class PgyVisibleBrowser:
             if locator.count() == 1:
                 try:
                     locator.first.click(timeout=3000)
-                    return
+                    page.wait_for_timeout(300)
+                    if panel_closed():
+                        return
                 except Exception:
                     continue
         for label in ("关闭", "×", "X"):
@@ -1969,10 +1978,20 @@ class PgyVisibleBrowser:
             if locator.count() == 1 and locator.first.is_visible():
                 try:
                     locator.first.click(timeout=3000)
-                    return
+                    page.wait_for_timeout(300)
+                    if panel_closed():
+                        return
                 except Exception:
                     continue
         self._check_page_blocker(page, pgy=True)
+        if copy_control.count() == 1 and page.locator("[role='dialog']:visible, .d-modal-mask:visible").count() == 0:
+            try:
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(300)
+                if panel_closed():
+                    return
+            except Exception:
+                pass
         raise ManualDismissRequired(
             "蒲公英笔记详情面板无法安全自动关闭，请在可见浏览器中手动关闭；关闭后将自动继续采集",
             page,
