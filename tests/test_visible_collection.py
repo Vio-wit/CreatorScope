@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from creatorscope.browser import ManualDismissRequired, PauseForUser, PgyVisibleBrowser
+from creatorscope.browser import CaptureError, ManualDismissRequired, PauseForUser, PgyVisibleBrowser
 from creatorscope.db import connection, initialize_database
 from creatorscope.ingest import normalize_value
 from creatorscope.quality import batch_quality_report
@@ -397,6 +397,58 @@ class VisibleCollectionTests(unittest.TestCase):
         self.assertEqual(reordered_rows, [2])
         with self.assertRaisesRegex(PauseForUser, "目标为 5 位.*仅 4 位"):
             run_case(5, 0, row_order=[1, 2, 3, 4])
+
+    def test_failed_note_checkpoint_saved_before_manual_panel_close(self) -> None:
+        class Locator:
+            def __init__(self, count):
+                self.value = count
+
+            def count(self):
+                return self.value
+
+        class Page:
+            def __init__(self, url):
+                self.url = url
+
+            def is_closed(self):
+                return False
+
+            def get_by_role(self, _role):
+                return Locator(2)
+
+            def locator(self, _selector):
+                return Locator(1)
+
+        page = Page("https://pgy.xiaohongshu.com/solar/pre-trade/note/kol")
+        detail = Page("https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/one")
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        browser._context = SimpleNamespace(pages=[page])
+        browser._page = page
+        browser._check_page_blocker = lambda *_args, **_kwargs: None
+        browser._capture_list_rows = lambda _page: [{"creator_ref": "pgy:one", "visible_row_index": 1, "fields": {"创作者名称": "one"}}]
+        browser._open_creator_row = lambda *_args, **_kwargs: (detail, True)
+        browser._capture_creator_records = lambda *_args: [{"type": "creator_profile_sample", "fields": {"粉丝数": "1"}}]
+        browser._open_notes_tab = lambda *_args: None
+        def fail_copy(*_args):
+            raise CaptureError("复制链接失败")
+        browser._open_and_copy_note = fail_copy
+        browser._close_owned_page = lambda *_args: None
+        def wait_for_close(*_args):
+            raise ManualDismissRequired("手动关闭", detail, kind="note", pgy=True)
+        browser._close_visible_note_panel = wait_for_close
+        checkpoints = []
+        with self.assertRaises(ManualDismissRequired):
+            browser._collect_visible(
+                {"creator_count": 1, "collect_creator": True, "collect_notes": True, "collect_comments": False},
+                {"creator_index": 0, "note_index": 0, "creator_targets": []},
+                check_control=lambda: None, save_checkpoint=checkpoints.append,
+                save_records=lambda *_args: None, save_comments=lambda *_args: {},
+                report_progress=lambda *_args: None, report_failure=lambda *_args: None,
+                report_note_success=lambda *_args: None, report_field_status=lambda *_args: None,
+                existing_comment_count=0,
+            )
+        self.assertEqual(checkpoints[-1]["note_index"], 1)
+        self.assertEqual(checkpoints[-1]["creator_index"], 0)
 
     def test_resume_selects_unique_matching_list_without_navigation(self) -> None:
         class Page:
