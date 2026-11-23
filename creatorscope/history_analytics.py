@@ -17,13 +17,26 @@ class HistoryAnalyticsError(ValueError):
 
 
 SOURCE_GROUPS: dict[str, dict[str, str]] = {
-    "EPT": {"label": "EPT 候选池", "where": "s.source_name = ?", "match": "EPT"},
-    "MUSINSA": {"label": "MUSINSA 候选池", "where": "s.source_name = ?", "match": "MUSINSA"},
+    "EPT": {"label": "EPT 候选池", "where": "s.source_name = ? OR s.source_name = 'rednote_creator__EPT'", "match": "EPT"},
+    "MUSINSA": {"label": "MUSINSA 候选池", "where": "s.source_name = ? OR s.source_name = 'rednote_creator__MUSINSA'", "match": "MUSINSA"},
     "creator_detail": {
         "label": "达人详情样本",
-        "where": "s.source_name LIKE ?",
+        "where": "s.source_name LIKE ? OR s.source_name = 'rednote_creator__详情JSON'",
         "match": "达人详情样本%",
     },
+}
+
+LIBRARY_SOURCE_GROUPS: dict[str, dict[str, str]] = {
+    "history_all": {
+        "label": "全部历史达人",
+        "where": "s.source_name LIKE ?",
+        "match": "rednote_creator__%",
+    },
+    "EPT": {"label": "EPT 候选池", "where": "s.source_name LIKE ?", "match": "%EPT%"},
+    "MUSINSA": {"label": "MUSINSA 候选池", "where": "s.source_name LIKE ?", "match": "%MUSINSA%"},
+    "creator_detail": {"label": "达人详情", "where": "s.source_name LIKE ?", "match": "%详情%"},
+    "history_index": {"label": "历史索引", "where": "s.source_name LIKE ?", "match": "%索引%"},
+    "history_candidates": {"label": "其他历史候选表", "where": "s.source_name LIKE ?", "match": "%候选%"},
 }
 
 METRICS: tuple[tuple[str, str, str], ...] = (
@@ -152,6 +165,71 @@ def list_sources(path: Path | str | None) -> dict[str, Any]:
                     {"key": field, "label": label}
                     for field, label, _ in METRICS if field in available
                 ],
+            })
+        return {"sources": result}
+    finally:
+        conn.close()
+
+
+def list_library_sources(path: Path | str | None) -> dict[str, Any]:
+    """List browseable history groups without mixing them into analysis groups."""
+    conn = _connection(path)
+    try:
+        result = []
+        for key, group in LIBRARY_SOURCE_GROUPS.items():
+            sources = _source_files(conn, group["where"], group["match"])
+            if not sources:
+                continue
+            source_ids = [item["source_id"] for item in sources]
+            marks = ",".join("?" for _ in source_ids)
+            visible_name = " OR ".join(
+                f"(json_extract(sr.raw_json, '$.{field}') IS NOT NULL "
+                f"AND trim(CAST(json_extract(sr.raw_json, '$.{field}') AS TEXT)) <> '' "
+                f"AND lower(trim(CAST(json_extract(sr.raw_json, '$.{field}') AS TEXT))) NOT LIKE '%.xlsx' "
+                f"AND lower(trim(CAST(json_extract(sr.raw_json, '$.{field}') AS TEXT))) NOT LIKE '%.csv' "
+                f"AND lower(trim(CAST(json_extract(sr.raw_json, '$.{field}') AS TEXT))) NOT LIKE '%.json' "
+                f"AND lower(trim(CAST(json_extract(sr.raw_json, '$.{field}') AS TEXT))) NOT LIKE '%.txt')"
+                for field in (
+                    "博主昵称", "creator_name", "创作者名称", "blogger_name", "达人名称",
+                    "达人昵称", "博主名称", "昵称", "账号名称",
+                )
+            )
+            if key == "history_all":
+                entity_count_sql = f"""
+                    COUNT(DISTINCT CASE WHEN
+                        EXISTS (SELECT 1 FROM identity_claims ic WHERE ic.record_id=sr.record_id)
+                        OR ({visible_name})
+                        OR EXISTS (
+                            SELECT 1 FROM field_evidence ve WHERE ve.record_id=sr.record_id
+                              AND ve.target_field IN ('followers','daily_read_median','daily_interaction_median',
+                                  'likes_and_favorites','published_notes','category','region','all_price',
+                                  'image_price','video_price','image_fixed_price','video_fixed_price')
+                              AND ve.parse_status IN ('parsed','text','starting_price')
+                        )
+                    THEN COALESCE(sr.identity_id, sr.record_id) END)
+                """
+            else:
+                # Match the browse API: every non-index-only source record is
+                # available in the table, so the selector should count its
+                # distinct linked identity even when some fields are sparse.
+                entity_count_sql = "COUNT(DISTINCT COALESCE(sr.identity_id, sr.record_id))"
+            counts = conn.execute(
+                f"""
+                SELECT COUNT(DISTINCT sr.record_id) AS records,
+                       {entity_count_sql} AS entities
+                FROM source_records sr
+                WHERE sr.source_id IN ({marks}) AND sr.identity_status <> 'index_only'
+                """,
+                source_ids,
+            ).fetchone()
+            if not counts["records"]:
+                continue
+            result.append({
+                "key": key,
+                "label": group["label"],
+                "sample_count": int(counts["records"]),
+                "entity_count": int(counts["entities"]),
+                "source_file_count": len(sources),
             })
         return {"sources": result}
     finally:
@@ -321,6 +399,8 @@ def _first_text(raw: dict[str, Any], keys: tuple[str, ...]) -> str:
             continue
         text = str(value).strip()
         if text and text.casefold() not in {"-", "--", "—", "null", "none", "n/a"}:
+            if re.search(r"(?i)\.(?:xlsx|xls|csv|jsonl?|txt)$", text):
+                continue
             return text
     return ""
 
@@ -345,6 +425,101 @@ def _creator_claims(conn: sqlite3.Connection, record_ids: list[str]) -> dict[str
     return claims
 
 
+def _history_source_priority(source_name: str) -> int:
+    folded = source_name.casefold()
+    if "详情" in source_name:
+        return 0
+    if "ept" in folded or "musinsa" in folded:
+        return 1
+    if "早期" in source_name:
+        return 2
+    if "索引" in source_name:
+        return 3
+    return 4
+
+
+def _merge_history_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Merge only records already linked by the evidence store's strong IDs."""
+    grouped: dict[str, dict[str, Any]] = {}
+    priorities: dict[str, dict[str, tuple[int, str]]] = {}
+    for record in records:
+        identity = str(record.get("identity_id") or record["ref"])
+        rank = _history_source_priority(str(record.get("source_name") or ""))
+        group = grouped.get(identity)
+        if group is None:
+            group = dict(record)
+            group["aliases"] = []
+            group["source_records"] = []
+            group["source_names"] = []
+            group["details"] = []
+            group["prices"] = []
+            grouped[identity] = group
+            priorities[identity] = {}
+            for field in ("followers", "daily_read_median", "daily_interaction_median", "likes_and_favorites", "published_notes", "category", "region"):
+                value = record.get(field)
+                if value not in (None, ""):
+                    priorities[identity][field] = (rank, str(record.get("capture_time") or ""))
+
+        name = str(record.get("name") or "").strip()
+        if name and name != "未命名记录" and name not in group["aliases"]:
+            group["aliases"].append(name)
+        source_ref = {
+            "source_name": record.get("source_name", ""),
+            "sha256": record.get("sha256", ""),
+            "source_paths": record.get("source_paths", []),
+            "row_number": record.get("row_number"),
+            "capture_time": record.get("capture_time"),
+        }
+        if source_ref not in group["source_records"]:
+            group["source_records"].append(source_ref)
+        if record.get("source_name") and record["source_name"] not in group["source_names"]:
+            group["source_names"].append(record["source_name"])
+
+        for field in ("xiaohongshu_account", "xiaohongshu_profile_id", "pgy_creator_id"):
+            if record.get(field) and not group.get(field):
+                group[field] = record[field]
+
+        for field in ("followers", "daily_read_median", "daily_interaction_median", "likes_and_favorites", "published_notes", "category", "region"):
+            value = record.get(field)
+            if value in (None, ""):
+                continue
+            candidate_time = str(record.get("capture_time") or "")
+            prior = priorities[identity].get(field)
+            if prior is None or rank < prior[0] or (rank == prior[0] and candidate_time > prior[1]):
+                group[field] = value
+                priorities[identity][field] = (rank, candidate_time)
+
+        for detail in record.get("details", []):
+            if detail not in group["details"]:
+                group["details"].append(detail)
+        for price in record.get("prices", []):
+            tagged = {**price, "source_name": record.get("source_name", ""), "row_number": record.get("row_number")}
+            if tagged not in group["prices"]:
+                group["prices"].append(tagged)
+
+        if rank < _history_source_priority(str(group.get("source_name") or "")):
+            group["name"] = name or group.get("name")
+            group["source_name"] = record.get("source_name")
+            group["sha256"] = record.get("sha256")
+            group["row_number"] = record.get("row_number")
+            group["capture_time"] = record.get("capture_time")
+
+    merged = list(grouped.values())
+    for item in merged:
+        item["ref"] = item.get("identity_id") or item["ref"]
+        source_paths = {
+            path
+            for row in item["source_records"]
+            for path in row.get("source_paths", [])
+        }
+        item["source_file_count"] = len(source_paths) or len({row["sha256"] for row in item["source_records"] if row.get("sha256")})
+        item["source_names"] = sorted(item["source_names"])
+        item["aliases"] = sorted(item["aliases"], key=str.casefold)
+        item["source_records"] = item["source_records"][:30]
+        item["details"] = item["details"][:80]
+    return merged
+
+
 def history_creator_library(
     path: Path | str | None,
     source_key: str = "EPT",
@@ -358,8 +533,13 @@ def history_creator_library(
     daily_read_max: float | None = None,
     daily_interaction_min: float | None = None,
     daily_interaction_max: float | None = None,
+    offset: int = 0,
+    limit: int = 100,
 ) -> dict[str, Any]:
-    _, where, match = _group(source_key)
+    group = LIBRARY_SOURCE_GROUPS.get(source_key) or SOURCE_GROUPS.get(source_key)
+    if group is None:
+        raise HistoryAnalyticsError("请选择有效的数据来源")
+    where, match = group["where"], group["match"]
     conn = _connection(path)
     try:
         sources = _source_files(conn, where, match)
@@ -367,9 +547,15 @@ def history_creator_library(
             raise HistoryAnalyticsError("所选数据来源暂时没有记录")
         source_ids = [source["source_id"] for source in sources]
         marks = ",".join("?" for _ in source_ids)
+        paths_by_source: dict[str, list[str]] = {}
+        for path_row in conn.execute(
+            f"SELECT source_id, path FROM source_paths WHERE source_id IN ({marks}) ORDER BY path",
+            source_ids,
+        ).fetchall():
+            paths_by_source.setdefault(path_row["source_id"], []).append(path_row["path"])
         rows = conn.execute(
             f"""
-            SELECT sr.record_id, sr.row_number, sr.capture_time, sr.raw_json,
+            SELECT sr.record_id, sr.source_id, sr.identity_id, sr.identity_status, sr.row_number, sr.capture_time, sr.raw_json,
                    s.source_name, s.sha256, fe.target_field, fe.original_field,
                    fe.raw_json AS field_raw_json, fe.numeric_value, fe.text_value,
                    fe.unit, fe.period, fe.parse_status
@@ -377,7 +563,7 @@ def history_creator_library(
             JOIN sources s ON s.source_id=sr.source_id
             LEFT JOIN field_evidence fe ON fe.record_id=sr.record_id
                 AND fe.target_field IN ({','.join('?' for _ in FIELD_LABELS)})
-            WHERE sr.source_id IN ({marks})
+            WHERE sr.source_id IN ({marks}) AND sr.identity_status <> 'index_only'
             ORDER BY s.source_name, sr.row_number, fe.target_field
             """,
             (*FIELD_LABELS.keys(), *source_ids),
@@ -387,10 +573,13 @@ def history_creator_library(
         for row in rows:
             record = by_record.setdefault(row["record_id"], {
                 "ref": row["record_id"],
+                "identity_id": row["identity_id"],
+                "identity_status": row["identity_status"],
                 "row_number": row["row_number"],
                 "capture_time": row["capture_time"],
                 "source_name": row["source_name"],
                 "sha256": row["sha256"],
+                "source_paths": paths_by_source.get(row["source_id"], []),
                 "raw": _raw_value(row["raw_json"]),
                 "fields": {},
                 "evidence": [],
@@ -432,6 +621,8 @@ def history_creator_library(
             region = text_value("region")
             values = {
                 "ref": record_id,
+                "identity_id": record["identity_id"],
+                "identity_status": record["identity_status"],
                 "name": name or "未命名记录",
                 "xiaohongshu_account": ids.get("xiaohongshu_account", ""),
                 "xiaohongshu_profile_id": ids.get("xiaohongshu_profile_id", ""),
@@ -445,6 +636,7 @@ def history_creator_library(
                 "region": region,
                 "source_name": record["source_name"],
                 "sha256": record["sha256"],
+                "source_paths": record["source_paths"],
                 "row_number": record["row_number"],
                 "capture_time": record["capture_time"],
                 "prices": [],
@@ -470,48 +662,116 @@ def history_creator_library(
                     "unit": evidence_row["unit"] or unit,
                     "period": evidence_row["period"],
                     "parse_status": evidence_row["parse_status"],
+                    "source_name": record["source_name"],
+                    "row_number": record["row_number"],
+                    "capture_time": record["capture_time"],
                 }
                 values["details"].append(detail)
                 if field in {"all_price", "image_price", "video_price", "image_fixed_price", "video_fixed_price"}:
                     values["prices"].append({"label": label, "raw_value": display_value})
 
+            if source_key == "history_all" and not name and not any(ids.values()):
+                visible_metrics = (
+                    values["followers"], values["daily_read_median"], values["daily_interaction_median"],
+                    values["likes_and_favorites"], values["published_notes"], values["category"], values["region"],
+                )
+                if not any(value not in (None, "") for value in visible_metrics) and not values["prices"]:
+                    continue
+
             searchable = " ".join(str(value) for value in (
                 values["name"], values["xiaohongshu_account"], values["xiaohongshu_profile_id"],
                 values["pgy_creator_id"], values["category"], values["region"],
             )).casefold()
-            if q and q not in searchable:
-                continue
-            if category_filter and category_filter not in categories.casefold():
-                continue
-            if location_filter and location_filter not in region.casefold():
-                continue
-            followers = values["followers"]
-            if followers_min is not None and (followers is None or followers < followers_min):
-                continue
-            if followers_max is not None and (followers is None or followers > followers_max):
-                continue
-            daily_read = values["daily_read_median"]
-            if daily_read_min is not None and (daily_read is None or daily_read < daily_read_min):
-                continue
-            if daily_read_max is not None and (daily_read is None or daily_read > daily_read_max):
-                continue
-            daily_interaction = values["daily_interaction_median"]
-            if daily_interaction_min is not None and (daily_interaction is None or daily_interaction < daily_interaction_min):
-                continue
-            if daily_interaction_max is not None and (daily_interaction is None or daily_interaction > daily_interaction_max):
-                continue
+            if source_key != "history_all":
+                if q and q not in searchable:
+                    continue
+                if category_filter and category_filter not in categories.casefold():
+                    continue
+                if location_filter and location_filter not in region.casefold():
+                    continue
+                followers = values["followers"]
+                if followers_min is not None and (followers is None or followers < followers_min):
+                    continue
+                if followers_max is not None and (followers is None or followers > followers_max):
+                    continue
+                daily_read = values["daily_read_median"]
+                if daily_read_min is not None and (daily_read is None or daily_read < daily_read_min):
+                    continue
+                if daily_read_max is not None and (daily_read is None or daily_read > daily_read_max):
+                    continue
+                daily_interaction = values["daily_interaction_median"]
+                if daily_interaction_min is not None and (daily_interaction is None or daily_interaction < daily_interaction_min):
+                    continue
+                if daily_interaction_max is not None and (daily_interaction is None or daily_interaction > daily_interaction_max):
+                    continue
             results.append(values)
 
+        visible_entity_count: int | None = None
+        if source_key == "history_all":
+            results = _merge_history_records(results)
+            visible_entity_count = len(results)
+            filtered = []
+            for values in results:
+                searchable = " ".join(str(value) for value in (
+                    values.get("name", ""), *values.get("aliases", []),
+                    values.get("xiaohongshu_account", ""), values.get("xiaohongshu_profile_id", ""),
+                    values.get("pgy_creator_id", ""), values.get("category", ""), values.get("region", ""),
+                )).casefold()
+                if q and q not in searchable:
+                    continue
+                if category_filter and category_filter not in str(values.get("category") or "").casefold():
+                    continue
+                if location_filter and location_filter not in str(values.get("region") or "").casefold():
+                    continue
+                followers = values.get("followers")
+                if followers_min is not None and (followers is None or followers < followers_min):
+                    continue
+                if followers_max is not None and (followers is None or followers > followers_max):
+                    continue
+                daily_read = values.get("daily_read_median")
+                if daily_read_min is not None and (daily_read is None or daily_read < daily_read_min):
+                    continue
+                if daily_read_max is not None and (daily_read is None or daily_read > daily_read_max):
+                    continue
+                daily_interaction = values.get("daily_interaction_median")
+                if daily_interaction_min is not None and (daily_interaction is None or daily_interaction < daily_interaction_min):
+                    continue
+                if daily_interaction_max is not None and (daily_interaction is None or daily_interaction > daily_interaction_max):
+                    continue
+                filtered.append(values)
+            results = filtered
+        else:
+            for values in results:
+                values["source_records"] = [{
+                    "source_name": values["source_name"],
+                    "sha256": values["sha256"],
+                    "source_paths": values["source_paths"],
+                    "row_number": values["row_number"],
+                    "capture_time": values["capture_time"],
+                }]
+                values["source_file_count"] = len(values["source_paths"]) or 1
         results.sort(key=lambda item: (item["followers"] is None, -(item["followers"] or 0), item["name"].casefold()))
+        result_count = len(results)
+        page_records = results[offset:offset + limit]
+        entity_count = visible_entity_count
+        if entity_count is None:
+            entity_count = conn.execute(
+                f"""SELECT COUNT(DISTINCT COALESCE(sr.identity_id, sr.record_id))
+                    FROM source_records sr WHERE sr.source_id IN ({marks}) AND sr.identity_status <> 'index_only'""",
+                source_ids,
+            ).fetchone()[0]
         return {
             "source": {
                 "key": source_key,
-                "label": SOURCE_GROUPS[source_key]["label"],
+                "label": group["label"],
                 "sample_count": sum(source["saved_records"] for source in sources),
+                "entity_count": int(entity_count),
                 "source_file_count": len(sources),
             },
-            "result_count": len(results),
-            "records": results,
+            "result_count": result_count,
+            "offset": offset,
+            "limit": limit,
+            "records": page_records,
         }
     finally:
         conn.close()
@@ -677,15 +937,105 @@ def note_samples(path: Path | str | None) -> dict[str, Any]:
                 sample["title"] = value
             elif field == "note_body_candidate":
                 body = re.sub(r"https?://\S+", "", value)
-                sample["body"] = re.sub(r"(?<!\w)@[^\s，。；;]+", "", body).strip()
+                body = re.sub(r"(?<!\w)@[^\s，。；;]+", "", body)
+                sample["body"] = re.sub(r"\[\s*话题\s*\]", "", body, flags=re.IGNORECASE).strip()
             elif field == "note_topics_candidate":
                 try:
                     topics = json.loads(value)
                 except (TypeError, json.JSONDecodeError):
                     topics = re.findall(r"#([^\s#]+)", value)
                 if isinstance(topics, list):
-                    sample["topics"] = list(dict.fromkeys(str(topic).strip().lstrip("#") for topic in topics if str(topic).strip()))
+                    clean_topics = []
+                    for topic in topics:
+                        name = re.sub(r"\[\s*话题\s*\]", "", str(topic), flags=re.IGNORECASE).strip().lstrip("#")
+                        if name and name.casefold() != "话题" and name not in clean_topics:
+                            clean_topics.append(name)
+                    sample["topics"] = clean_topics
         selected = [samples[digest] for digest in NOTE_SAMPLE_SHA256 if digest in samples and samples[digest]["title"] and samples[digest]["body"]]
         return {"sample_count": len(selected), "samples": selected}
+    finally:
+        conn.close()
+
+
+def history_note_library(
+    path: Path | str | None,
+    *,
+    query: str = "",
+    offset: int = 0,
+    limit: int = 12,
+) -> dict[str, Any]:
+    """Read searchable title/body/topic samples from imported history notes."""
+    conn = _connection(path)
+    try:
+        rows = conn.execute(
+            """
+            SELECT s.source_name, s.sha256,
+                   (SELECT MIN(sp.path) FROM source_paths sp WHERE sp.source_id=s.source_id) AS source_path,
+                   sr.record_id, sr.row_number, sr.capture_time,
+                   sr.raw_json, fe.target_field, fe.text_value
+            FROM sources s
+            JOIN source_records sr ON sr.source_id=s.source_id
+            LEFT JOIN field_evidence fe ON fe.record_id=sr.record_id
+                AND fe.target_field IN ('note_title','note_body','note_body_candidate','note_topics','note_topics_candidate')
+            WHERE s.source_name LIKE 'rednote_note__%'
+            ORDER BY s.source_name, s.sha256, sr.row_number, fe.target_field
+            """
+        ).fetchall()
+        notes: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            note = notes.setdefault(row["record_id"], {
+                "title": "", "body": "", "topics": [], "author": "",
+                "lineage": {
+                    "source_name": row["source_name"], "sha256": row["sha256"],
+                    "source_path": row["source_path"], "row_number": row["row_number"], "capture_time": row["capture_time"],
+                },
+            })
+            raw = _raw_value(row["raw_json"])
+            if isinstance(raw, dict) and not note["author"]:
+                note["author"] = _first_text(raw, ("author_name", "author", "creator_name", "博主昵称", "达人名称"))
+            field, value = row["target_field"], row["text_value"]
+            if not value:
+                continue
+            if field == "note_title" and not note["title"]:
+                note["title"] = str(value).strip()
+            elif field in {"note_body", "note_body_candidate"} and not note["body"]:
+                body = re.sub(r"https?://\S+", "", str(value))
+                body = re.sub(r"(?<!\w)@[^\s，。；;]+", "", body)
+                body = re.sub(r"\[\s*话题\s*\]", "", body, flags=re.IGNORECASE)
+                note["body"] = body.strip()
+            elif field in {"note_topics", "note_topics_candidate"} and not note["topics"]:
+                try:
+                    topics = json.loads(value)
+                except (TypeError, json.JSONDecodeError):
+                    topics = re.findall(r"#([^\s#]+)", str(value))
+                if isinstance(topics, str):
+                    topics = [topics]
+                if isinstance(topics, list):
+                    normalized = []
+                    for topic in topics:
+                        name = re.sub(r"\[\s*话题\s*\]", "", str(topic), flags=re.IGNORECASE).strip().lstrip("#")
+                        if name and name.casefold() not in {"话题", "正文", "无"} and name not in normalized:
+                            normalized.append(name)
+                    note["topics"] = normalized
+
+        notes_list = list(notes.values())
+        title_count = sum(bool(note["title"]) for note in notes_list)
+        body_count = sum(bool(note["body"]) for note in notes_list)
+        topics_count = sum(bool(note["topics"]) for note in notes_list)
+        q = query.strip().casefold()
+        matched = [
+            note for note in notes_list
+            if not q or q in " ".join((note["title"], note["body"], " ".join(note["topics"]), note["author"])).casefold()
+        ]
+        return {
+            "total_count": len(notes_list),
+            "result_count": len(matched),
+            "title_count": title_count,
+            "body_count": body_count,
+            "topics_count": topics_count,
+            "offset": offset,
+            "limit": limit,
+            "samples": matched[offset:offset + limit],
+        }
     finally:
         conn.close()

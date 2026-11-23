@@ -18,6 +18,10 @@
   let lastAnalyticsData = null;
   let lastCreatorCompareRows = [];
   let lastNoteCompareRows = [];
+  let historyLibraryOffset = 0;
+  const HISTORY_LIBRARY_PAGE_SIZE = 50;
+  let historyNoteOffset = 0;
+  const HISTORY_NOTE_PAGE_SIZE = 12;
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -823,14 +827,32 @@
 
   function renderHistoryNoteSamples(payload) {
     const samples = payload.samples || [];
-    $('#historyNoteCount').textContent = `${payload.sample_count || 0} 篇`;
-    $('#historyNoteStatus').textContent = samples.length ? '正文与话题示例' : '暂无可展示的笔记内容';
-    $('#historyNoteSamples').innerHTML = samples.map((item) => `<article class="history-note-card"><h4>${escapeHtml(item.title)}</h4><p class="history-note-body">${escapeHtml(item.body)}</p><div class="history-note-topics">${(item.topics || []).map((topic) => `<span>#${escapeHtml(topic)}</span>`).join('')}</div></article>`).join('') || '<article class="history-note-card empty-cell">暂无笔记样本</article>';
+    $('#historyNoteCount').textContent = `${formatMetric(payload.total_count || 0)} 篇`;
+    $('#historyNoteStatus').textContent = `正文 ${formatMetric(payload.body_count || 0)} 篇 · 标题 ${formatMetric(payload.title_count || 0)} 篇 · 有话题 ${formatMetric(payload.topics_count || 0)} 篇`;
+    $('#historyNoteSamples').innerHTML = samples.map((item) => `<article class="history-note-card"><h4>${escapeHtml(item.title || '（无标题）')}</h4>${item.author ? `<small>${escapeHtml(item.author)}</small>` : ''}<p class="history-note-body">${escapeHtml(item.body || '暂无已解析正文')}</p><div class="history-note-topics">${(item.topics || []).map((topic) => `<span>#${escapeHtml(topic)}</span>`).join('') || '<span>暂无已解析话题</span>'}</div><small>${escapeHtml(item.lineage?.source_name || '历史笔记')} · 第 ${formatMetric(item.lineage?.row_number || 0)} 行${item.lineage?.capture_time ? ` · ${escapeHtml(item.lineage.capture_time)}` : ''}</small></article>`).join('') || '<article class="history-note-card empty-cell">暂无匹配笔记内容</article>';
+    const offset = Number(payload.offset || 0);
+    const limit = Number(payload.limit || HISTORY_NOTE_PAGE_SIZE);
+    const resultCount = Number(payload.result_count || 0);
+    const first = resultCount ? offset + 1 : 0;
+    const last = Math.min(offset + limit, resultCount);
+    $('#historyNotePageStatus').textContent = `${formatMetric(first)}–${formatMetric(last)} / ${formatMetric(resultCount)}`;
+    $('#historyNoteCoverage').textContent = `原始资料共 ${formatMetric(payload.total_count || 0)} 篇`;
+    $('#historyNotePrev').disabled = offset <= 0;
+    $('#historyNoteNext').disabled = offset + limit >= resultCount;
+  }
+
+  async function refreshHistoryNoteLibrary() {
+    const params = new URLSearchParams({
+      q: $('#historyNoteQuery').value.trim(),
+      offset: String(historyNoteOffset),
+      limit: String(HISTORY_NOTE_PAGE_SIZE),
+    });
+    renderHistoryNoteSamples(await requestJson(`/api/history-analysis/note-library?${params.toString()}`));
   }
 
   function renderHistoryLibrary(payload) {
     const source = payload.source || {};
-    $('#historyLibraryCount').textContent = `${formatMetric(payload.result_count || 0)} 条结果 / ${formatMetric(source.sample_count || 0)} 条来源记录`;
+    $('#historyLibraryCount').textContent = `${formatMetric(payload.result_count || 0)} 条匹配 / ${formatMetric(source.entity_count || 0)} 条历史条目 / ${formatMetric(source.sample_count || 0)} 条来源记录`;
     const statuses = {
       parsed: '已解析', text: '文本取得', starting_price: '起价解析',
       displayed_unavailable: '页面显示无值', empty: '页面空白',
@@ -846,17 +868,29 @@
         const raw = item.raw_value ? escapeHtml(item.raw_value) : (item.text_value ? escapeHtml(item.text_value) : '—');
         return `<dt>${escapeHtml(item.label)}${original}<small> · ${escapeHtml(state)}</small></dt><dd>${raw}${parsed}${item.period ? `<small> · ${escapeHtml(item.period)}</small>` : ''}</dd>`;
       }).join('');
-      const details = `<details class="history-row-details"><summary>查看字段（${(row.details || []).length}）</summary><dl>${detailList || '<dd>暂无字段详情</dd>'}</dl></details>`;
+      const sourceRefs = (row.source_records || []).map((item) => {
+        const paths = (item.source_paths || []).map((path) => `<small>${escapeHtml(path)}</small>`).join('');
+        return `<li>${escapeHtml(item.source_name || '历史来源')} · 第 ${formatMetric(item.row_number || 0)} 行${item.capture_time ? ` · ${escapeHtml(item.capture_time)}` : ''}${paths}</li>`;
+      }).join('');
+      const details = `<details class="history-row-details"><summary>查看字段（${(row.details || []).length}）· 来源 ${formatMetric(row.source_file_count || 0)} 份</summary>${row.aliases?.length > 1 ? `<p>历史名称：${row.aliases.map(escapeHtml).join('、')}</p>` : ''}<ul class="history-lineage-list">${sourceRefs || '<li>来源记录见原始资料</li>'}</ul><dl>${detailList || '<dd>暂无字段详情</dd>'}</dl></details>`;
       return `<tr><td>${escapeHtml(row.name || '未命名记录')}</td><td>${escapeHtml(row.xiaohongshu_account || '—')}</td><td>${escapeHtml(row.xiaohongshu_profile_id || '—')}</td><td>${escapeHtml(row.pgy_creator_id || '—')}</td><td>${escapeHtml(row.region || '—')}</td><td>${escapeHtml(row.category || '—')}</td><td>${row.followers === null || row.followers === undefined ? '—' : formatMetric(row.followers)}</td><td>${row.daily_read_median === null || row.daily_read_median === undefined ? '—' : formatMetric(row.daily_read_median)}</td><td>${row.daily_interaction_median === null || row.daily_interaction_median === undefined ? '—' : formatMetric(row.daily_interaction_median)}</td><td>${row.likes_and_favorites === null || row.likes_and_favorites === undefined ? '—' : formatMetric(row.likes_and_favorites)}</td><td>${row.published_notes === null || row.published_notes === undefined ? '—' : formatMetric(row.published_notes)}</td><td>${prices}</td><td>${details}</td></tr>`;
     }).join('') || '<tr><td colspan="13" class="empty-cell">当前条件下没有历史记录</td></tr>';
+    const offset = Number(payload.offset || 0);
+    const limit = Number(payload.limit || HISTORY_LIBRARY_PAGE_SIZE);
+    const resultCount = Number(payload.result_count || 0);
+    const first = resultCount ? offset + 1 : 0;
+    const last = Math.min(offset + limit, resultCount);
+    $('#historyLibraryPageStatus').textContent = `${formatMetric(first)}–${formatMetric(last)} / ${formatMetric(resultCount)}`;
+    $('#historyLibraryPrev').disabled = offset <= 0;
+    $('#historyLibraryNext').disabled = offset + limit >= resultCount;
   }
 
   async function refreshHistoryLibrary() {
-    const sourcePayload = await requestJson('/api/history-analysis/sources');
+    const sourcePayload = await requestJson('/api/history-analysis/library-sources');
     const select = $('#historyLibrarySourceSelect');
     const sources = sourcePayload.sources || [];
-    const selected = sources.some((item) => item.key === select.value) ? select.value : (sources[0]?.key || '');
-    select.innerHTML = sources.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)} · ${formatMetric(item.sample_count)} 条</option>`).join('');
+    const selected = sources.some((item) => item.key === select.value) ? select.value : (sources.find((item) => item.key === 'history_all')?.key || sources[0]?.key || '');
+    select.innerHTML = sources.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)} · ${formatMetric(item.entity_count || 0)} 条资料</option>`).join('');
     select.value = selected;
     if (!selected) {
       $('#historyLibraryCount').textContent = '暂无历史记录';
@@ -874,6 +908,8 @@
       daily_read_max: $('#historyLibraryDailyReadMax').value.trim(),
       daily_interaction_min: $('#historyLibraryDailyInteractionMin').value.trim(),
       daily_interaction_max: $('#historyLibraryDailyInteractionMax').value.trim(),
+      offset: String(historyLibraryOffset),
+      limit: String(HISTORY_LIBRARY_PAGE_SIZE),
     });
     renderHistoryLibrary(await requestJson(`/api/history-analysis/library?${params.toString()}`));
   }
@@ -895,7 +931,7 @@
         setEmptyChart(charts.historyPerformanceChart, '暂无可用样本');
         setEmptyChart(charts.historyCoverageChart, '暂无可用样本');
       }
-      renderHistoryNoteSamples(await requestJson('/api/history-analysis/note-samples'));
+      await refreshHistoryNoteLibrary();
     } catch (error) {
       $('#historyAnalysisStatus').textContent = error.message;
       setEmptyChart(charts.historyFollowersChart, '历史数据暂不可用');
@@ -904,7 +940,7 @@
       $('#historyFieldBody').innerHTML = '<tr><td colspan="4" class="empty-cell">暂无样本</td></tr>';
       $('#historyCoverageBody').innerHTML = '<tr><td colspan="15" class="empty-cell">暂无字段证据</td></tr>';
       $('#historyRecordBody').innerHTML = '<tr><td colspan="4" class="empty-cell">暂无样本</td></tr>';
-      renderHistoryNoteSamples({ samples: [], sample_count: 0 });
+      renderHistoryNoteSamples({ samples: [], total_count: 0, result_count: 0, body_count: 0, title_count: 0, topics_count: 0 });
     }
   }
 
@@ -993,11 +1029,19 @@
 
   function bindEvents() {
     $('#historySourceSelect').addEventListener('change', () => refreshHistoryAnalysis().catch((error) => toast(error.message, true)));
-    $('#historyLibrarySourceSelect').addEventListener('change', () => refreshHistoryLibrary().catch((error) => toast(error.message, true)));
-    $('#filterHistoryLibrary').addEventListener('click', () => refreshHistoryLibrary().catch((error) => toast(error.message, true)));
+    $('#historyLibrarySourceSelect').addEventListener('change', () => { historyLibraryOffset = 0; refreshHistoryLibrary().catch((error) => toast(error.message, true)); });
+    $('#filterHistoryLibrary').addEventListener('click', () => { historyLibraryOffset = 0; refreshHistoryLibrary().catch((error) => toast(error.message, true)); });
+    $('#historyLibraryPrev').addEventListener('click', () => { historyLibraryOffset = Math.max(0, historyLibraryOffset - HISTORY_LIBRARY_PAGE_SIZE); refreshHistoryLibrary().catch((error) => toast(error.message, true)); });
+    $('#historyLibraryNext').addEventListener('click', () => { historyLibraryOffset += HISTORY_LIBRARY_PAGE_SIZE; refreshHistoryLibrary().catch((error) => toast(error.message, true)); });
     $('#historyLibraryQuery').addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') refreshHistoryLibrary().catch((error) => toast(error.message, true));
+      if (event.key === 'Enter') { historyLibraryOffset = 0; refreshHistoryLibrary().catch((error) => toast(error.message, true)); }
     });
+    $('#filterHistoryNotes').addEventListener('click', () => { historyNoteOffset = 0; refreshHistoryNoteLibrary().catch((error) => toast(error.message, true)); });
+    $('#historyNoteQuery').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') { historyNoteOffset = 0; refreshHistoryNoteLibrary().catch((error) => toast(error.message, true)); }
+    });
+    $('#historyNotePrev').addEventListener('click', () => { historyNoteOffset = Math.max(0, historyNoteOffset - HISTORY_NOTE_PAGE_SIZE); refreshHistoryNoteLibrary().catch((error) => toast(error.message, true)); });
+    $('#historyNoteNext').addEventListener('click', () => { historyNoteOffset += HISTORY_NOTE_PAGE_SIZE; refreshHistoryNoteLibrary().catch((error) => toast(error.message, true)); });
     elements.importButton.addEventListener('click', () => submitTask('/api/tasks/import-baseline', '已提交历史基线导入任务'));
     elements.uploadButton.addEventListener('click', () => elements.uploadInput.click());
     elements.uploadInput.addEventListener('change', async () => {

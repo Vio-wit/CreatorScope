@@ -46,10 +46,20 @@
 .history-library-heading h3{margin:0;font-size:13px;color:#364039}
 .history-library-heading p{margin:5px 0 0;color:#89948d;font-size:9px}
 .history-library-filters{margin-bottom:10px}
+.history-advanced-filters{flex:1 0 100%;padding-top:7px;border-top:1px solid #edf0ed}
+.history-advanced-filters>summary{cursor:pointer;color:#6e7b72;font-size:9px}
+.history-advanced-fields{display:flex;flex-wrap:wrap;gap:9px;padding-top:9px}
+.history-advanced-fields label{display:flex;flex-direction:column;gap:5px;color:#8a948d;font-size:8px}
+.history-advanced-fields input{height:30px;min-width:95px;border:1px solid #e5eae5;border-radius:6px;background:#fff;padding:0 8px;color:#46514a;font:inherit;font-size:9px}
 .history-library-panel .creator-table-card{margin:0}
 .history-library-panel table{min-width:1450px}
 .history-library-panel .table-scroll{max-height:520px}
+.history-library-pager{display:flex;justify-content:center;align-items:center;gap:10px;padding:10px 0 1px;color:#7b877f;font-size:10px}
+.history-library-pager .button{padding:5px 10px;font-size:9px}
+.history-library-pager .button:disabled{opacity:.45;cursor:not-allowed}
 .history-row-details summary{cursor:pointer;color:#36805e;font-size:8px}
+.history-lineage-list{margin:6px 0;padding:7px 8px 7px 22px;background:#f8faf8;border-radius:6px;color:#68766d;font-size:8px;line-height:1.7}
+.history-lineage-list small{display:block;overflow-wrap:anywhere;color:#8a958d;font-size:7px}
 .history-row-details dl{display:grid;grid-template-columns:minmax(90px,auto) minmax(160px,1fr);gap:3px 8px;min-width:360px;max-width:620px;margin:7px 0;padding:8px;background:#f8faf8;border-radius:6px;white-space:normal}
 .history-row-details dt{color:#7b877f;font-size:8px}
 .history-row-details dd{margin:0;color:#4a564e;font-size:8px;overflow-wrap:anywhere}
@@ -72,6 +82,10 @@
 .dashboard-note-sample small{display:block;margin-top:6px;color:#98a29b;font-size:7px}
 .history-note-section{margin-top:12px;padding:14px;background:#fff;border:1px solid #e9ede9;border-radius:10px}
 .history-note-section .card-heading{align-items:center;margin-bottom:10px}
+.history-note-controls{display:flex;align-items:flex-end;gap:8px;margin:0 0 10px}
+.history-note-controls label{display:grid;gap:4px;max-width:360px;flex:1;color:#738077;font-size:9px}
+.history-note-controls input{min-width:160px;padding:7px 9px;border:1px solid #e5ebe6;border-radius:7px;color:#39463e;font:inherit}
+.history-note-controls span{margin-left:auto;color:#87938b;font-size:9px}
 .history-note-section h3,.history-fields-card h3,.history-records-card h3{margin:0;font-size:12px;color:#364039}
 .history-note-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .history-note-card{min-width:0;padding:12px;border:1px solid #edf0ed;border-radius:8px;background:#fcfdfc}
@@ -81,7 +95,7 @@
 .history-note-topics span{padding:3px 7px;border-radius:12px;background:#edf5ef;color:#4e765e;font-size:8px}
 .history-records-card .table-scroll{max-height:300px}
 @media(max-width:1120px){.history-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.history-note-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:760px){.nav-more{display:none}.history-analysis-panel{padding:10px}.history-panel-heading{align-items:flex-start;flex-direction:column}.history-panel-heading .select-wrap{width:100%}.history-panel-heading .select-wrap select{max-width:none}.history-kpi-grid,.history-chart-grid,.history-note-grid{grid-template-columns:1fr}.history-note-section{padding:10px}}
+@media(max-width:760px){.nav-more{display:none}.history-analysis-panel{padding:10px}.history-panel-heading{align-items:flex-start;flex-direction:column}.history-panel-heading .select-wrap{width:100%}.history-panel-heading .select-wrap select{max-width:none}.history-kpi-grid,.history-chart-grid,.history-note-grid{grid-template-columns:1fr}.history-note-section{padding:10px}.history-note-controls{align-items:stretch;flex-wrap:wrap}.history-note-controls label{min-width:100%;max-width:none}.history-note-controls button{flex:0 0 auto}.history-note-controls span{margin-left:0;align-self:center}.history-advanced-filters{grid-column:1/-1}.history-advanced-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.history-advanced-fields label,.history-advanced-fields input{width:100%;min-width:0}}
 @media(max-width:760px){.sidebar{flex-direction:row;align-items:center}.sidebar .brand{flex:0 0 100%;padding:0}.sidebar .nav-item[data-primary-section]{display:flex;flex:1 1 30%;justify-content:center;height:34px;margin:8px 0 0;padding:0 5px;font-size:9px;gap:5px}}
 
 /* ---------- 数据质量看板 ---------- */

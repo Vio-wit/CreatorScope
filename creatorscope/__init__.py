@@ -19,7 +19,7 @@ from .browser import PgyVisibleBrowser
 from .db import SCHEMA_VERSION, connection, initialize_database, schema_version_readonly, verify_database_readonly
 from .domain import field_dictionary
 from .ingest import MAX_UPLOAD_BYTES
-from .history_analytics import HistoryAnalyticsError, analysis_data as history_analysis_data, history_creator_library, list_sources as history_source_options, note_samples as history_note_samples
+from .history_analytics import HistoryAnalyticsError, analysis_data as history_analysis_data, history_creator_library, history_note_library, list_library_sources as history_library_source_options, list_sources as history_source_options, note_samples as history_note_samples
 from .news import NEWS_FEEDS, append_news_items, correlate_news_notes, fetch_feed, load_news_items
 from .quality import batch_quality_report, quality_overview
 from .report import build_report, render_docx, render_markdown, report_filename
@@ -388,6 +388,34 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         except HistoryAnalyticsError as exc:
             return jsonify({"error": str(exc)}), 503
 
+    @app.get("/api/history-analysis/note-library")
+    def api_history_analysis_note_library():
+        try:
+            try:
+                offset = int(request.args.get("offset", "0"))
+                limit = int(request.args.get("limit", "12"))
+            except ValueError as exc:
+                raise ValueError("分页参数必须是整数") from exc
+            if offset < 0 or limit < 1 or limit > 100:
+                raise ValueError("笔记分页范围无效（limit 最大为 100）")
+            return jsonify(history_note_library(
+                app.config["HISTORY_EVIDENCE_DB"],
+                query=request.args.get("q", ""),
+                offset=offset,
+                limit=limit,
+            ))
+        except HistoryAnalyticsError as exc:
+            return jsonify({"error": str(exc)}), 503
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
+    @app.get("/api/history-analysis/library-sources")
+    def api_history_analysis_library_sources():
+        try:
+            return jsonify(history_library_source_options(app.config["HISTORY_EVIDENCE_DB"]))
+        except HistoryAnalyticsError as exc:
+            return jsonify({"error": str(exc)}), 503
+
     @app.get("/api/history-analysis/library")
     def api_history_analysis_library():
         def optional_number(name: str) -> float | None:
@@ -403,6 +431,13 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 raise ValueError(f"筛选参数 {name} 必须是数字") from exc
 
         try:
+            try:
+                offset = int(request.args.get("offset", "0"))
+                limit = int(request.args.get("limit", "100"))
+            except ValueError as exc:
+                raise ValueError("分页参数必须是整数") from exc
+            if offset < 0 or limit < 1 or limit > 200:
+                raise ValueError("分页范围无效（limit 最大为 200）")
             numeric_filters = {
                 name: optional_number(name)
                 for name in (
@@ -426,6 +461,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 query=request.args.get("q", ""),
                 category=request.args.get("category", ""),
                 location=request.args.get("location", ""),
+                offset=offset,
+                limit=limit,
                 **numeric_filters,
             )
         except HistoryAnalyticsError as exc:

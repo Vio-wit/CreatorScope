@@ -65,6 +65,7 @@
           </div>
         </div>
         <div class="collection-controls">
+          <a class="button button-secondary download-link" href="/ai">AI 智能选人</a>
           <button class="button button-primary" id="importButton" {% if demo_mode %}hidden{% endif %}><span>＋</span>导入基线样本</button>
           <button class="button button-secondary" id="uploadButton" {% if demo_mode %}hidden{% endif %}>导入 JSON / CSV</button>
           <input id="uploadInput" type="file" accept=".json,.csv,application/json,text/csv" hidden>
@@ -166,8 +167,10 @@
           <div class="table-scroll"><table><thead><tr><th>样本</th><th>粉丝数</th><th>日常阅读中位数</th><th>日常互动中位数</th></tr></thead><tbody id="historyRecordBody"><tr><td colspan="4" class="empty-cell">读取中…</td></tr></tbody></table></div>
         </article>
         <section class="history-note-section">
-          <div class="card-heading"><div><h3>课堂内容样本</h3><p id="historyNoteStatus">从历史笔记中选取正文与话题示例</p></div><span class="analysis-count" id="historyNoteCount">—</span></div>
+          <div class="card-heading"><div><h3>历史笔记正文与话题</h3><p id="historyNoteStatus">按真实笔记原文展示，可搜索标题、正文和话题</p></div><span class="analysis-count" id="historyNoteCount">—</span></div>
+          <div class="history-note-controls"><label>搜索笔记<input id="historyNoteQuery" type="search" placeholder="标题、正文或话题关键词"></label><button class="button button-primary" id="filterHistoryNotes" type="button">搜索</button><span id="historyNotePageStatus">—</span></div>
           <div class="history-note-grid" id="historyNoteSamples"><article class="history-note-card empty-cell">读取中…</article></div>
+          <div class="history-library-pager"><button class="button" id="historyNotePrev" type="button">上一页</button><span id="historyNoteCoverage">—</span><button class="button" id="historyNoteNext" type="button">下一页</button></div>
         </section>
       </section>
       <section class="charts-grid analytics-grid">
@@ -215,21 +218,24 @@
       </section>
 
       <section class="history-library-panel" aria-labelledby="historyLibraryTitle">
-        <div class="card-heading history-library-heading"><div><h3 id="historyLibraryTitle">历史候选库</h3><p>按来源独立检索；记录数是来源记录数，不代表去重人数。</p></div><span class="table-count" id="historyLibraryCount">加载中…</span></div>
+        <div class="card-heading history-library-heading"><div><h3 id="historyLibraryTitle">历史达人库</h3><p>汇总本地 rednote 历史资料；有相同平台标识的来源会合并展示，指标仍按来源查看。</p></div><span class="table-count" id="historyLibraryCount">加载中…</span></div>
         <section class="creator-filter-panel history-library-filters">
-          <label>历史数据集<select id="historyLibrarySourceSelect"><option value="">加载中…</option></select></label>
+          <label>历史数据范围<select id="historyLibrarySourceSelect"><option value="">加载中…</option></select></label>
           <label>关键词<input id="historyLibraryQuery" type="search" placeholder="名称、公开账号或内容领域"></label>
           <label>粉丝下限<input id="historyLibraryFollowersMin" inputmode="numeric" placeholder="人"></label>
           <label>粉丝上限<input id="historyLibraryFollowersMax" inputmode="numeric" placeholder="人"></label>
-          <label>日常阅读下限<input id="historyLibraryDailyReadMin" inputmode="numeric" placeholder="次"></label>
-          <label>日常阅读上限<input id="historyLibraryDailyReadMax" inputmode="numeric" placeholder="次"></label>
-          <label>日常互动下限<input id="historyLibraryDailyInteractionMin" inputmode="numeric" placeholder="次"></label>
-          <label>日常互动上限<input id="historyLibraryDailyInteractionMax" inputmode="numeric" placeholder="次"></label>
-          <label>领域<input id="historyLibraryCategory" type="search" placeholder="领域关键词"></label>
-          <label>地域<input id="historyLibraryLocation" type="search" placeholder="地域关键词"></label>
           <button class="button button-primary" id="filterHistoryLibrary">筛选历史记录</button>
+          <details class="history-advanced-filters"><summary>更多条件</summary><div class="history-advanced-fields">
+            <label>日常阅读下限<input id="historyLibraryDailyReadMin" inputmode="numeric" placeholder="次"></label>
+            <label>日常阅读上限<input id="historyLibraryDailyReadMax" inputmode="numeric" placeholder="次"></label>
+            <label>日常互动下限<input id="historyLibraryDailyInteractionMin" inputmode="numeric" placeholder="次"></label>
+            <label>日常互动上限<input id="historyLibraryDailyInteractionMax" inputmode="numeric" placeholder="次"></label>
+            <label>领域<input id="historyLibraryCategory" type="search" placeholder="领域关键词"></label>
+            <label>地域<input id="historyLibraryLocation" type="search" placeholder="地域关键词"></label>
+          </div></details>
         </section>
         <div class="table-card creator-table-card"><div class="table-scroll"><table><thead><tr><th>名称</th><th>小红书公开账号</th><th>小红书主页 ID</th><th>蒲公英 ID</th><th>地域</th><th>领域</th><th>粉丝数</th><th>日常阅读</th><th>日常互动</th><th>获赞与收藏</th><th>发布笔记</th><th>报价原值</th><th>其他字段</th></tr></thead><tbody id="historyLibraryBody"><tr><td colspan="13" class="empty-cell">读取中…</td></tr></tbody></table></div></div>
+        <div class="history-library-pager"><button class="button" id="historyLibraryPrev" type="button">上一页</button><span id="historyLibraryPageStatus">—</span><button class="button" id="historyLibraryNext" type="button">下一页</button></div>
       </section>
 
       <section class="creator-comparison-panel">
