@@ -92,6 +92,14 @@ class HistoryEvidenceTests(unittest.TestCase):
         self.assertEqual(rows['published_notes'][:3], (7.0, 'count', 'parsed'))
         self.assertEqual(self.rows("SELECT capture_time FROM source_records"), [(None,)])
 
+    def test_timestamp_mapped_as_followers_keeps_raw_but_is_not_a_count(self):
+        p=self.make_json('timestamp_as_followers.json',[{'creator_name':'asset.xlsx','latest_known_followers':'20260728214705'}])
+        import_file(self.db,p,'suspect follower value')
+        row=self.rows("SELECT raw_json,numeric_value,parse_status FROM field_evidence WHERE target_field='followers'")[0]
+        self.assertEqual(row[0],'"20260728214705"')
+        self.assertIsNone(row[1])
+        self.assertEqual(row[2],'unparsed')
+
     def test_jsonl_error_and_csv_multiline_preserve_positions(self):
         p = self.root / 'raw.jsonl'
         p.write_text('{"title":"一"}\ninvalid\n', encoding='utf-8')

@@ -227,8 +227,14 @@ def _value(value: Any, kind: str, target: str) -> tuple[float | None, str | None
         raw = re.sub(r"[,，\s]", "", raw)
     if not re.fullmatch(r"-?\d+(?:\.\d+)?", raw):
         return None, None, unit, "unparsed"
+    numeric = float(raw) * suffix
+    # Multi-billion follower counts are almost certainly timestamps or file
+    # metadata accidentally mapped into a count column. Keep the raw value and
+    # flag it as unparsed instead of letting it distort the creator library.
+    if target == "followers" and numeric > 1_000_000_000:
+        return None, None, unit, "unparsed"
     # A bare price has no proven currency; keep its numeric value with NULL unit.
-    return float(raw) * suffix, None, unit, "starting_price" if is_start else "parsed"
+    return numeric, None, unit, "starting_price" if is_start else "parsed"
 
 
 def _records(data: bytes, suffix: str) -> list[tuple[int, dict[str, Any], str | None, str | None]]:
