@@ -5,3 +5,4 @@ numpy==2.4.6
 jieba==0.42.1
 WordCloud==1.9.6
 matplotlib==3.11.2
+python-docx==1.1.2

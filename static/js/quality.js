@@ -133,6 +133,7 @@
     $('#detailScope').textContent = `来源 ${report.source || '—'} · 状态 ${statusLabel(report.status)} · 耗时 ${seconds(report.elapsed_seconds)} · 记录 ${number(report.counts?.records)} · 评论 ${number(report.counts?.comments)}`;
     const link = $('#rawQualityLink');
     link.href = `/api/batches/${encodeURIComponent(report.batch_id)}/quality`;
+    $('#batchReportLink').href = `/report?batch_id=${encodeURIComponent(report.batch_id)}`;
 
     const fields = report.field_coverage || [];
     $('#fieldCount').textContent = `${fields.length} 个字段项`;
