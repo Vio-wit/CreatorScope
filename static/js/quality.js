@@ -132,6 +132,10 @@
     $('#detailSection').hidden = false;
     $('#detailTitle').textContent = `批次 ${report.batch_id}`;
     $('#detailScope').textContent = `来源 ${report.source || '—'} · 状态 ${statusLabel(report.status)} · 耗时 ${seconds(report.elapsed_seconds)} · 记录 ${number(report.counts?.records)} · 评论 ${number(report.counts?.comments)}`;
+    const acceptance = report.creator_acceptance;
+    $('#creatorAcceptance').textContent = acceptance
+      ? `达人合格 ${number(acceptance.success)} / ${number(acceptance.target)}（${percent(acceptance.success_pct)}），最低 ${number(acceptance.minimum_success)} 人 · ${acceptance.passed === null ? '任务未完成，不判定' : acceptance.passed ? '达到演示底线' : '未达到演示底线'}。${acceptance.note}`
+      : '该批次不适用五人达人演示验收。';
     const link = $('#rawQualityLink');
     link.href = `/api/batches/${encodeURIComponent(report.batch_id)}/quality`;
     $('#batchReportLink').href = `/report?batch_id=${encodeURIComponent(report.batch_id)}`;
