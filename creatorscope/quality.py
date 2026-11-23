@@ -67,10 +67,10 @@ def _coverage_target_key(row: sqlite3.Row) -> str:
 
 
 def _five_creator_field_grade(target_rows: dict[str, list[sqlite3.Row]]) -> str:
-    """Grade only a fully observed sample with five distinct explicit platform IDs."""
+    """Grade fields against the five-creator target, allowing four verified IDs."""
     if not target_rows:
         return "not_verified"
-    if len(target_rows) != 5:
+    if len(target_rows) not in {4, 5}:
         return "incomplete"
     identities: set[str] = set()
     successful = 0
@@ -93,7 +93,7 @@ def _five_creator_field_grade(target_rows: dict[str, list[sqlite3.Row]]) -> str:
 
         if any(usable(row) for row in rows):
             successful += 1
-    if len(identities) != 5:
+    if len(identities) != len(target_rows):
         return "incomplete"
     return "stable" if successful >= 4 else "partial" if successful == 3 else "unstable"
 
@@ -215,6 +215,12 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
             "passed": success >= ceil(5 * 0.7) if batch["status"] == "completed" and success <= 5 else None,
             "note": "只统计本批明确观察到平台 ID、来源和时间齐全且至少两类核心指标成功解析的唯一达人；身份冲突不计。",
         }
+    grade_sample_ready = bool(
+        five_creator_task
+        and batch["task_status"] == "completed"
+        and creator_acceptance
+        and creator_acceptance["success"] >= creator_acceptance["minimum_success"]
+    )
 
     records_by_type = {str(row["record_type"]): int(row["row_count"]) for row in record_rows}
     grouped_fields: dict[tuple[str, str], dict[str, Any]] = {}
@@ -234,6 +240,9 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
         item["parse_success_count"] += int(row["normalization_status"] == "parsed")
 
     field_coverage = []
+    gradeable_record_types = {
+        "blogger_list_sample", "creator_profile_sample", "creator_content_performance", "fan_analysis"
+    }
     for item in grouped_fields.values():
         key = (item["record_type"], item["field_name"])
         for target_rows in targets_by_field[key].values():
@@ -253,12 +262,13 @@ def batch_quality_report(db_path: Path, batch_id: str) -> dict[str, Any] | None:
         item["captured_records"] = captured
         item["observed_records"] = len(targets_by_field[key])
         item["unobserved_records"] = max(0, denominator - item["observed_records"])
-        item["five_creator_grade"] = (
-            _five_creator_field_grade(targets_by_field[key])
-            if five_creator_task and item["record_type"] in {
-                "blogger_list_sample", "creator_profile_sample", "creator_content_performance", "fan_analysis"
-            } else None
-        )
+        if item["record_type"] in gradeable_record_types:
+            if grade_sample_ready:
+                item["five_creator_grade"] = _five_creator_field_grade(targets_by_field[key])
+            else:
+                item["five_creator_grade"] = "incomplete" if five_creator_task else None
+        else:
+            item["five_creator_grade"] = None
         item["coverage_pct"] = round(captured * 100 / denominator, 1) if denominator else None
         field_coverage.append(item)
     field_coverage.sort(key=lambda item: (item["record_type"], item["field_name"]))
