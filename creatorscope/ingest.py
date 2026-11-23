@@ -27,6 +27,9 @@ COUNT_KEYS = {
     "分享量",
     "阅读中位数（日常）",
     "互动中位数（日常）",
+    "曝光中位数（合作）",
+    "阅读中位数（合作）",
+    "互动中位数（合作）",
     "曝光中位数",
     "阅读中位数",
     "互动中位数",
@@ -89,7 +92,7 @@ def normalize_value(key: str, raw_value: Any) -> tuple[float | None, str, str]:
         return None, _unit_for(key), "missing"
 
     raw = str(raw_value).strip()
-    if not raw or raw in {"-", "—", "–"}:
+    if not raw or raw in {"-", "--", "—", "–"}:
         return None, _unit_for(key), "displayed_unavailable"
 
     if key in DURATION_KEYS:

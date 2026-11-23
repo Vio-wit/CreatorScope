@@ -12,7 +12,7 @@ from flask import Flask
 
 from creatorscope.browser import PgyVisibleBrowser
 from creatorscope.db import connection, ensure_creator_ref, initialize_database
-from creatorscope.ingest import ingest_comment_snapshots, ingest_payload
+from creatorscope.ingest import ingest_comment_snapshots, ingest_payload, normalize_value
 from research.r4_3_comment_analysis.comment_analysis import fetch_comments
 from research.r4_3_comment_analysis.comments_web import comment_analysis_bp
 
@@ -44,7 +44,7 @@ class _CreatorRow:
         return _TextLocator()
 
     def evaluate(self, _script):
-        return self.metadata
+        return {**self.metadata, "cells": self.cells}
 
 
 class _CreatorListPage:
@@ -188,6 +188,18 @@ class RawDataPreservationTests(unittest.TestCase):
         self.assertEqual([item["visible_row_index"] for item in records], [1, 2])
         self.assertEqual([item["fields"]["创作者名称"] for item in records], ["创作者甲", "创作者乙"])
         self.assertEqual([item["fields"]["平台公开ID"] for item in records], ["user-1", "user-2"])
+
+    def test_selected_cooperation_metrics_remain_distinct_from_daily_metrics(self) -> None:
+        headers = ["博主信息", "阅读中位数（日常）", "阅读中位数（合作）", "曝光中位数（合作）", "互动中位数（合作）"]
+        row = PgyVisibleBrowser._parse_creator_list_row(
+            headers, ["创作者甲", "2,037", "3,000", "8,313", "--"]
+        )
+        self.assertEqual(row["fields"]["阅读中位数（日常）"], "2,037")
+        self.assertEqual(row["fields"]["阅读中位数（合作）"], "3,000")
+        self.assertEqual(row["fields"]["曝光中位数（合作）"], "8,313")
+        self.assertEqual(row["fields"]["互动中位数（合作）"], "--")
+        self.assertEqual(normalize_value("曝光中位数（合作）", "1,083,126"), (1083126.0, "count", "parsed"))
+        self.assertEqual(normalize_value("曝光中位数（合作）", "--"), (None, "count", "displayed_unavailable"))
 
     def test_creator_detail_parser_keeps_visible_identity_metrics_and_audience_values(self) -> None:
         browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)

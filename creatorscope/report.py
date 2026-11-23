@@ -231,6 +231,8 @@ def build_report(
         quality["task_status_label"] = status_label(quality.get("task_status"))
         for item in quality.get("field_coverage") or []:
             item["state_text"] = state_text(item.get("states"))
+            if item.get("displayed_unavailable_count"):
+                item["state_text"] += f"；页面显示缺失 {item['displayed_unavailable_count']}"
             item["record_label"] = type_label(str(item.get("record_type")))
     bundle = {
         "title": REPORT_TITLE,
