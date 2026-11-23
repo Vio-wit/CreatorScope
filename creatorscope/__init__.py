@@ -20,6 +20,7 @@ from .db import SCHEMA_VERSION, connection, initialize_database, schema_version_
 from .domain import field_dictionary
 from .ingest import MAX_UPLOAD_BYTES
 from .history_analytics import HistoryAnalyticsError, analysis_data as history_analysis_data, history_creator_library, history_note_library, list_library_sources as history_library_source_options, list_sources as history_source_options, note_samples as history_note_samples
+from .unified_library import unified_creator_library
 from .news import NEWS_FEEDS, append_news_items, correlate_news_notes, fetch_feed, load_news_items
 from .quality import batch_quality_report, quality_overview
 from .report import build_report, render_docx, render_markdown, report_filename
@@ -45,6 +46,9 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     )
     instance_dir = project_root / "instance"
     instance_dir.mkdir(parents=True, exist_ok=True)
+    expanded_history_default = project_root / "_preview" / "v24_history_expanded_final_20261123.sqlite3"
+    if not expanded_history_default.is_file():
+        expanded_history_default = project_root / "_preview" / "v22_s3_history_final_20261123.sqlite3"
     app.config.update(
         DATABASE_PATH=Path(
             os.environ.get("CREATORSCOPE_DB", str(instance_dir / "creatorscope_unified.sqlite3"))
@@ -56,7 +60,13 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         HISTORY_EVIDENCE_DB=Path(
             os.environ.get(
                 "CREATORSCOPE_HISTORY_DB",
-                str(project_root / "_preview" / "v22_s3_history_final_20261123.sqlite3"),
+                str(expanded_history_default),
+            )
+        ),
+        COURSE_SAMPLE_DATABASE=Path(
+            os.environ.get(
+                "CREATORSCOPE_COURSE_SAMPLE_DB",
+                str(project_root / "_preview" / "v2_field_validation_20261123.sqlite3"),
             )
         ),
         MAX_CONTENT_LENGTH=MAX_UPLOAD_BYTES + 64 * 1024,
@@ -73,6 +83,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     app.config["BASELINE_PATH"] = Path(app.config["BASELINE_PATH"])
     if app.config["HISTORY_EVIDENCE_DB"] is not None:
         app.config["HISTORY_EVIDENCE_DB"] = Path(app.config["HISTORY_EVIDENCE_DB"])
+    if app.config["COURSE_SAMPLE_DATABASE"] is not None:
+        app.config["COURSE_SAMPLE_DATABASE"] = Path(app.config["COURSE_SAMPLE_DATABASE"])
     if app.config["DEMO_MODE"]:
         verify_database_readonly(app.config["DATABASE_PATH"])
     else:
@@ -529,6 +541,46 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 sort_desc=request.args.get("sort_desc", "true").casefold() != "false",
                 batch_id=(request.args.get("batch_id") or None) if request.args.get("batch_id") != "__all__" else None,
                 source=request.args.get("source", "").strip(),
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        return jsonify(data)
+
+    @app.get("/api/unified-creators")
+    def api_unified_creators():
+        def optional_nonnegative(name: str) -> float | None:
+            raw = request.args.get(name, "").strip()
+            if not raw:
+                return None
+            try:
+                value = float(raw)
+                if not math.isfinite(value) or value < 0:
+                    raise ValueError
+                return value
+            except ValueError as exc:
+                raise ValueError(f"筛选参数 {name} 必须是非负数字") from exc
+
+        try:
+            try:
+                offset = int(request.args.get("offset", "0"))
+                limit = int(request.args.get("limit", "50"))
+            except ValueError as exc:
+                raise ValueError("分页参数必须是整数") from exc
+            lower, upper = optional_nonnegative("followers_min"), optional_nonnegative("followers_max")
+            if lower is not None and upper is not None and lower > upper:
+                raise ValueError("粉丝下限不能大于上限")
+            data = unified_creator_library(
+                app.config["DATABASE_PATH"],
+                app.config["COURSE_SAMPLE_DATABASE"],
+                app.config["HISTORY_EVIDENCE_DB"],
+                query=request.args.get("q", ""),
+                bucket=request.args.get("bucket", "all"),
+                category=request.args.get("category", ""),
+                ip_location=request.args.get("ip_location", ""),
+                followers_min=lower,
+                followers_max=upper,
+                offset=offset,
+                limit=limit,
             )
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
