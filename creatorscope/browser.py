@@ -1128,14 +1128,6 @@ class PgyVisibleBrowser:
                                     "note", attempt_ref, "note_detail", NOTE_PANEL_FIELDS,
                                     status, "蒲公英笔记详情",
                                 )
-                            try:
-                                self._close_visible_note_panel(detail_page)
-                            except (PauseForUser, StopCollection):
-                                raise
-                            except Exception:
-                                raise PauseForUser(
-                                    "笔记失败后无法恢复创作者详情页；请检查可见窗口后恢复任务"
-                                ) from None
                             note_start = note_index + 1
                             save_checkpoint(
                                 {
@@ -1145,6 +1137,14 @@ class PgyVisibleBrowser:
                                     "creator_targets": creator_targets,
                                 }
                             )
+                            try:
+                                self._close_visible_note_panel(detail_page)
+                            except (PauseForUser, StopCollection):
+                                raise
+                            except Exception:
+                                raise PauseForUser(
+                                    "笔记失败后无法恢复创作者详情页；请检查可见窗口后恢复任务"
+                                ) from None
                             report_progress(
                                 min(95, 30 + (notes_visited + failures) * 4),
                                 f"笔记 {note_index + 1} 失败，继续处理后续笔记",
