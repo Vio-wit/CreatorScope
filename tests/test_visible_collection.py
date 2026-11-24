@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from creatorscope.browser import ManualDismissRequired, PauseForUser, PgyVisibleBrowser
+from creatorscope.browser import CaptureError, ManualDismissRequired, PauseForUser, PgyVisibleBrowser
 from creatorscope.db import connection, initialize_database
 from creatorscope.ingest import normalize_value
 from creatorscope.quality import batch_quality_report
@@ -314,27 +314,45 @@ class VisibleCollectionTests(unittest.TestCase):
             def get_by_role(self, role):
                 return RowLocator(self.row_count) if role == "row" else RowLocator(0)
 
-        def run_case(creator_count, checkpoint_creator_index, *, row_order=None, creator_targets=None):
+        def run_case(
+            creator_count,
+            checkpoint_creator_index,
+            *,
+            row_order=None,
+            creator_targets=None,
+            reorder_during_collection=None,
+        ):
             ordered_creators = row_order or list(range(1, creator_count + 1))
             list_page = Page("https://pgy.xiaohongshu.com/solar/pre-trade/note/kol", len(ordered_creators) + 1)
-            list_records = [
-                {
-                    "type": "blogger_list_sample",
-                    "creator_ref": f"pgy:id:creator-{creator_number}",
-                    "visible_row_index": index + 1,
-                    "fields": {"创作者名称": f"creator-{creator_number}"},
-                }
-                for index, creator_number in enumerate(ordered_creators)
-            ]
+            capture_calls = 0
+
+            def capture_rows(_page):
+                nonlocal capture_calls
+                capture_calls += 1
+                current_order = ordered_creators
+                if reorder_during_collection and capture_calls >= 3:
+                    current_order = reorder_during_collection
+                return [
+                    {
+                        "type": "blogger_list_sample",
+                        "creator_ref": f"pgy:id:creator-{creator_number}",
+                        "visible_row_index": index + 1,
+                        "fields": {"创作者名称": f"creator-{creator_number}"},
+                    }
+                    for index, creator_number in enumerate(current_order)
+                ]
+
             browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
             browser._context = SimpleNamespace(pages=[list_page])
             browser._page = list_page
             browser._check_page_blocker = lambda _page, **_kwargs: None
-            browser._capture_list_rows = lambda _page: list_records
+            browser._capture_list_rows = capture_rows
             opened_rows = []
+            opened_names = []
 
             def open_creator_row(_page, row_index, expected_record=None):
                 opened_rows.append(row_index)
+                opened_names.append(expected_record["fields"]["创作者名称"])
                 return (
                     Page(
                         f"https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/detail-{row_index}",
@@ -348,7 +366,7 @@ class VisibleCollectionTests(unittest.TestCase):
                 {
                     "type": "creator_profile_sample",
                     "creator_ref": creator_ref,
-                    "fields": {"粉丝数": "1200"},
+                    "fields": {"粉丝数": "1200", "创作者名称": opened_names[-1], "平台公开ID": opened_names[-1]},
                 }
             ]
             browser._close_owned_page = lambda _page: None
@@ -387,6 +405,13 @@ class VisibleCollectionTests(unittest.TestCase):
             row_order=[2, 1],
             creator_targets=one_checkpoints[0]["creator_targets"],
         )
+        reordered_during, reordered_records, reordered_during_rows, _ = run_case(
+            1,
+            0,
+            row_order=[1, 2, 3],
+            creator_targets=one_checkpoints[0]["creator_targets"],
+            reorder_during_collection=[2, 1, 3],
+        )
         self.assertEqual(one["creators_visited"], 1)
         self.assertEqual(len(one_records), 2)
         self.assertEqual(ten["creators_visited"], 10)
@@ -395,6 +420,154 @@ class VisibleCollectionTests(unittest.TestCase):
         self.assertEqual(len(resumed_records), 12)
         self.assertEqual(reordered["creators_visited"], 1)
         self.assertEqual(reordered_rows, [2])
+        self.assertEqual(reordered_during["creators_visited"], 1)
+        self.assertEqual(reordered_during_rows, [2])
+        self.assertEqual(
+            next(record["fields"]["创作者名称"] for record in reordered_records if record["type"] == "blogger_list_sample"),
+            "creator-1",
+        )
+        with self.assertRaisesRegex(PauseForUser, "目标为 5 位.*仅 4 位"):
+            run_case(5, 0, row_order=[1, 2, 3, 4])
+
+    def test_note_panel_escape_requires_closure_and_avoids_other_dialogs(self) -> None:
+        from playwright.sync_api import sync_playwright
+
+        browser_impl = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        browser_impl._check_page_blocker = lambda *_args, **_kwargs: None
+        with sync_playwright() as playwright:
+            chromium = playwright.chromium.launch(headless=True)
+            try:
+                page = chromium.new_page()
+                page.set_content("""<div id='panel'>复制小红书笔记链接</div>
+                    <script>document.addEventListener('keydown', e => {
+                    if (e.key === 'Escape') document.querySelector('#panel').remove();
+                    });</script>""")
+                browser_impl._close_visible_note_panel(page)
+                self.assertEqual(page.get_by_text("复制小红书笔记链接", exact=True).count(), 0)
+                page.set_content("<div>复制小红书笔记链接</div><div role='dialog'>其他对话框</div>")
+                with self.assertRaises(ManualDismissRequired):
+                    browser_impl._close_visible_note_panel(page)
+                self.assertEqual(page.get_by_text("复制小红书笔记链接", exact=True).count(), 1)
+            finally:
+                chromium.close()
+
+    def test_open_creator_uses_name_when_scrolling_inserts_a_row(self) -> None:
+        from playwright.sync_api import sync_playwright
+
+        impl = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        impl._check_page_blocker = lambda *_args, **_kwargs: None
+        with sync_playwright() as playwright:
+            chromium = playwright.chromium.launch(headless=True)
+            try:
+                context = chromium.new_context(viewport={"width": 800, "height": 500})
+                context.route("https://pgy.xiaohongshu.com/**", lambda route: route.fulfill(body="ok"))
+                page = context.new_page()
+                page.set_content("""
+                    <div id='list'>
+                      <div role='row' style='height:850px'><div role='cell'>前一位</div></div>
+                      <div role='row' style='height:150px'><div role='cell'>
+                        <span>目标达人</span><img width='80' height='80'
+                        src='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="80"/%3E'
+                        onclick="window.open('https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/target')">
+                      </div></div>
+                    </div>
+                    <script>
+                    addEventListener('scroll', () => {
+                      if (!document.getElementById('inserted')) {
+                        const r=document.createElement('div'); r.id='inserted';
+                        r.setAttribute('role','row'); r.textContent='动态插入的行';
+                        document.querySelector('#list').prepend(r);
+                      }
+                    });
+                    </script>
+                """)
+                impl._context = context
+                detail, opened = impl._open_creator_row(
+                    page, 1, expected_record={"fields": {"创作者名称": "目标达人"}}
+                )
+                self.assertTrue(opened)
+                self.assertEqual(detail.url, "https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/target")
+                self.assertEqual(page.locator("#inserted").count(), 1)
+            finally:
+                chromium.close()
+
+    def test_failed_note_checkpoint_saved_before_manual_panel_close(self) -> None:
+        class Locator:
+            def __init__(self, count):
+                self.value = count
+
+            def count(self):
+                return self.value
+
+        class Page:
+            def __init__(self, url):
+                self.url = url
+
+            def is_closed(self):
+                return False
+
+            def get_by_role(self, _role):
+                return Locator(2)
+
+            def locator(self, _selector):
+                return Locator(1)
+
+        page = Page("https://pgy.xiaohongshu.com/solar/pre-trade/note/kol")
+        detail = Page("https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/one")
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        browser._context = SimpleNamespace(pages=[page])
+        browser._page = page
+        browser._check_page_blocker = lambda *_args, **_kwargs: None
+        browser._capture_list_rows = lambda _page: [{"creator_ref": "pgy:one", "visible_row_index": 1, "fields": {"创作者名称": "one"}}]
+        browser._open_creator_row = lambda *_args, **_kwargs: (detail, True)
+        browser._capture_creator_records = lambda *_args: [{"type": "creator_profile_sample", "fields": {"粉丝数": "1", "创作者名称": "one", "平台公开ID": "one-id"}}]
+        browser._open_notes_tab = lambda *_args: None
+        def fail_copy(*_args):
+            raise CaptureError("复制链接失败")
+        browser._open_and_copy_note = fail_copy
+        browser._close_owned_page = lambda *_args: None
+        def wait_for_close(*_args):
+            raise ManualDismissRequired("手动关闭", detail, kind="note", pgy=True)
+        browser._close_visible_note_panel = wait_for_close
+        checkpoints = []
+        with self.assertRaises(ManualDismissRequired):
+            browser._collect_visible(
+                {"creator_count": 1, "collect_creator": True, "collect_notes": True, "collect_comments": False},
+                {"creator_index": 0, "note_index": 0, "creator_targets": []},
+                check_control=lambda: None, save_checkpoint=checkpoints.append,
+                save_records=lambda *_args: None, save_comments=lambda *_args: {},
+                report_progress=lambda *_args: None, report_failure=lambda *_args: None,
+                report_note_success=lambda *_args: None, report_field_status=lambda *_args: None,
+                existing_comment_count=0,
+            )
+        self.assertEqual(checkpoints[-1]["note_index"], 1)
+        self.assertEqual(checkpoints[-1]["creator_index"], 0)
+
+    def test_resume_selects_unique_matching_list_without_navigation(self) -> None:
+        class Page:
+            url = "https://pgy.xiaohongshu.com/solar/pre-trade/note/kol"
+
+            def __init__(self, refs):
+                self.refs = refs
+
+            def is_closed(self):
+                return False
+
+        original = Page(["pgy:one", "pgy:two"])
+        other = Page(["pgy:other"])
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        browser._context = SimpleNamespace(pages=[original, other])
+        browser._page = other
+        browser._capture_list_rows = lambda page: [{"creator_ref": ref} for ref in page.refs]
+        targets = [{"kind": "creator_ref", "value": ref} for ref in original.refs]
+        self.assertIs(browser._select_collection_page(targets), original)
+        original.refs = ["pgy:wrong"]
+        with self.assertRaises(PauseForUser):
+            browser._select_collection_page(targets)
+        original.refs = ["pgy:one", "pgy:two"]
+        other.refs = list(original.refs)
+        with self.assertRaises(PauseForUser):
+            browser._select_collection_page(targets)
 
     def test_creator_checkpoint_resolves_reordered_visible_rows_by_stable_identity(self) -> None:
         browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
@@ -418,6 +591,84 @@ class VisibleCollectionTests(unittest.TestCase):
 
         self.assertEqual(resolved[0]["fields"]["创作者名称"], "原目标创作者")
         self.assertEqual(resolved[0]["visible_row_index"], 6)
+
+    def test_creator_detail_identity_validation_requires_matching_evidence(self) -> None:
+        detail_path = "/solar/pre-trade/blogger-detail/creator-123"
+        detail_url = "https://pgy.xiaohongshu.com" + detail_path
+        list_record = {
+            "creator_detail_path": detail_path,
+            "fields": {"创作者名称": "目标达人", "平台公开ID": "target-123"},
+        }
+        profile = {"type": "creator_profile_sample", "fields": {"创作者名称": "目标达人", "平台公开ID": "target-123"}}
+        validate = PgyVisibleBrowser._validate_creator_identity
+        validate(list_record, detail_url, [profile])
+
+        cases = [
+            (list_record, detail_url, [{**profile, "fields": {"创作者名称": "另一位", "平台公开ID": "target-123"}}]),
+            (list_record, detail_url, [{**profile, "fields": {"创作者名称": "目标达人", "平台公开ID": "other-456"}}]),
+            (list_record, "https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/other", [profile]),
+            (list_record, detail_url, [{**profile, "fields": {"平台公开ID": "target-123"}}]),
+            (list_record, detail_url, [{**profile, "fields": {"创作者名称": "目标达人"}}]),
+            (list_record, detail_url, []),
+        ]
+        for list_row, url, records in cases:
+            with self.subTest(url=url, records=records):
+                with self.assertRaises(CaptureError):
+                    validate(list_row, url, records)
+
+    def test_creator_identity_mismatch_does_not_save_any_records(self) -> None:
+        class RowLocator:
+            def count(self):
+                return 2
+
+        class Page:
+            def __init__(self, url):
+                self.url = url
+
+            def is_closed(self):
+                return False
+
+            def get_by_role(self, _role):
+                return RowLocator()
+
+        detail_path = "/solar/pre-trade/blogger-detail/creator-123"
+        detail_url = "https://pgy.xiaohongshu.com" + detail_path
+        list_record = {
+            "type": "blogger_list_sample", "creator_ref": "pgy:" + detail_path,
+            "creator_detail_path": detail_path, "visible_row_index": 1,
+            "fields": {"创作者名称": "目标达人", "平台公开ID": "target-123"},
+        }
+        variants = [
+            (detail_url, {"创作者名称": "另一位", "平台公开ID": "target-123"}),
+            (detail_url, {"创作者名称": "目标达人", "平台公开ID": "other-456"}),
+            ("https://pgy.xiaohongshu.com/solar/pre-trade/blogger-detail/other", {"创作者名称": "目标达人", "平台公开ID": "target-123"}),
+            (detail_url, {"平台公开ID": "target-123"}),
+            (detail_url, {"创作者名称": "目标达人"}),
+        ]
+        for url, fields in variants:
+            with self.subTest(url=url, fields=fields):
+                page = Page("https://pgy.xiaohongshu.com/solar/pre-trade/note/kol")
+                detail = Page(url)
+                browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+                browser._context = SimpleNamespace(pages=[page])
+                browser._page = page
+                browser._check_page_blocker = lambda *_args, **_kwargs: None
+                browser._capture_list_rows = lambda _page: [dict(list_record)]
+                browser._open_creator_row = lambda *_args, **_kwargs: (detail, True)
+                browser._capture_creator_records = lambda *_args: [{"type": "creator_profile_sample", "fields": fields}]
+                browser._close_owned_page = lambda *_args: None
+                saved = []
+                with self.assertRaises(PauseForUser):
+                    browser._collect_visible(
+                        {"creator_count": 1, "collect_creator": True, "collect_notes": False, "collect_comments": False},
+                        {"creator_index": 0, "note_index": 0, "creator_targets": []},
+                        check_control=lambda: None, save_checkpoint=lambda *_args: None,
+                        save_records=saved.append, save_comments=lambda *_args: {},
+                        report_progress=lambda *_args: None, report_failure=lambda *_args: None,
+                        report_note_success=lambda *_args: None, report_field_status=lambda *_args: None,
+                        existing_comment_count=0,
+                    )
+                self.assertEqual(saved, [])
 
     def test_creator_checkpoint_pauses_when_visible_identity_is_missing_or_ambiguous(self) -> None:
         browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
@@ -497,7 +748,10 @@ class VisibleCollectionTests(unittest.TestCase):
             self.assertTrue(browser.started.wait(3))
             self.assertTrue(manager.pause_task(task_id))
             self.assertEqual(self._read_task(task_id)["status"], "paused")
+            with connection(self.db_path) as conn:
+                conn.execute("UPDATE tasks SET progress=100 WHERE task_id=?", (task_id,))
             self.assertTrue(manager.resume_task(task_id))
+            self.assertEqual(self._read_task(task_id)["progress"], 0)
             browser.release.set()
             task = self._wait_for_status(task_id, {"completed", "failed"})
             self.assertEqual(task["status"], "completed", task["message"])
@@ -618,6 +872,20 @@ class VisibleCollectionTests(unittest.TestCase):
         browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
         with self.assertRaisesRegex(PauseForUser, "验证码或安全验证"):
             browser._check_page_blocker(Page(), pgy=True)
+
+    def test_phone_login_sms_code_label_is_not_a_security_challenge(self) -> None:
+        class BodyLocator:
+            def inner_text(self, timeout):
+                assert timeout == 5000
+                return "手机号登录 请输入手机号 输入验证码 获取验证码 登录"
+
+        class Page:
+            def locator(self, selector):
+                assert selector == "body"
+                return BodyLocator()
+
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        browser._check_page_blocker(Page(), pgy=False)
 
     def test_waiting_for_manual_close_can_be_stopped(self) -> None:
         browser = ManualDismissBrowser()

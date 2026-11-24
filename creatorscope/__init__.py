@@ -6,6 +6,7 @@ import io
 import json
 import math
 import sqlite3
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -18,8 +19,11 @@ from .browser import PgyVisibleBrowser
 from .db import SCHEMA_VERSION, connection, initialize_database, schema_version_readonly, verify_database_readonly
 from .domain import field_dictionary
 from .ingest import MAX_UPLOAD_BYTES
+from .history_analytics import HistoryAnalyticsError, analysis_data as history_analysis_data, history_creator_library, history_note_library, list_library_sources as history_library_source_options, list_sources as history_source_options, note_samples as history_note_samples
+from .unified_library import unified_creator_library, unified_creator_records_by_refs
 from .news import NEWS_FEEDS, append_news_items, correlate_news_notes, fetch_feed, load_news_items
-from .quality import batch_quality_report
+from .quality import batch_quality_report, quality_overview
+from .report import build_report, render_docx, render_markdown, report_filename
 from .tasks import TaskManager
 from .migrations import backup_database
 from research.r4_3_comment_analysis.comments_web import comment_analysis_bp
@@ -42,6 +46,9 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     )
     instance_dir = project_root / "instance"
     instance_dir.mkdir(parents=True, exist_ok=True)
+    expanded_history_default = project_root / "_preview" / "v24_history_expanded_final_20261123.sqlite3"
+    if not expanded_history_default.is_file():
+        expanded_history_default = project_root / "_preview" / "v22_s3_history_final_20261123.sqlite3"
     app.config.update(
         DATABASE_PATH=Path(
             os.environ.get("CREATORSCOPE_DB", str(instance_dir / "creatorscope_unified.sqlite3"))
@@ -50,6 +57,18 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         NEWS_DATA_PATH=instance_dir / "news_items.jsonl",
         MIGRATION_BACKUP_DIR=project_root / "_backup",
         BASELINE_PATH=project_root / "data" / "baseline" / "pgy_live_sample_2026-11-19.json",
+        HISTORY_EVIDENCE_DB=Path(
+            os.environ.get(
+                "CREATORSCOPE_HISTORY_DB",
+                str(expanded_history_default),
+            )
+        ),
+        COURSE_SAMPLE_DATABASE=Path(
+            os.environ.get(
+                "CREATORSCOPE_COURSE_SAMPLE_DB",
+                str(project_root / "_preview" / "v2_field_validation_20261123.sqlite3"),
+            )
+        ),
         MAX_CONTENT_LENGTH=MAX_UPLOAD_BYTES + 64 * 1024,
         DEMO_MODE=os.environ.get("CREATORSCOPE_DEMO_MODE", "0").strip().casefold() in {"1", "true", "yes"},
     )
@@ -62,6 +81,10 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     # All CreatorScope modules share one local database, including comment analysis.
     app.config["COMMENT_ANALYSIS_DATABASE_PATH"] = app.config["DATABASE_PATH"]
     app.config["BASELINE_PATH"] = Path(app.config["BASELINE_PATH"])
+    if app.config["HISTORY_EVIDENCE_DB"] is not None:
+        app.config["HISTORY_EVIDENCE_DB"] = Path(app.config["HISTORY_EVIDENCE_DB"])
+    if app.config["COURSE_SAMPLE_DATABASE"] is not None:
+        app.config["COURSE_SAMPLE_DATABASE"] = Path(app.config["COURSE_SAMPLE_DATABASE"])
     if app.config["DEMO_MODE"]:
         verify_database_readonly(app.config["DATABASE_PATH"])
     else:
@@ -96,9 +119,14 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     app.extensions["creatorscope_tasks"] = tasks
     app.register_blueprint(comment_analysis_bp)
 
+    def history_evidence_available() -> bool:
+        path = app.config["HISTORY_EVIDENCE_DB"]
+        return path is not None and Path(path).expanduser().is_file()
+
     @app.before_request
     def block_demo_writes():
-        if app.config["DEMO_MODE"] and request.method not in {"GET", "HEAD", "OPTIONS"}:
+        demo_read_only_post = request.method == "POST" and request.path == "/api/ai/preview"
+        if app.config["DEMO_MODE"] and request.method not in {"GET", "HEAD", "OPTIONS"} and not demo_read_only_post:
             return jsonify({"error": "离线演示数据库只读；请使用筛选、分析和导出"}), 409
         return None
 
@@ -204,14 +232,26 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @app.post("/api/ai/preview")
     def api_ai_preview():
         payload = request.get_json(silent=True) or {}
+        analysis_type = str(payload.get("analysis_type") or "")
+        unified_records = None
+        if analysis_type == "unified_creator_compare":
+            refs = payload.get("unified_creator_refs") if isinstance(payload.get("unified_creator_refs"), list) else []
+            try:
+                unified_records = unified_creator_records_by_refs(
+                    app.config["DATABASE_PATH"], app.config["COURSE_SAMPLE_DATABASE"],
+                    app.config["HISTORY_EVIDENCE_DB"], refs,
+                )
+            except ValueError as exc:
+                return jsonify({"error": str(exc)}), 400
         try:
             result = build_preview(
                 app.config["DATABASE_PATH"],
-                analysis_type=str(payload.get("analysis_type") or ""),
+                analysis_type=analysis_type,
                 creator_ids=payload.get("creator_ids") if isinstance(payload.get("creator_ids"), list) else [],
                 note_ids=payload.get("note_ids") if isinstance(payload.get("note_ids"), list) else [],
                 batch_id=str(payload.get("batch_id") or ""),
                 include_raw_text=payload.get("include_raw_text") is True,
+                unified_creator_records=unified_records,
             )
         except AIServiceError as exc:
             return jsonify({"error": str(exc)}), 400
@@ -264,16 +304,25 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         if not status["model_configured"]:
             return jsonify({"status": "incomplete", "message": "请填写服务商支持的模型 ID"})
         try:
+            analysis_type = str(payload.get("analysis_type") or "")
+            unified_records = None
+            if analysis_type == "unified_creator_compare":
+                refs = payload.get("unified_creator_refs") if isinstance(payload.get("unified_creator_refs"), list) else []
+                unified_records = unified_creator_records_by_refs(
+                    app.config["DATABASE_PATH"], app.config["COURSE_SAMPLE_DATABASE"],
+                    app.config["HISTORY_EVIDENCE_DB"], refs,
+                )
             preview = build_preview(
                 app.config["DATABASE_PATH"],
-                analysis_type=str(payload.get("analysis_type") or ""),
+                analysis_type=analysis_type,
                 creator_ids=payload.get("creator_ids") if isinstance(payload.get("creator_ids"), list) else [],
                 note_ids=payload.get("note_ids") if isinstance(payload.get("note_ids"), list) else [],
                 batch_id=str(payload.get("batch_id") or ""),
                 include_raw_text=payload.get("include_raw_text") is True,
+                unified_creator_records=unified_records,
             )
             output = run_analysis(provider=provider, model=model, base_url=base_url, preview=preview)
-        except AIServiceError as exc:
+        except (AIServiceError, ValueError) as exc:
             return jsonify({"error": str(exc)}), 503
         analysis_at = generated_at()
         report = {
@@ -284,6 +333,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             "model": status["model"],
             "input_batch_id": str(payload.get("batch_id") or ""),
             "input_creator_ids": payload.get("creator_ids") if isinstance(payload.get("creator_ids"), list) else [],
+            "input_creator_refs": payload.get("unified_creator_refs") if isinstance(payload.get("unified_creator_refs"), list) else [],
             "input_note_ids": payload.get("note_ids") if isinstance(payload.get("note_ids"), list) else [],
             "include_raw_text": preview["include_raw_text"],
             "analysis_at": analysis_at,
@@ -352,6 +402,132 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             word_kind=request.args.get("word_kind", "body").strip(),
         ))
 
+    @app.get("/api/history-analysis/sources")
+    def api_history_analysis_sources():
+        if not history_evidence_available():
+            return jsonify({"sources": []})
+        try:
+            return jsonify(history_source_options(app.config["HISTORY_EVIDENCE_DB"]))
+        except HistoryAnalyticsError as exc:
+            return jsonify({"error": str(exc)}), 503
+
+    @app.get("/api/history-analysis")
+    def api_history_analysis():
+        try:
+            return jsonify(history_analysis_data(
+                app.config["HISTORY_EVIDENCE_DB"],
+                source_key=request.args.get("source", "EPT").strip() or "EPT",
+            ))
+        except HistoryAnalyticsError as exc:
+            status = 400 if str(exc) == "请选择有效的数据来源" else 503
+            return jsonify({"error": str(exc)}), status
+
+    @app.get("/api/history-analysis/note-samples")
+    def api_history_analysis_note_samples():
+        if not history_evidence_available():
+            return jsonify({"sample_count": 0, "samples": []})
+        try:
+            return jsonify(history_note_samples(app.config["HISTORY_EVIDENCE_DB"]))
+        except HistoryAnalyticsError as exc:
+            return jsonify({"error": str(exc)}), 503
+
+    @app.get("/api/history-analysis/note-library")
+    def api_history_analysis_note_library():
+        try:
+            try:
+                offset = int(request.args.get("offset", "0"))
+                limit = int(request.args.get("limit", "12"))
+            except ValueError as exc:
+                raise ValueError("分页参数必须是整数") from exc
+            if offset < 0 or limit < 1 or limit > 100:
+                raise ValueError("笔记分页范围无效（limit 最大为 100）")
+            if not history_evidence_available():
+                return jsonify({
+                    "total_count": 0,
+                    "result_count": 0,
+                    "title_count": 0,
+                    "body_count": 0,
+                    "topics_count": 0,
+                    "offset": offset,
+                    "limit": limit,
+                    "samples": [],
+                })
+            return jsonify(history_note_library(
+                app.config["HISTORY_EVIDENCE_DB"],
+                query=request.args.get("q", ""),
+                offset=offset,
+                limit=limit,
+            ))
+        except HistoryAnalyticsError as exc:
+            return jsonify({"error": str(exc)}), 503
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
+    @app.get("/api/history-analysis/library-sources")
+    def api_history_analysis_library_sources():
+        if not history_evidence_available():
+            return jsonify({"sources": []})
+        try:
+            return jsonify(history_library_source_options(app.config["HISTORY_EVIDENCE_DB"]))
+        except HistoryAnalyticsError as exc:
+            return jsonify({"error": str(exc)}), 503
+
+    @app.get("/api/history-analysis/library")
+    def api_history_analysis_library():
+        def optional_number(name: str) -> float | None:
+            raw = request.args.get(name, "").strip()
+            if not raw:
+                return None
+            try:
+                value = float(raw)
+                if not math.isfinite(value):
+                    raise ValueError
+                return value
+            except ValueError as exc:
+                raise ValueError(f"筛选参数 {name} 必须是数字") from exc
+
+        try:
+            try:
+                offset = int(request.args.get("offset", "0"))
+                limit = int(request.args.get("limit", "100"))
+            except ValueError as exc:
+                raise ValueError("分页参数必须是整数") from exc
+            if offset < 0 or limit < 1 or limit > 200:
+                raise ValueError("分页范围无效（limit 最大为 200）")
+            numeric_filters = {
+                name: optional_number(name)
+                for name in (
+                    "followers_min", "followers_max", "daily_read_min", "daily_read_max",
+                    "daily_interaction_min", "daily_interaction_max",
+                )
+            }
+            if any(value is not None and value < 0 for value in numeric_filters.values()):
+                raise ValueError("数值筛选范围不能小于 0")
+            for low_key, high_key in (
+                ("followers_min", "followers_max"),
+                ("daily_read_min", "daily_read_max"),
+                ("daily_interaction_min", "daily_interaction_max"),
+            ):
+                low, high = numeric_filters[low_key], numeric_filters[high_key]
+                if low is not None and high is not None and low > high:
+                    raise ValueError("筛选下限不能大于上限")
+            data = history_creator_library(
+                app.config["HISTORY_EVIDENCE_DB"],
+                source_key=request.args.get("source", "EPT").strip() or "EPT",
+                query=request.args.get("q", ""),
+                category=request.args.get("category", ""),
+                location=request.args.get("location", ""),
+                offset=offset,
+                limit=limit,
+                **numeric_filters,
+            )
+        except HistoryAnalyticsError as exc:
+            status = 400 if str(exc) == "请选择有效的数据来源" else 503
+            return jsonify({"error": str(exc)}), status
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        return jsonify(data)
+
     @app.get("/api/wordcloud.png")
     def api_wordcloud():
         try:
@@ -413,6 +589,71 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
         return jsonify(data)
+
+    @app.get("/api/unified-creators")
+    def api_unified_creators():
+        def optional_nonnegative(name: str) -> float | None:
+            raw = request.args.get(name, "").strip()
+            if not raw:
+                return None
+            try:
+                value = float(raw)
+                if not math.isfinite(value) or value < 0:
+                    raise ValueError
+                return value
+            except ValueError as exc:
+                raise ValueError(f"筛选参数 {name} 必须是非负数字") from exc
+
+        try:
+            try:
+                offset = int(request.args.get("offset", "0"))
+                limit = int(request.args.get("limit", "50"))
+            except ValueError as exc:
+                raise ValueError("分页参数必须是整数") from exc
+            lower, upper = optional_nonnegative("followers_min"), optional_nonnegative("followers_max")
+            if lower is not None and upper is not None and lower > upper:
+                raise ValueError("粉丝下限不能大于上限")
+            read_min, read_max = optional_nonnegative("daily_read_min"), optional_nonnegative("daily_read_max")
+            if read_min is not None and read_max is not None and read_min > read_max:
+                raise ValueError("日常阅读下限不能大于上限")
+            interaction_min = optional_nonnegative("daily_interaction_min")
+            interaction_max = optional_nonnegative("daily_interaction_max")
+            if interaction_min is not None and interaction_max is not None and interaction_min > interaction_max:
+                raise ValueError("日常互动下限不能大于上限")
+            data = unified_creator_library(
+                app.config["DATABASE_PATH"],
+                app.config["COURSE_SAMPLE_DATABASE"],
+                app.config["HISTORY_EVIDENCE_DB"],
+                query=request.args.get("q", ""),
+                bucket=request.args.get("bucket", "all"),
+                category=request.args.get("category", ""),
+                ip_location=request.args.get("ip_location", ""),
+                followers_min=lower,
+                followers_max=upper,
+                daily_read_min=read_min,
+                daily_read_max=read_max,
+                daily_interaction_min=interaction_min,
+                daily_interaction_max=interaction_max,
+                offset=offset,
+                limit=limit,
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        return jsonify(data)
+
+    @app.get("/api/unified-creators/compare")
+    def api_unified_creators_compare():
+        refs = request.args.getlist("ref")
+        try:
+            records = unified_creator_records_by_refs(
+                app.config["DATABASE_PATH"],
+                app.config["COURSE_SAMPLE_DATABASE"],
+                app.config["HISTORY_EVIDENCE_DB"],
+                refs,
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        return jsonify({"records": records, "count": len(records)})
 
     @app.get("/api/creators/compare")
     def api_creator_compare():
@@ -658,6 +899,76 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         if report is None:
             return jsonify({"error": "采集批次不存在"}), 404
         return jsonify(report)
+
+    @app.get("/quality")
+    def quality_board():
+        return render_template("quality.html", demo_mode=app.config["DEMO_MODE"])
+
+    @app.get("/api/quality/overview")
+    def api_quality_overview():
+        try:
+            limit = int(request.args.get("limit") or 20)
+        except ValueError:
+            return jsonify({"error": "limit 必须为整数"}), 400
+        return jsonify(quality_overview(app.config["DATABASE_PATH"], limit=limit))
+
+    def _report_bundle():
+        raw_batch_id = (request.args.get("batch_id") or "").strip()
+        batch_id = None if raw_batch_id in {"", "__all__"} else raw_batch_id
+        try:
+            return build_report(app.config["DATABASE_PATH"], batch_id=batch_id)
+        except sqlite3.DatabaseError:
+            return None
+
+    @app.get("/report")
+    def report_page():
+        try:
+            bundle = _report_bundle()
+        except LookupError:
+            return jsonify({"error": "采集批次不存在"}), 404
+        if bundle is None:
+            return render_template("report.html", report=None, demo_mode=app.config["DEMO_MODE"], error="数据库不可读取"), 503
+        return render_template("report.html", report=bundle, demo_mode=app.config["DEMO_MODE"], error=None)
+
+    @app.get("/api/report.md")
+    def api_report_markdown():
+        try:
+            bundle = _report_bundle()
+        except LookupError:
+            return jsonify({"error": "采集批次不存在"}), 404
+        if bundle is None:
+            return jsonify({"error": "数据库不可读取"}), 503
+        response = make_response(render_markdown(bundle))
+        response.headers["Content-Type"] = "text/markdown; charset=utf-8"
+        response.headers["Content-Disposition"] = (
+            f'attachment; filename="{report_filename(bundle, "md")}"'
+        )
+        return response
+
+    @app.get("/api/report.docx")
+    def api_report_docx():
+        try:
+            bundle = _report_bundle()
+        except LookupError:
+            return jsonify({"error": "采集批次不存在"}), 404
+        if bundle is None:
+            return jsonify({"error": "数据库不可读取"}), 503
+        buffer = io.BytesIO()
+        try:
+            with tempfile.TemporaryDirectory(prefix="creatorscope-report-") as workspace:
+                target = render_docx(bundle, Path(workspace) / "report.docx")
+                buffer.write(target.read_bytes())
+        except ImportError:
+            return jsonify({"error": "缺少 python-docx，请先运行 setup.ps1 安装依赖"}), 503
+        buffer.seek(0)
+        response = make_response(buffer.read())
+        response.headers["Content-Type"] = (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        response.headers["Content-Disposition"] = (
+            f'attachment; filename="{report_filename(bundle, "docx")}"'
+        )
+        return response
 
     @app.get("/api/export/json")
     def api_export_json():

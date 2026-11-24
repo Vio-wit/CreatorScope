@@ -1,35 +1,34 @@
 # CreatorScope
 
-面向《数据采集与处理综合实训》的 Windows 本地数据采集与分析应用。技术栈：Python、Flask、Playwright、SQLite、pandas、jieba、WordCloud 和本地 ECharts。
+面向《数据采集与处理综合实训》的 Windows 本地数据采集与分析应用，使用 Python、Flask、Playwright、SQLite 和本地 ECharts。
 
-## 本地启动
+## 本地运行
 
-需要 Python 3.11 或更高版本以及可访问 PyPI 的网络。PowerShell 中运行：
+需要 Python 3.11 或更高版本以及可访问 PyPI 的网络。PowerShell 在项目目录执行：
 
 ```powershell
 .\setup.ps1
 .\run.ps1
 ```
 
-浏览器访问 <http://127.0.0.1:8765>。实时采集使用独立的可见浏览器配置；用户按平台正常登录。验证码、安全验证或访问权限提示会暂停任务，不绕过验证。常规统计和分析不需要模型 API Key。
+然后访问 <http://127.0.0.1:8765>。实时采集使用独立的可见浏览器配置，用户按平台正常登录。验证码、安全验证或访问权限提示会暂停任务，不绕过验证。
 
-## 测试
+## 功能
 
-```powershell
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
+- 达人库：搜索、筛选、查看采集字段和历史来源。
+- 数据分析：按可用数据展示粉丝、阅读、互动、笔记和字段覆盖情况；图表标注有效样本与统计范围。
+- 智能筛选与采集：通过可见浏览器执行采集任务；AI 辅助功能按需配置，基础数据浏览和统计不依赖模型 API Key。
+- 更多工具：评论分析、数据质量、实训报告和新闻关联等辅助页面。
 
-## 数据与离线演示
+## 数据说明
 
-此公开源码快照不包含任何 SQLite 数据库、采集样本、采集运行日志或截图。应用会在本地初始化 SQLite；`run.ps1 -Mode Demo` 需要用户自行准备 `data/demo/creatorscope_demo.sqlite3`，该演示数据库不随仓库分发。基线导入也需要用户自行提供受权取得的数据文件。项目原始本地数据仍由数据持有人自行保管。
+此公开源码快照不附带数据库、真实采集样本、运行日志或截图。应用会在本机初始化数据库；历史数据与离线演示数据需要由使用者自行准备。不要将 Cookie、Session、Token、账号密码或浏览器用户目录提交到代码库。
 
-## 当前待办
+图表只使用本地实际保存且符合字段口径的数据；缺失值不会填成 0。不同来源或统计周期的数据按页面标注分开展示。
 
-自然语言需求理解和采集条件建议保持 BACKLOG。待真实采集稳定性、字段覆盖和样本规模验证完成后，再依据真实数据设计；常规采集、清洗与统计分析不依赖 AI 服务。
+## 文档与许可
 
-## 文档
-
-- [分析功能实现矩阵](docs/ANALYTICS_IMPLEMENTATION_MATRIX.zh-CN.md)
+- [分析实现矩阵](docs/ANALYTICS_IMPLEMENTATION_MATRIX.zh-CN.md)
 - [分析使用指南](docs/ANALYTICS_USER_GUIDE.zh-CN.md)
 
-仓库未附带软件许可证文件；公开可见不等于授予代码复用许可。
+仓库未附带软件许可证；公开可见不等于授予代码复用许可。

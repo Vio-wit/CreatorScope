@@ -18,6 +18,13 @@
   let lastAnalyticsData = null;
   let lastCreatorCompareRows = [];
   let lastNoteCompareRows = [];
+  const selectedUnifiedCreators = new Map();
+  let unifiedCreatorOffset = 0;
+  const UNIFIED_CREATOR_PAGE_SIZE = 50;
+  let historyNoteOffset = 0;
+  let historyAllView = null;
+  let historyRequestVersion = 0;
+  const HISTORY_NOTE_PAGE_SIZE = 12;
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -48,6 +55,7 @@
       'exposureReadChart', 'readingInteractionChart', 'notePublishChart', 'noteTrendChart',
       'audienceGenderChart', 'audienceAgeChart', 'audienceRegionChart', 'audienceInterestChart', 'audienceDeviceChart',
       'creatorCompareBarChart', 'creatorCompareRadarChart', 'noteCompareBarChart', 'noteCompareRadarChart',
+      'historyFollowersChart', 'historyPerformanceChart', 'historyCoverageChart', 'libraryFollowersChart',
     ].forEach((id) => {
       const element = document.getElementById(id);
       if (element && window.echarts) charts[id] = echarts.init(element);
@@ -93,16 +101,7 @@
       charts.fanChart?.setOption({ ...baseChart, grid: { left: 90, right: 24, top: 8, bottom: 13 }, xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 8, color: '#a0a9a2' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, yAxis: { type: 'category', data: fans.map((item) => item.name), axisLabel: { fontSize: 8, color: '#858f88' }, axisTick: { show: false }, axisLine: { show: false } }, series: [{ type: 'bar', data: fans.map((item) => item.value), barWidth: 10, itemStyle: { color: '#8bb79b', borderRadius: 5 }, label: { show: true, position: 'right', formatter: '{c}%', fontSize: 8, color: '#728078' } }] }, true);
     } else setEmptyChart(charts.fanChart, '当前批次没有粉丝比例字段');
 
-    const categories = data.chart_data?.categories || [];
-    if (categories.length) {
-      charts.categoryChart?.setOption({ ...baseChart, color: ['#438f6c', '#78ad86', '#aec9aa', '#e8c58f', '#b6c6d9'], tooltip: { trigger: 'item' }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '48%'], label: { fontSize: 8, color: '#77847b' }, labelLine: { length: 7, length2: 5 }, data: categories }] }, true);
-    } else setEmptyChart(charts.categoryChart, '暂无可统计的内容类目');
 
-    const words = data.chart_data?.word_frequency || [];
-    $('#wordStatus').textContent = data.availability?.word_frequency || '等待可用标题或正文';
-    if (words.length) {
-      charts.wordChart?.setOption({ ...baseChart, grid: { left: 50, right: 15, top: 10, bottom: 24 }, xAxis: { type: 'category', data: words.map((item) => item.word), axisLabel: { interval: 0, rotate: 25, fontSize: 8, color: '#88938c' }, axisLine: { lineStyle: { color: '#e8ece8' } }, axisTick: { show: false } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { fontSize: 8, color: '#a0a9a2' } }, series: [{ type: 'bar', data: words.map((item) => item.count), barWidth: 13, itemStyle: { color: '#bf9465', borderRadius: [3, 3, 0, 0] } }] }, true);
-    } else setEmptyChart(charts.wordChart, '暂无可用标题/正文');
   }
 
   function setBarChart(id, items, horizontal = false, valueSuffix = '') {
@@ -208,7 +207,7 @@
   function renderAnalytics(data) {
     lastAnalyticsData = data;
     const chartsData = data.charts || {};
-    $('#analysisScope').textContent = `${data.scope || ''} · ${data.availability?.history || ''}`;
+    $('#analysisScope').textContent = data.scope || '基于已保存的创作者快照';
     $('#analysisCount').textContent = `${data.counts?.creators || 0} 位创作者 · ${data.counts?.notes || 0} 条笔记`;
     $('#followerDistStatus').textContent = `精确粉丝值 n=${chartsData.follower_sample_count || 0}`;
     $('#quoteDistStatus').textContent = `全部报价精确值 n=${chartsData.quote_sample_count || 0}；起价与区间不进入数值区间`;
@@ -246,29 +245,6 @@
       $('#wordStatus').textContent = data.availability?.word_frequency || '暂无笔记文本';
       setEmptyChart(charts.wordChart, '当前筛选文本不足以分词');
     }
-
-    const correlation = chartsData.correlation;
-    $('#correlationStatus').textContent = data.availability?.correlation || '样本不足';
-    if (correlation?.values?.length) {
-      const cells = [];
-      correlation.values.forEach((row, y) => row.forEach((value, x) => { if (value !== null) cells.push([x, y, value]); }));
-      charts.correlationChart?.setOption({
-        ...baseChart,
-        tooltip: { position: 'top', formatter: (item) => `${correlation.labels[item.data[1]]} × ${correlation.labels[item.data[0]]}<br>${item.data[2]}` },
-        grid: { left: 88, right: 16, top: 12, bottom: 26 },
-        xAxis: { type: 'category', data: correlation.labels, axisLabel: { fontSize: 8, color: '#89948d', interval: 0, rotate: 25 }, splitArea: { show: true } },
-        yAxis: { type: 'category', data: correlation.labels, axisLabel: { fontSize: 8, color: '#89948d' }, splitArea: { show: true } },
-        visualMap: { min: -1, max: 1, calculable: false, orient: 'horizontal', left: 'center', bottom: 0, textStyle: { fontSize: 7 }, inRange: { color: ['#d88a79', '#f5f6f3', '#4b9c78'] } },
-        series: [{ type: 'heatmap', data: cells, label: { show: true, fontSize: 8, formatter: (item) => Number(item.data[2]).toFixed(2) }, emphasis: { itemStyle: { shadowBlur: 6, shadowColor: '#3334' } } }],
-      }, true);
-    } else setEmptyChart(charts.correlationChart, '至少需要 3 位共同完整样本');
-
-    const trend = chartsData.batch_trend || [];
-    $('#trendStatus').textContent = data.availability?.history || '历史快照不足';
-    if (trend.length) {
-      const times = [...new Set(trend.flatMap((group) => group.points.map((point) => point.captured_at)))].sort();
-      charts.trendChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 15, top: 12, bottom: 48 }, xAxis: { type: 'category', data: times, axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, series: trend.map((group) => { const byTime = new Map(group.points.map((point) => [point.captured_at, point.median_followers])); return { name: `${group.source} · ${group.period}`, type: 'line', smooth: true, symbolSize: 6, connectNulls: false, data: times.map((time) => byTime.get(time) ?? null) }; }) }, true);
-    } else setEmptyChart(charts.trendChart, '需要同来源、同周期、重复创作者快照');
 
     $('#followerPriceStatus').textContent = data.availability?.follower_price || '';
     $('#readingStatus').textContent = data.availability?.reading_engagement || '';
@@ -309,6 +285,7 @@
 
   function renderAudienceProfiles(groups) {
     const select = $('#audienceGroupSelect');
+    if (!select) return;
     const current = select.value;
     select.innerHTML = '<option value="">选择兼容来源与周期</option>' + groups.map((group) => `<option value="${group.group_id}">${escapeHtml(group.label)}</option>`).join('');
     if (groups.some((group) => String(group.group_id) === current)) select.value = current;
@@ -478,8 +455,16 @@
     return params;
   }
 
+  function renderDashboardNoteSamples(rows) {
+    const withBody = rows.filter((row) => String(row.body || '').trim());
+    const samples = (withBody.length ? withBody : rows.filter((row) => (row.topics || []).length)).slice(0, 3);
+    $('#dashboardNoteSamplesSummary').textContent = `展开真实笔记内容（${samples.length} 条）`;
+    $('#dashboardNoteSamples').innerHTML = samples.map((row) => `<article class="dashboard-note-sample"><h3>${escapeHtml(row.title || '（无标题）')}</h3><p>${escapeHtml(row.body || '暂无正文')}</p><div class="history-note-topics">${(row.topics || []).map((topic) => `<span>${escapeHtml(topic)}</span>`).join('')}</div><small>${escapeHtml(row.creator_name || '未知创作者')} · ${escapeHtml(row.source || '未知来源')} · ${escapeHtml(row.batch_id || '未知批次')}</small></article>`).join('') || '<p class="empty-cell">当前筛选没有可展示的正文或话题</p>';
+  }
+
   function renderNotes(data) {
     lastNotesData = data;
+    renderDashboardNoteSamples(data.notes || []);
     $('#noteCountLabel').textContent = `${data.count || 0} 篇笔记`;
     const fill = (selector, rows, valueKey, labelFn, emptyLabel, current) => {
       const node = $(selector);
@@ -655,47 +640,101 @@
     if ((data.creators || []).some((creator) => creator.creator_id === current)) elements.creatorSelect.value = current;
   }
 
+  function updateUnifiedCompareButton() {
+    const count = selectedUnifiedCreators.size;
+    const button = $('#compareSelectedCreators');
+    button.textContent = `去智能分析对比（${count}/4）`;
+    button.disabled = count < 2 || count > 4;
+  }
+
+  function unifiedDetailMarkup(record) {
+    const labels = {
+      name: '名称', platform_id: '平台 ID', followers: '粉丝数',
+      daily_read_median: '日常阅读中位数', daily_interaction_median: '日常互动中位数',
+      likes_and_favorites: '获赞与收藏', published_notes: '发布笔记数',
+      image_fixed_price: '图文报价原值', video_fixed_price: '视频报价原值',
+      category: '领域', account_ip_location: '蒲公英账号 IP 属地', historical_region: '历史地域原值',
+    };
+    const values = Object.entries(record.fields || {}).map(([key, value]) => {
+      if (value === null || value === undefined || value === '') return '';
+      return `<div><dt>${escapeHtml(labels[key] || key)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+    }).filter(Boolean).join('');
+    const identifiers = Object.entries(record.identifiers || {}).map(([key, value]) => `<div><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('');
+    const raw = (record.details || []).map((item) => {
+      const label = item.label || item.key || item.original_field || '原始字段';
+      const rawValue = item.raw_value ?? item.text_value ?? item.value ?? '';
+      const meta = [item.original_field && `字段名 ${item.original_field}`, item.parse_status, item.unit, item.period].filter(Boolean).join(' · ');
+      return `<div><dt>${escapeHtml(label)}${meta ? `<small> · ${escapeHtml(meta)}</small>` : ''}</dt><dd>${escapeHtml(rawValue || '—')}${item.numeric_value !== null && item.numeric_value !== undefined ? ` <small>解析值 ${formatMetric(item.numeric_value)}</small>` : ''}</dd></div>`;
+    }).join('');
+    const sources = (record.source_records || []).map((item) => {
+      const paths = (item.source_paths || []).map((value) => `<small class="unified-source-path">${escapeHtml(value)}</small>`).join('');
+      const facts = [item.source_name || record.source_name, item.row_number && `第 ${formatMetric(item.row_number)} 行`, item.batch_id && `批次 ${item.batch_id}`, item.captured_at || item.capture_time].filter(Boolean).join(' · ');
+      return `<li>${escapeHtml(facts)}${paths}</li>`;
+    }).join('');
+    const prices = (record.prices || []).map((item) => `<div><dt>${escapeHtml(item.label || '报价')}</dt><dd>${escapeHtml(item.raw_value || '—')}</dd></div>`).join('');
+    return `<details class="unified-row-details"><summary>查看全部字段与来源</summary><p class="unified-record-meta">${escapeHtml(record.bucket_label || '')} · ${escapeHtml(record.source_name || '来源未知')} · ${escapeHtml(record.captured_at || '采集时间未知')}</p><dl>${values}${identifiers}${prices}${raw || '<div><dd>没有额外原始字段</dd></div>'}</dl><ul class="history-lineage-list">${sources || '<li>暂无来源行信息</li>'}</ul></details>`;
+  }
+
   async function refreshCreatorLibrary() {
-    const params = new URLSearchParams();
-    const values = {
+    const params = new URLSearchParams({
+      q: $('#creatorQuery').value.trim(),
+      bucket: $('#creatorBucketFilter').value,
       category: $('#categoryFilter').value,
-      location: $('#locationFilter').value,
+      ip_location: $('#locationFilter').value,
       followers_min: $('#followersMin').value.trim(),
       followers_max: $('#followersMax').value.trim(),
-      quote_min: $('#quoteMin').value.trim(),
-      quote_max: $('#quoteMax').value.trim(),
-      sort_by: $('#creatorSort').value,
-    };
-    Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, value); });
-    if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
-    if (elements.sourceSelect.value) params.set('source', elements.sourceSelect.value);
-    const data = await requestJson(`/api/creators?${params.toString()}`);
-    const currentCategory = $('#categoryFilter').value;
-    const currentLocation = $('#locationFilter').value;
-    const compareSelection = Array.from($('#creatorCompareSelect').selectedOptions).map((option) => option.value);
-    const categories = data.categories || [];
-    $('#categoryFilter').innerHTML = '<option value="">全部领域</option>' + categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
-    if (categories.includes(currentCategory)) $('#categoryFilter').value = currentCategory;
-    const locations = data.locations || [];
-    $('#locationFilter').innerHTML = '<option value="">全部地域</option>' + locations.map((location) => `<option value="${escapeHtml(location)}">${escapeHtml(location)}</option>`).join('');
-    if (locations.includes(currentLocation)) $('#locationFilter').value = currentLocation;
-    $('#creatorCount').textContent = `${data.count || 0} 位博主`;
-    const body = $('#creatorBody');
-    if (!data.creators?.length) {
-      body.innerHTML = '<tr><td colspan="10" class="empty-cell">当前筛选条件下没有创作者</td></tr>';
-      $('#creatorCompareSelect').innerHTML = '';
-      return;
+      offset: String(unifiedCreatorOffset),
+      limit: String(UNIFIED_CREATOR_PAGE_SIZE),
+    });
+    const data = await requestJson(`/api/unified-creators?${params.toString()}`);
+    const categorySelect = $('#categoryFilter');
+    const locationSelect = $('#locationFilter');
+    const previousCategory = categorySelect.value;
+    const previousLocation = locationSelect.value;
+    categorySelect.innerHTML = '<option value="">全部领域</option>' + (data.categories || []).map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+    locationSelect.innerHTML = '<option value="">全部 IP 属地</option>' + (data.ip_locations || []).map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+    if ((data.categories || []).includes(previousCategory)) categorySelect.value = previousCategory;
+    if ((data.ip_locations || []).includes(previousLocation)) locationSelect.value = previousLocation;
+    const groups = data.groups || [];
+    const summary = data.filtered_summary || {};
+    $('#libraryMatched').textContent = formatMetric(data.total_count || 0);
+    $('#libraryFollowersValid').textContent = formatMetric(summary.followers_valid || 0);
+    $('#libraryPerformanceValid').textContent = formatMetric(summary.reading_interaction_valid || 0);
+    $('#libraryCategoryValid').textContent = formatMetric(summary.category_valid || 0);
+    $('#libraryFollowerStatus').textContent = `粉丝数有效 ${formatMetric(summary.followers_valid || 0)} 条；来源记录可能重复`;
+    if (summary.followers_valid) setBarChart('libraryFollowersChart', (summary.follower_distribution || []).map((item) => ({ name: item.label, value: item.count })));
+    else setEmptyChart(charts.libraryFollowersChart, '当前筛选没有粉丝数');
+    $('#creatorCount').textContent = `${formatMetric(data.total_count || 0)} 条匹配记录`;
+    $('#unifiedCreatorCount').textContent = formatMetric(data.total_count || 0);
+    $('#unifiedCreatorGroups').textContent = groups.map((item) => `${item.label} ${formatMetric(item.count || 0)}`).join(' · ');
+    const body = $('#unifiedCreatorBody');
+    const records = data.records || [];
+    if (!records.length) {
+      body.innerHTML = '<tr><td colspan="9" class="empty-cell">当前筛选下没有达人资料</td></tr>';
+    } else {
+      body.innerHTML = records.map((record) => {
+        const fields = record.fields || {};
+        const selected = selectedUnifiedCreators.has(record.ref) ? ' checked' : '';
+        const name = record.name || '未命名记录';
+        const identifier = record.platform_id || Object.values(record.identifiers || {})[0] || '无平台 ID';
+        const completeness = record.completeness || {};
+        const source = [record.bucket_label, record.source_name, record.captured_at || '采集时间未知'].filter(Boolean).join(' · ');
+        return `<tr><td><strong>${escapeHtml(name)}</strong><br><small>${escapeHtml(identifier)}</small>${unifiedDetailMarkup(record)}</td><td>${formatMetric(fields.followers, ' 人')}</td><td>${formatMetric(fields.daily_read_median, ' 次')}</td><td>${formatMetric(fields.daily_interaction_median, ' 次')}</td><td>${escapeHtml(fields.category || '—')}</td><td>${escapeHtml(fields.account_ip_location || '—')}</td><td><span class="coverage-pill coverage-tier-${completeness.percentage >= 80 ? 'high' : completeness.percentage >= 40 ? 'partial' : 'low'}">${formatMetric(completeness.valid_fields || 0)} / ${formatMetric(completeness.total_fields || 0)} · ${formatMetric(completeness.percentage || 0)}%</span></td><td>${escapeHtml(source)}</td><td><label class="unified-compare-check"><input type="checkbox" data-unified-compare data-ref="${escapeHtml(record.ref)}"${selected}>加入对比</label></td></tr>`;
+      }).join('');
     }
-    const typeLabels = { blogger_list_sample: '列表', creator_profile_sample: '详情', creator_content_performance: '表现', fan_analysis: '画像', note_detail: '笔记' };
-    body.innerHTML = data.creators.map((creator) => `<tr><td>${escapeHtml(creator.pseudonym)}</td><td>${escapeHtml(creator.platform_creator_id || '—')}</td><td>${escapeHtml(creator.location || '—')}</td><td>${escapeHtml((creator.categories || []).join('、') || '—')}</td><td>${formatMetric(creator.followers, ' 人')}</td><td>${escapeHtml(quoteDisplay(creator))}</td><td>${formatMetric(creator.reading)}</td><td>${formatMetric(creator.engagement)}</td><td>${escapeHtml((creator.record_types || []).map((type) => typeLabels[type] || type).join(' / '))}</td><td>${escapeHtml(creator.last_seen_at || '—')}</td></tr>`).join('');
-    $('#creatorCompareSelect').innerHTML = data.creators.map((creator) => `<option value="${escapeHtml(creator.creator_id)}">${escapeHtml(creator.pseudonym)}</option>`).join('');
-    Array.from($('#creatorCompareSelect').options).forEach((option) => { option.selected = compareSelection.includes(option.value); });
+    const offset = Number(data.offset || 0);
+    const limit = Number(data.limit || UNIFIED_CREATOR_PAGE_SIZE);
+    const total = Number(data.total_count || 0);
+    $('#unifiedCreatorPageStatus').textContent = `${total ? offset + 1 : 0}–${Math.min(offset + limit, total)} / ${formatMetric(total)} 条`;
+    $('#unifiedCreatorPrev').disabled = offset <= 0;
+    $('#unifiedCreatorNext').disabled = offset + limit >= total;
+    updateUnifiedCompareButton();
   }
 
   async function refreshFieldDictionary() {
     const fields = await requestJson('/api/fields');
     $('#dictionaryCount').textContent = `${fields.length} 个字段`;
-    $('#dictionaryBody').innerHTML = fields.map((field) => `<tr><td>${escapeHtml(field.group)}</td><td>${escapeHtml(field.name)}</td><td>${escapeHtml(field.unit)}</td><td>${escapeHtml(field.period)}</td><td><span class="coverage-pill ${field.observed ? '' : 'pending-pill'}">${field.observed ? '真实样本已见' : '待采/待核'}</span></td></tr>`).join('');
+    $('#dictionaryBody').innerHTML = fields.map((field) => `<tr><td>${escapeHtml(field.group)}</td><td>${escapeHtml(field.name)}</td><td>${escapeHtml(field.unit)}</td><td>${escapeHtml(field.period)}</td></tr>`).join('');
   }
 
   function renderDashboard(data) {
@@ -713,6 +752,11 @@
     renderTasks(data.tasks || []);
   }
 
+  function syncDashboardFilterSummary() {
+    const activeCount = [$('#sourceSelect').value, $('#typeSelect').value].filter(Boolean).length;
+    $('#dashboardExtraFiltersSummary').textContent = activeCount ? `更多筛选 · ${activeCount}` : '更多筛选';
+  }
+
   async function refreshDashboard() {
     const params = new URLSearchParams();
     if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
@@ -720,6 +764,7 @@
     if (elements.typeSelect.value) params.set('record_type', elements.typeSelect.value);
     const data = await requestJson(`/api/dashboard?${params.toString()}`);
     renderDashboard(data);
+    syncDashboardFilterSummary();
   }
 
   async function refreshAnalytics() {
@@ -727,6 +772,152 @@
     params.set('word_kind', $('#wordKindSelect').value);
     const data = await requestJson(`/api/analytics?${params.toString()}`);
     renderAnalytics(data);
+  }
+
+  function renderHistoryAnalysis(data) {
+    const source = data.source || {};
+    const metrics = data.metrics || {};
+    const followers = metrics.followers || {};
+    const reading = metrics.daily_read_median || {};
+    const interaction = metrics.daily_interaction_median || {};
+    $('#historyAnalysisStatus').textContent = `${source.label || '历史数据'} · ${source.sample_count || 0} 条样本`;
+    $('#historySampleCount').textContent = formatMetric(source.sample_count || 0);
+    $('#historySourceFiles').textContent = `来源文件 ${formatMetric(source.source_file_count || 0)} 个`;
+    $('#historyFollowersAverage').textContent = followers.average === null || followers.average === undefined ? '暂无数据' : formatMetric(followers.average);
+    $('#historyFollowersCount').textContent = `有效样本 ${formatMetric(followers.valid_count || 0)}`;
+    $('#historyReadingMedian').textContent = reading.median === null || reading.median === undefined ? '暂无数据' : formatMetric(reading.median);
+    $('#historyReadingCount').textContent = `有效样本 ${formatMetric(reading.valid_count || 0)}`;
+    $('#historyInteractionMedian').textContent = interaction.median === null || interaction.median === undefined ? '暂无数据' : formatMetric(interaction.median);
+    $('#historyInteractionCount').textContent = `有效样本 ${formatMetric(interaction.valid_count || 0)}`;
+    $('#historyFollowerScope').textContent = `粉丝数，有效样本 ${followers.valid_count || 0}`;
+    $('#historyPerformanceScope').textContent = `共同样本 ${data.performance_pairs?.length || 0} 条`;
+    $('#historyRecordCount').textContent = `${data.records?.length || 0} 条记录`;
+
+    const coverage = data.field_coverage || {};
+    const coverageFields = coverage.fields || [];
+    const coverageDistribution = coverage.distribution || [];
+    $('#historyCoverageScope').textContent = `${coverage.record_count || 0} 条记录 · ${coverage.field_count || 0} 个字段 · 覆盖率按已取得原值统计`;
+    $('#historyCoverageFieldCount').textContent = `${coverage.field_count || 0} 个字段`;
+    if (coverageDistribution.some((item) => item.count > 0)) {
+      charts.historyCoverageChart?.setOption({
+        ...baseChart,
+        grid: { left: 48, right: 16, top: 12, bottom: 38 },
+        tooltip: { trigger: 'axis', formatter: (items) => `${escapeHtml(items[0]?.name || '')}<br>${formatMetric(items[0]?.value || 0)} 个字段` },
+        xAxis: { type: 'category', data: coverageDistribution.map((item) => item.label), axisTick: { show: false }, axisLabel: { color: '#929c95', fontSize: 8, interval: 0 } },
+        yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        series: [{ type: 'bar', data: coverageDistribution.map((item) => item.count), barMaxWidth: 38, itemStyle: { color: '#638d75', borderRadius: [4, 4, 0, 0] } }],
+      }, true);
+    } else setEmptyChart(charts.historyCoverageChart, '暂无字段记录');
+    $('#historyCoverageBody').innerHTML = coverageFields.map((item) => {
+      const unitPeriod = [...(item.units || []), ...(item.periods || [])].join(' / ') || item.unit || '—';
+      const original = (item.original_fields || []).join(' / ') || '—';
+      const parseSuccess = item.parse_success_pct === null || item.parse_success_pct === undefined ? '—' : `${formatMetric(item.parse_success_pct)}%`;
+      return `<tr><td>${escapeHtml(item.label)}</td><td>${formatMetric(item.collected_count || 0)} / ${formatMetric(item.total_count || 0)}</td><td>${formatMetric(item.coverage_pct || 0)}%</td><td>${parseSuccess}</td><td>${formatMetric(item.numeric_success_count || 0)}</td><td>${formatMetric(item.text_count || 0)}</td><td>${formatMetric(item.starting_price_count || 0)}</td><td>${formatMetric(item.displayed_unavailable_count || 0)}</td><td>${formatMetric(item.empty_count || 0)}</td><td>${formatMetric(item.not_read_count || 0)}</td><td>${formatMetric(item.parse_failed_count || 0)}</td><td>${formatMetric(item.other_raw_count || 0)}</td><td><span class="coverage-pill coverage-tier-${escapeHtml(item.tier)}">${escapeHtml(item.tier_label)}</span></td><td>${escapeHtml(original)}</td><td>${escapeHtml(unitPeriod)}</td></tr>`;
+    }).join('') || '<tr><td colspan="15" class="empty-cell">暂无字段证据</td></tr>';
+
+    const bucketRows = data.follower_distribution || [];
+    if (bucketRows.some((item) => item.count > 0)) {
+      charts.historyFollowersChart?.setOption({
+        ...baseChart,
+        grid: { left: 48, right: 16, top: 12, bottom: 32 },
+        tooltip: { trigger: 'axis', formatter: (items) => `${escapeHtml(items[0]?.name || '')}<br>${formatMetric(items[0]?.value || 0)} 条样本` },
+        xAxis: { type: 'category', data: bucketRows.map((item) => item.label), axisTick: { show: false }, axisLabel: { color: '#929c95', fontSize: 8, interval: 0, rotate: 16 } },
+        yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        series: [{ type: 'bar', data: bucketRows.map((item) => item.count), barMaxWidth: 32, itemStyle: { color: '#4a9b75', borderRadius: [4, 4, 0, 0] } }],
+      }, true);
+    } else setEmptyChart(charts.historyFollowersChart, '暂无可用粉丝数');
+
+    const pairs = data.performance_pairs || [];
+    if (pairs.length) {
+      charts.historyPerformanceChart?.setOption({
+        ...baseChart,
+        grid: { left: 48, right: 14, top: 12, bottom: 37 },
+        tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.data.name)}<br>日常阅读：${formatMetric(item.value[0])} 次<br>日常互动：${formatMetric(item.value[1])} 次` },
+        xAxis: { type: 'value', name: '日常阅读中位数', nameTextStyle: { fontSize: 8 }, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        yAxis: { type: 'value', name: '日常互动中位数', nameTextStyle: { fontSize: 8 }, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        series: [{ type: 'scatter', symbolSize: 8, itemStyle: { color: '#4a9b75', opacity: 0.7 }, data: pairs.map((item) => ({ name: item.sample, value: [item.reading, item.interaction] })) }],
+      }, true);
+    } else setEmptyChart(charts.historyPerformanceChart, '暂无共同有效样本');
+
+    const labels = {
+      followers: '粉丝数', daily_read_median: '日常阅读中位数', daily_interaction_median: '日常互动中位数',
+      likes_and_favorites: '获赞与收藏', published_notes: '发布笔记数',
+    };
+    const units = { followers: '人', daily_read_median: '次', daily_interaction_median: '次', likes_and_favorites: '次', published_notes: '篇' };
+    const scopes = { followers: '采集记录值', daily_read_median: '日常中位数', daily_interaction_median: '日常中位数', likes_and_favorites: '页面显示值', published_notes: '页面显示值' };
+    $('#historyFieldBody').innerHTML = Object.entries(metrics).map(([key, item]) => `<tr><td>${escapeHtml(labels[key] || item.label || key)}</td><td>${formatMetric(item.valid_count || 0)} / ${formatMetric(item.total_count || 0)}</td><td>${escapeHtml(units[key] || item.unit || '')}</td><td>${escapeHtml(scopes[key] || '')}</td></tr>`).join('');
+    const recordFields = ['followers', 'daily_read_median', 'daily_interaction_median'];
+    $('#historyRecordBody').innerHTML = (data.records || []).map((row) => `<tr><td>${escapeHtml(row.sample)}</td>${recordFields.map((field) => `<td>${row[field] === null || row[field] === undefined ? '—' : formatMetric(row[field])}</td>`).join('')}</tr>`).join('') || '<tr><td colspan="4" class="empty-cell">暂无样本</td></tr>';
+  }
+
+  function renderHistoryNoteSamples(payload) {
+    const samples = payload.samples || [];
+    $('#historyNoteCount').textContent = `${formatMetric(payload.total_count || 0)} 篇`;
+    $('#historyNoteStatus').textContent = `正文 ${formatMetric(payload.body_count || 0)} 篇 · 标题 ${formatMetric(payload.title_count || 0)} 篇 · 有话题 ${formatMetric(payload.topics_count || 0)} 篇`;
+    $('#historyNoteSamples').innerHTML = samples.map((item) => `<article class="history-note-card"><h4>${escapeHtml(item.title || '（无标题）')}</h4>${item.author ? `<small>${escapeHtml(item.author)}</small>` : ''}<p class="history-note-body">${escapeHtml(item.body || '暂无已解析正文')}</p><div class="history-note-topics">${(item.topics || []).map((topic) => `<span>#${escapeHtml(topic)}</span>`).join('') || '<span>暂无已解析话题</span>'}</div><small>${escapeHtml(item.lineage?.source_name || '历史笔记')} · 第 ${formatMetric(item.lineage?.row_number || 0)} 行${item.lineage?.capture_time ? ` · ${escapeHtml(item.lineage.capture_time)}` : ''}</small></article>`).join('') || '<article class="history-note-card empty-cell">暂无匹配笔记内容</article>';
+    const offset = Number(payload.offset || 0);
+    const limit = Number(payload.limit || HISTORY_NOTE_PAGE_SIZE);
+    const resultCount = Number(payload.result_count || 0);
+    const first = resultCount ? offset + 1 : 0;
+    const last = Math.min(offset + limit, resultCount);
+    $('#historyNotePageStatus').textContent = `${formatMetric(first)}–${formatMetric(last)} / ${formatMetric(resultCount)}`;
+    $('#historyNoteCoverage').textContent = `原始资料共 ${formatMetric(payload.total_count || 0)} 篇`;
+    $('#historyNotePrev').disabled = offset <= 0;
+    $('#historyNoteNext').disabled = offset + limit >= resultCount;
+  }
+
+  async function refreshHistoryNoteLibrary() {
+    const params = new URLSearchParams({
+      q: $('#historyNoteQuery').value.trim(),
+      offset: String(historyNoteOffset),
+      limit: String(HISTORY_NOTE_PAGE_SIZE),
+    });
+    renderHistoryNoteSamples(await requestJson(`/api/history-analysis/note-library?${params.toString()}`));
+  }
+
+  async function refreshHistoryAnalysis() {
+    const version = ++historyRequestVersion;
+    try {
+      const sourcePayload = await requestJson('/api/history-analysis/sources');
+      if (version !== historyRequestVersion) return;
+      const select = $('#historySourceSelect');
+      const sourceOptions = sourcePayload.sources || [];
+      const selected = select.value === '__all__' ? '__all__' : (sourceOptions.some((item) => item.key === select.value) ? select.value : (sourceOptions.length ? '__all__' : ''));
+      select.innerHTML = '<option value="__all__">全部数据集（分开展示）</option>' + sourceOptions.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)} · ${formatMetric(item.sample_count)} 条</option>`).join('');
+      select.value = selected;
+      const allView = historyAllView ||= window.CreatorScopeHistoryAll.create({ container: $('#historyAllGroups'), requestJson, onSelectSource: (key) => { select.value = key; refreshHistoryAnalysis(); } });
+      if (selected === '__all__') {
+        $('#historySingleSource').hidden = true;
+        $('#historyAnalysisStatus').textContent = '全部历史数据集，按来源分开展示';
+        await allView.show(sourceOptions);
+      } else if (selected) {
+        allView.hide();
+        $('#historySingleSource').hidden = false;
+        const params = new URLSearchParams({ source: selected });
+        const data = await requestJson(`/api/history-analysis?${params.toString()}`);
+        if (version !== historyRequestVersion) return;
+        renderHistoryAnalysis(data);
+        window.requestAnimationFrame(() => ['historyFollowersChart', 'historyPerformanceChart', 'historyCoverageChart'].forEach((id) => charts[id]?.resize()));
+      } else {
+        allView.hide();
+        $('#historySingleSource').hidden = false;
+        $('#historyAnalysisStatus').textContent = '暂无可用历史样本';
+        setEmptyChart(charts.historyFollowersChart, '暂无可用样本');
+        setEmptyChart(charts.historyPerformanceChart, '暂无可用样本');
+        setEmptyChart(charts.historyCoverageChart, '暂无可用样本');
+      }
+      if (version === historyRequestVersion) await refreshHistoryNoteLibrary();
+    } catch (error) {
+      if (version !== historyRequestVersion) return;
+      $('#historyAnalysisStatus').textContent = error.message;
+      setEmptyChart(charts.historyFollowersChart, '历史数据暂不可用');
+      setEmptyChart(charts.historyPerformanceChart, '历史数据暂不可用');
+      setEmptyChart(charts.historyCoverageChart, '历史数据暂不可用');
+      $('#historyFieldBody').innerHTML = '<tr><td colspan="4" class="empty-cell">暂无样本</td></tr>';
+      $('#historyCoverageBody').innerHTML = '<tr><td colspan="15" class="empty-cell">暂无字段证据</td></tr>';
+      $('#historyRecordBody').innerHTML = '<tr><td colspan="4" class="empty-cell">暂无样本</td></tr>';
+      renderHistoryNoteSamples({ samples: [], total_count: 0, result_count: 0, body_count: 0, title_count: 0, topics_count: 0 });
+    }
   }
 
   async function refreshDataViews() {
@@ -798,13 +989,55 @@
 
   async function refreshAll() {
     try {
-      await Promise.all([refreshDataViews(), refreshTasks(), refreshBrowserStatus()]);
+      await Promise.all([refreshDataViews(), refreshTasks(), refreshBrowserStatus(), refreshHistoryAnalysis()]);
     } catch (error) {
       toast(`本地服务暂不可用：${error.message}`, true);
     }
   }
 
+  function syncPrimaryNavigation() {
+    const hash = window.location.hash;
+    const activeSection = hash === '#creators' ? 'creators' : hash === '#collection' ? 'smart' : 'analytics';
+    document.querySelectorAll('[data-primary-section]').forEach((link) => {
+      link.classList.toggle('active', link.dataset.primarySection === activeSection);
+    });
+    document.querySelectorAll('[data-primary-view]').forEach((section) => {
+      section.hidden = section.dataset.primaryView !== activeSection;
+    });
+    window.requestAnimationFrame(() => Object.values(charts).forEach((chart) => chart.resize()));
+  }
+
   function bindEvents() {
+    $('#historySourceSelect').addEventListener('change', () => refreshHistoryAnalysis().catch((error) => toast(error.message, true)));
+    $('#unifiedCreatorPrev').addEventListener('click', () => { unifiedCreatorOffset = Math.max(0, unifiedCreatorOffset - UNIFIED_CREATOR_PAGE_SIZE); refreshCreatorLibrary().catch((error) => toast(error.message, true)); });
+    $('#unifiedCreatorNext').addEventListener('click', () => { unifiedCreatorOffset += UNIFIED_CREATOR_PAGE_SIZE; refreshCreatorLibrary().catch((error) => toast(error.message, true)); });
+    $('#unifiedCreatorBody').addEventListener('change', (event) => {
+      const checkbox = event.target.closest('[data-unified-compare]');
+      if (!checkbox) return;
+      const ref = checkbox.dataset.ref;
+      if (checkbox.checked) {
+        if (selectedUnifiedCreators.size >= 4) {
+          checkbox.checked = false;
+          toast('横向对比最多选择 4 位达人', true);
+          return;
+        }
+        const name = checkbox.closest('tr')?.querySelector('strong')?.textContent || ref;
+        selectedUnifiedCreators.set(ref, name);
+      } else selectedUnifiedCreators.delete(ref);
+      updateUnifiedCompareButton();
+    });
+    $('#compareSelectedCreators').addEventListener('click', () => {
+      if (selectedUnifiedCreators.size < 2 || selectedUnifiedCreators.size > 4) return;
+      const params = new URLSearchParams();
+      selectedUnifiedCreators.forEach((_name, ref) => params.append('creator_ref', ref));
+      window.location.href = `/ai?${params.toString()}`;
+    });
+    $('#filterHistoryNotes').addEventListener('click', () => { historyNoteOffset = 0; refreshHistoryNoteLibrary().catch((error) => toast(error.message, true)); });
+    $('#historyNoteQuery').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') { historyNoteOffset = 0; refreshHistoryNoteLibrary().catch((error) => toast(error.message, true)); }
+    });
+    $('#historyNotePrev').addEventListener('click', () => { historyNoteOffset = Math.max(0, historyNoteOffset - HISTORY_NOTE_PAGE_SIZE); refreshHistoryNoteLibrary().catch((error) => toast(error.message, true)); });
+    $('#historyNoteNext').addEventListener('click', () => { historyNoteOffset += HISTORY_NOTE_PAGE_SIZE; refreshHistoryNoteLibrary().catch((error) => toast(error.message, true)); });
     elements.importButton.addEventListener('click', () => submitTask('/api/tasks/import-baseline', '已提交历史基线导入任务'));
     elements.uploadButton.addEventListener('click', () => elements.uploadInput.click());
     elements.uploadInput.addEventListener('change', async () => {
@@ -851,42 +1084,27 @@
       }
     });
     elements.batchSelect.addEventListener('change', () => {
-      Promise.all([refreshDashboard(), refreshAnalytics(), refreshCreatorLibrary(), refreshNotes()]).catch((error) => toast(error.message, true));
+      Promise.all([refreshDashboard(), refreshAnalytics(), refreshNotes()]).catch((error) => toast(error.message, true));
     });
     elements.sourceSelect.addEventListener('change', () => {
-      Promise.all([refreshDashboard(), refreshAnalytics(), refreshCreatorLibrary(), refreshNotes()]).catch((error) => toast(error.message, true));
+      Promise.all([refreshDashboard(), refreshAnalytics(), refreshNotes()]).catch((error) => toast(error.message, true));
     });
     elements.typeSelect.addEventListener('change', refreshDashboard);
-    $('#filterCreators').addEventListener('click', () => refreshCreatorLibrary().catch((error) => toast(error.message, true)));
-    ['#categoryFilter', '#locationFilter', '#creatorSort'].forEach((selector) => $(selector).addEventListener('change', () => {
+    $('#filterCreators').addEventListener('click', () => { unifiedCreatorOffset = 0; refreshCreatorLibrary().catch((error) => toast(error.message, true)); });
+    $('#creatorQuery').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') { unifiedCreatorOffset = 0; refreshCreatorLibrary().catch((error) => toast(error.message, true)); }
+    });
+    $('#categoryFilter').addEventListener('change', () => {
+      unifiedCreatorOffset = 0;
       Promise.all([refreshCreatorLibrary(), refreshAnalytics(), refreshNotes()]).catch((error) => toast(error.message, true));
+    });
+    ['#locationFilter', '#creatorBucketFilter'].forEach((selector) => $(selector).addEventListener('change', () => {
+      unifiedCreatorOffset = 0;
+      refreshCreatorLibrary().catch((error) => toast(error.message, true));
     }));
-    $('#creatorCompareSelect').addEventListener('change', () => {
-      const selected = Array.from($('#creatorCompareSelect').selectedOptions);
-      if (selected.length > 4) { selected.at(-1).selected = false; $('#creatorCompareStatus').textContent = '最多选择 4 位创作者'; }
-      else $('#creatorCompareStatus').textContent = `${selected.length} 位已选择；请选 2 至 4 位`;
-    });
-    $('#audienceGroupSelect').addEventListener('change', () => {
-      if (lastAnalyticsData) renderAudienceProfiles(lastAnalyticsData.charts?.audience_groups || []);
-    });
-    $('#compareCreators').addEventListener('click', async () => {
-      if (elements.batchSelect.value === '__all__') {
-        $('#creatorCompareStatus').textContent = '请选择一个具体采集批次，以保证来源和时间口径一致';
-        return;
-      }
-      const params = new URLSearchParams();
-      Array.from($('#creatorCompareSelect').selectedOptions).forEach((option) => params.append('creator_id', option.value));
-      if (elements.batchSelect.value) params.set('batch_id', elements.batchSelect.value);
-      if (elements.sourceSelect.value) params.set('source', elements.sourceSelect.value);
-      try {
-        const data = await requestJson(`/api/creators/compare?${params.toString()}`);
-        renderCreatorComparison(data);
-      } catch (error) { $('#creatorCompareStatus').textContent = error.message; }
-    });
-    $('#creatorCompareMetric').addEventListener('change', () => {
-      const option = $('#creatorCompareMetric').selectedOptions[0];
-      renderComparisonBar('creatorCompareBarChart', lastCreatorCompareRows, $('#creatorCompareMetric').value, 'pseudonym', option?.textContent || '指标');
-    });
+    ['#followersMin', '#followersMax'].forEach((selector) => $(selector).addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') { unifiedCreatorOffset = 0; refreshCreatorLibrary().catch((error) => toast(error.message, true)); }
+    }));
     $('#noteCompareSelect').addEventListener('change', () => {
       const selected = Array.from($('#noteCompareSelect').selectedOptions);
       if (selected.length > 4) { selected.at(-1).selected = false; $('#noteCompareStatus').textContent = '最多选择 4 篇笔记'; }
@@ -933,6 +1151,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    syncPrimaryNavigation();
+    window.addEventListener('hashchange', syncPrimaryNavigation);
     initCharts();
     bindEvents();
     refreshAll();

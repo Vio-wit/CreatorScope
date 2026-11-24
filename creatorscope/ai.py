@@ -49,6 +49,10 @@ ANALYSES = {
     "comment_topics": ("评论主题提取", "根据所选评论原文和统计数据归纳主题；保留原文依据，不推断未提供的信息。"),
     "comment_sentiment": ("评论情绪探索", "根据所选评论原文作谨慎的情绪倾向探索，说明样本局限。"),
     "creator_note_compare": ("创作者对比", "比较所选创作者的同批次指标，明确缺失字段和口径限制。"),
+    "unified_creator_compare": (
+        "统一达人对比建议",
+        "依据选定达人真实字段给出合作建议；区分原始事实和推断，标明来源、时间、缺失字段；不同来源或统计口径不明时不得直接比较，报价口径未核实时不得判断性价比。",
+    ),
     "anomaly": ("数据异常提示", "指出可从已提供数值中观察到的异常、缺失或需要复核之处。"),
     "operations_advice": ("内容运营建议", "基于所选创作者或笔记的事实数据提出可执行建议，并标记推断。"),
 }
@@ -215,6 +219,7 @@ def build_preview(
     note_ids: list[str] | None = None,
     batch_id: str = "",
     include_raw_text: bool = False,
+    unified_creator_records: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     if analysis_type not in ANALYSES:
         raise AIServiceError("请选择有效的分析类型")
@@ -232,7 +237,39 @@ def build_preview(
         else "笔记正文和评论原文保留在本机，不会进入本次模型输入；其他所选字段和统计摘要会显示在预览中。"
     )
 
-    if analysis_type in {"creator_summary", "creator_note_compare", "anomaly", "operations_advice"} and creators:
+    if analysis_type == "unified_creator_compare":
+        selected_records = list(unified_creator_records or [])
+        if not 2 <= len(selected_records) <= 4:
+            raise AIServiceError("统一达人对比需要选择 2 至 4 位达人")
+        raw_data = {
+            "creators": [
+                {
+                    "name": str(item.get("name") or "未命名记录"),
+                    "platform": item.get("platform"),
+                    "platform_id": item.get("platform_id"),
+                    "group": item.get("bucket_label"),
+                    "source": item.get("source_name"),
+                    "captured_at": item.get("captured_at"),
+                    "completeness": item.get("completeness"),
+                    "metrics": {
+                        "followers": (item.get("fields") or {}).get("followers"),
+                        "daily_read_median": (item.get("fields") or {}).get("daily_read_median"),
+                        "daily_interaction_median": (item.get("fields") or {}).get("daily_interaction_median"),
+                        "likes_and_favorites": (item.get("fields") or {}).get("likes_and_favorites"),
+                        "published_notes": (item.get("fields") or {}).get("published_notes"),
+                        "category": (item.get("fields") or {}).get("category"),
+                        "account_ip_location": (item.get("fields") or {}).get("account_ip_location"),
+                        "image_fixed_price_raw": (item.get("fields") or {}).get("image_fixed_price"),
+                        "video_fixed_price_raw": (item.get("fields") or {}).get("video_fixed_price"),
+                    },
+                }
+                for item in selected_records
+            ],
+            "comparison_notice": "跨来源、缺少来源时间或统计周期不一致的字段只作原值并列；不得据此认定优劣。报价保留原始显示，不作统一价格比较。",
+        }
+        scope_summary = f"{len(selected_records)} 位统一达人库记录；包含实际可用的粉丝、阅读、互动、内容和来源字段，缺失字段为空。"
+        data_notice = "本机按达人引用重新读取所选记录；仅纳入结构化字段、来源名称、采集时间和完整度，不包含笔记正文、评论原文或其他未选达人数据。跨来源和统计口径限制会随事实数据一起显示。"
+    elif analysis_type in {"creator_summary", "creator_note_compare", "anomaly", "operations_advice"} and creators:
         if len(creators) > 4:
             raise AIServiceError("一次最多选择 4 位创作者")
         if analysis_type == "creator_note_compare" and len(creators) < 2:
@@ -384,7 +421,7 @@ def list_analysis_reports(reports_dir: Path, *, limit: int = 20) -> list[dict[st
             continue
         reports.append({key: payload.get(key) for key in (
             "run_id", "analysis_type", "analysis_label", "provider", "provider_label",
-            "model", "input_batch_id", "analysis_at", "scope_summary", "include_raw_text", "report_saved",
+            "model", "input_batch_id", "input_creator_refs", "analysis_at", "scope_summary", "include_raw_text", "report_saved",
         )})
         if len(reports) >= bounded_limit:
             break

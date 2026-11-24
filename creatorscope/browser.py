@@ -28,7 +28,8 @@ COMMENT_FIELDS = (
 )
 CREATOR_LIST_FIELDS = (
     "创作者名称", "平台公开ID", "粉丝数", "阅读中位数（日常）",
-    "互动中位数（日常）", "全部报价", "合作报价", "图文报价", "视频报价",
+    "互动中位数（日常）", "曝光中位数（合作）", "阅读中位数（合作）",
+    "互动中位数（合作）", "全部报价", "合作报价", "图文报价", "视频报价",
     "内容领域", "地域", "人设", "标签",
 )
 CREATOR_PROFILE_FIELDS = (
@@ -286,21 +287,21 @@ class PgyVisibleBrowser:
             rows = page.get_by_role("row").all()
             parsed: list[dict[str, Any]] = []
             for visible_row_index, row in enumerate(rows):
-                cells = row.get_by_role("cell").all_inner_texts()
-                if not cells:
-                    cells = row.get_by_role("gridcell").all_inner_texts()
-                if not cells:
-                    cells = row.locator("td").all_inner_texts()
-                if not cells:
-                    continue
+                # Read text and links in one browser evaluation: a virtualized
+                # row may otherwise be reused between two separate reads.
                 metadata = row.evaluate(
                     """el => ({
+                      cells: Array.from(el.querySelectorAll('[role="cell"], [role="gridcell"], td'))
+                        .filter(c => c.getClientRects().length).map(c => c.innerText || ''),
                       links: Array.from(el.querySelectorAll('a[href]')).map(a => ({
                         text: (a.innerText || a.textContent || '').trim(), href: a.href
                       })),
                       rowKey: el.getAttribute('data-row-key') || el.getAttribute('data-key') || ''
                     })"""
                 )
+                cells = metadata.get("cells", [])
+                if not cells:
+                    continue
                 record = self._parse_creator_list_row(headers, cells, metadata)
                 if record:
                     record["visible_row_index"] = visible_row_index
@@ -322,6 +323,10 @@ class PgyVisibleBrowser:
             return "平台公开ID"
         if "粉丝" in normalized and any(token in normalized for token in ("数", "量", "人数")):
             return "粉丝数"
+        if "合作" in normalized and "中位数" in normalized:
+            for label in ("曝光", "阅读", "互动"):
+                if label in normalized:
+                    return f"{label}中位数（合作）"
         if "阅读" in normalized and "中位数" in normalized:
             return "阅读中位数（日常）" if "日常" in normalized else "阅读中位数"
         if "互动" in normalized and "中位数" in normalized:
@@ -729,6 +734,49 @@ class PgyVisibleBrowser:
             resolved.append(matches[0][1])
         return resolved
 
+    @staticmethod
+    def _validate_creator_identity(list_record: dict[str, Any], detail_url: str, creator_records: list[dict[str, Any]]) -> None:
+        """Do not associate list data with a detail until both identities agree."""
+        fields = list_record.get("fields") or {}
+        expected_name = str(fields.get("创作者名称") or "").strip()
+        expected_id = str(fields.get("平台公开ID") or "").strip()
+        expected_path = str(list_record.get("creator_detail_path") or "").strip()
+        profile = next((r.get("fields") or {} for r in creator_records
+                        if r.get("type") == "creator_profile_sample"), {})
+        actual_name = str(profile.get("创作者名称") or "").strip()
+        actual_id = str(profile.get("平台公开ID") or "").strip()
+        if not expected_name or not actual_name or not actual_id:
+            raise CaptureError("创作者详情身份未完整加载；未保存该达人，请检查后重试")
+        if expected_name != actual_name:
+            raise CaptureError(f"列表创作者「{expected_name[:40]}」与详情「{actual_name[:40]}」不一致；未保存该达人")
+        if expected_id and expected_id != actual_id:
+            raise CaptureError("列表与详情的创作者公开 ID 不一致；未保存该达人")
+        if expected_path and expected_path != urlparse(detail_url).path:
+            raise CaptureError("列表与详情的创作者地址不一致；未保存该达人")
+
+    def _select_collection_page(self, targets: list[dict[str, Any]]):
+        pages = [page for page in (self._context.pages if self._context else [])
+                 if not page.is_closed() and urlparse(page.url).hostname == PGY_HOST
+                 and urlparse(page.url).path.endswith("/solar/pre-trade/note/kol")]
+        if not pages:
+            raise PauseForUser("未找到蒲公英博主广场，请打开原筛选列表后恢复任务")
+        if not targets:
+            if self._page in pages:
+                return self._page
+            if len(pages) == 1:
+                return pages[0]
+            raise PauseForUser("存在多个博主广场，请保留要采集的筛选列表后再新建任务")
+        matches = []
+        for page in pages:
+            try:
+                self._resolve_creator_targets(self._capture_list_rows(page), targets)
+            except Exception:
+                continue
+            matches.append(page)
+        if len(matches) != 1:
+            raise PauseForUser("保存的创作者身份不能唯一匹配一个博主广场标签页；请检查原筛选列表后恢复")
+        return matches[0]
+
     def collect_visible(
         self,
         settings: dict[str, Any],
@@ -842,27 +890,11 @@ class PgyVisibleBrowser:
     ) -> dict[str, Any]:
         if self._context is None or self._page is None or self._page.is_closed():
             self._open()
-        pgy_pages = [
-            item
-            for item in (self._context.pages if self._context else [])
-            if not item.is_closed() and urlparse(item.url).hostname == PGY_HOST
-        ]
-        if pgy_pages and (
-            self._page is None
-            or self._page.is_closed()
-            or urlparse(self._page.url).hostname != PGY_HOST
-        ):
-            self._page = pgy_pages[-1]
-        page = self._page
-        if page is None:
-            raise CaptureError("无法打开蒲公英可见浏览器")
-        if urlparse(page.url).hostname != PGY_HOST:
-            raise PauseForUser("请在蒲公英窗口中正常登录，并停留在博主广场后恢复任务")
-        if not urlparse(page.url).path.endswith("/solar/pre-trade/note/kol"):
-            try:
-                page.goto(PGY_START_URL, wait_until="domcontentloaded", timeout=45000)
-            except Exception:
-                pass
+        planned_targets = checkpoint.get("creator_targets")
+        if not isinstance(planned_targets, list):
+            raise PauseForUser("此任务断点没有保存创作者身份；为避免列表重排后采错对象，请新建批次继续")
+        page = self._select_collection_page(planned_targets)
+        self._page = page
         self._check_page_blocker(page, pgy=True)
         row_locator = page.get_by_role("row")
         total_rows = row_locator.count()
@@ -877,12 +909,6 @@ class PgyVisibleBrowser:
         visible_creator_records = self._capture_list_rows(page)
         if not visible_creator_records:
             raise CaptureError("当前列表没有可按表头识别的创作者记录；未启动批量采集")
-        creator_limit = min(creator_limit, len(visible_creator_records))
-        planned_targets = checkpoint.get("creator_targets")
-        if not isinstance(planned_targets, list):
-            raise PauseForUser(
-                "此任务断点没有保存创作者身份；为避免列表重排后采错对象，请新建批次继续"
-            )
         if planned_targets:
             creator_targets = planned_targets
             creator_list_records = self._resolve_creator_targets(
@@ -890,6 +916,11 @@ class PgyVisibleBrowser:
             )
             creator_limit = len(creator_list_records)
         else:
+            if len(visible_creator_records) < creator_limit:
+                raise PauseForUser(
+                    f"目标为 {creator_limit} 位，但当前可识别列表仅 {len(visible_creator_records)} 位；"
+                    "请调整筛选或采集数量后新建任务，目标人数不会自动缩小"
+                )
             initial_targets = [
                 self._creator_target_descriptor(record)
                 for record in visible_creator_records[:creator_limit]
@@ -941,7 +972,12 @@ class PgyVisibleBrowser:
             opened_new_page = False
             creator_stage = "打开创作者详情"
             try:
-                list_record = creator_list_records[creator_index]
+                # The visible list can reorder while a batch is running. Resolve
+                # the saved identity again immediately before opening its row.
+                current_list_records = self._capture_list_rows(page)
+                list_record = self._resolve_creator_targets(
+                    current_list_records, [creator_targets[creator_index]]
+                )[0]
                 list_row_index = int(list_record.get("visible_row_index", creator_index + 1))
                 detail_page, opened_new_page = self._open_creator_row(
                     page, list_row_index, expected_record=list_record
@@ -952,6 +988,9 @@ class PgyVisibleBrowser:
                 if route.hostname != PGY_HOST or "/solar/pre-trade/blogger-detail/" not in route.path:
                     raise CaptureError("列表行未打开可识别的蒲公英创作者详情页")
                 creator_ref = f"pgy:{route.path}"
+                creator_stage = "核对创作者身份"
+                creator_records = self._capture_creator_records(detail_page, creator_ref)
+                self._validate_creator_identity(list_record, detail_page.url, creator_records)
                 list_record["creator_ref"] = creator_ref
                 list_record.pop("visible_row_index", None)
                 save_records(
@@ -962,7 +1001,6 @@ class PgyVisibleBrowser:
                 )
                 creator_stage = "读取创作者资料和指标"
                 if settings.get("collect_creator", True):
-                    creator_records = self._capture_creator_records(detail_page, creator_ref)
                     if creator_records:
                         save_records(
                             {
@@ -1122,14 +1160,6 @@ class PgyVisibleBrowser:
                                     "note", attempt_ref, "note_detail", NOTE_PANEL_FIELDS,
                                     status, "蒲公英笔记详情",
                                 )
-                            try:
-                                self._close_visible_note_panel(detail_page)
-                            except (PauseForUser, StopCollection):
-                                raise
-                            except Exception:
-                                raise PauseForUser(
-                                    "笔记失败后无法恢复创作者详情页；请检查可见窗口后恢复任务"
-                                ) from None
                             note_start = note_index + 1
                             save_checkpoint(
                                 {
@@ -1139,6 +1169,14 @@ class PgyVisibleBrowser:
                                     "creator_targets": creator_targets,
                                 }
                             )
+                            try:
+                                self._close_visible_note_panel(detail_page)
+                            except (PauseForUser, StopCollection):
+                                raise
+                            except Exception:
+                                raise PauseForUser(
+                                    "笔记失败后无法恢复创作者详情页；请检查可见窗口后恢复任务"
+                                ) from None
                             report_progress(
                                 min(95, 30 + (notes_visited + failures) * 4),
                                 f"笔记 {note_index + 1} 失败，继续处理后续笔记",
@@ -1190,11 +1228,24 @@ class PgyVisibleBrowser:
 
     def _open_creator_row(self, page, row_index: int, *, expected_record: dict[str, Any] | None = None):
         before_pages = set(self._context.pages)
-        row = page.get_by_role("row").nth(row_index)
-        if expected_record:
-            expected_fields = expected_record.get("fields", {})
-            expected_id = str(expected_fields.get("平台公开ID") or "").strip()
-            expected_name = str(expected_fields.get("创作者名称") or "").strip()
+        expected_fields = (expected_record or {}).get("fields", {})
+        expected_id = str(expected_fields.get("平台公开ID") or "").strip()
+        expected_name = str(expected_fields.get("创作者名称") or "").strip()
+        rows = page.get_by_role("row")
+        if expected_name:
+            # nth() can resolve to another row when scrolling changes the set
+            # of visible rows. Anchor the locator to the creator's exact name.
+            row = rows.filter(has=page.get_by_text(expected_name, exact=True))
+            if row.count() != 1:
+                raise CaptureError("目标创作者名称不能唯一定位列表行；未执行点击")
+        else:
+            row = rows.nth(row_index)
+
+        def verify_row():
+            if not expected_record:
+                return
+            if row.count() != 1:
+                raise CaptureError("滚动后目标创作者列表行不能唯一定位；未执行点击")
             try:
                 row_text = re.sub(r"\s+", " ", row.inner_text(timeout=5000)).strip()
             except Exception:
@@ -1203,6 +1254,9 @@ class PgyVisibleBrowser:
                 raise CaptureError("目标创作者公开 ID 与列表行不匹配；为避免串位已停止")
             if expected_name and expected_name not in row_text:
                 raise CaptureError("目标创作者名称与列表行不匹配；为避免串位已停止")
+
+        if expected_record:
+            verify_row()
         links = row.locator("a:visible, [role='link']:visible")
         images = row.locator("img:visible")
         avatars = row.locator("[class*='avatar']:visible")
@@ -1248,6 +1302,10 @@ class PgyVisibleBrowser:
         for target, target_kind in candidates:
             try:
                 target.scroll_into_view_if_needed(timeout=5000)
+                page.wait_for_timeout(300)
+                verify_row()
+            except CaptureError:
+                raise
             except Exception as exc:
                 click_errors.append(
                     f"{target_kind}:{type(exc).__name__}[target_summary_unavailable]"
@@ -1361,11 +1419,24 @@ class PgyVisibleBrowser:
         lines = capture_visible()
         deadline = time.monotonic() + 8
         start_wait = time.monotonic()
+        scrolled = False
         while time.monotonic() < deadline:
             identity_ready = bool(self._creator_identity_fields(lines).get("平台公开ID"))
             data_ready = self._creator_detail_data_ready(lines)
-            if data_ready and (identity_ready or time.monotonic() - start_wait >= 3):
+            if data_ready and identity_ready:
                 break
+            if not scrolled and time.monotonic() - start_wait >= 2:
+                # Trigger below-the-fold lazy sections only when the detail has
+                # not loaded; preserve the user's previous scroll position.
+                try:
+                    page.evaluate("""() => {
+                      const y = window.scrollY;
+                      window.scrollTo(0, document.documentElement.scrollHeight);
+                      window.setTimeout(() => window.scrollTo(0, y), 300);
+                    }""")
+                except Exception:
+                    pass
+                scrolled = True
             page.wait_for_timeout(250)
             lines = capture_visible()
         if not self._creator_detail_data_ready(lines) and any("加载中" in line for line in lines):
@@ -1382,6 +1453,10 @@ class PgyVisibleBrowser:
                 fans_tab.first.click(timeout=8000)
                 page.wait_for_timeout(450)
                 fan_lines = capture_visible()
+                fan_deadline = time.monotonic() + 3
+                while time.monotonic() < fan_deadline and not self._fans_record(fan_lines):
+                    page.wait_for_timeout(250)
+                    fan_lines = capture_visible()
             except CaptureError:
                 raise
             except Exception:
@@ -1907,7 +1982,10 @@ class PgyVisibleBrowser:
             body = page.locator("body").inner_text(timeout=5000)
         except Exception:
             body = ""
-        if re.search(r"验证码|安全验证|访问异常|请完成验证|人机验证", body):
+        if re.search(
+            r"安全验证|访问异常|请完成验证|人机验证|滑动验证|拖动滑块|操作频繁|账号异常",
+            body,
+        ):
             raise PauseForUser("页面要求验证码或安全验证，任务已暂停；请在可见浏览器中按正常流程处理")
         if pgy and re.search(r"请先登录|登录后查看|账号登录", body):
             raise PauseForUser("蒲公英需要正常登录后才能采集；请在可见浏览器中登录后恢复任务")
@@ -1945,6 +2023,13 @@ class PgyVisibleBrowser:
         copy_control = page.get_by_text("复制小红书笔记链接", exact=True)
         if copy_control.count() == 0 or not copy_control.first.is_visible():
             return
+
+        def panel_closed() -> bool:
+            try:
+                return copy_control.count() == 0 or not copy_control.first.is_visible()
+            except Exception:
+                return False
+
         for selector in (
             "button[aria-label*='关闭']:visible",
             "[role='button'][aria-label*='关闭']:visible",
@@ -1955,7 +2040,9 @@ class PgyVisibleBrowser:
             if locator.count() == 1:
                 try:
                     locator.first.click(timeout=3000)
-                    return
+                    page.wait_for_timeout(300)
+                    if panel_closed():
+                        return
                 except Exception:
                     continue
         for label in ("关闭", "×", "X"):
@@ -1963,10 +2050,20 @@ class PgyVisibleBrowser:
             if locator.count() == 1 and locator.first.is_visible():
                 try:
                     locator.first.click(timeout=3000)
-                    return
+                    page.wait_for_timeout(300)
+                    if panel_closed():
+                        return
                 except Exception:
                     continue
         self._check_page_blocker(page, pgy=True)
+        if copy_control.count() == 1 and page.locator("[role='dialog']:visible, .d-modal-mask:visible").count() == 0:
+            try:
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(300)
+                if panel_closed():
+                    return
+            except Exception:
+                pass
         raise ManualDismissRequired(
             "蒲公英笔记详情面板无法安全自动关闭，请在可见浏览器中手动关闭；关闭后将自动继续采集",
             page,

@@ -188,21 +188,21 @@ class TaskManager:
         if active:
             with connection(self.db_path) as conn:
                 conn.execute(
-                    "UPDATE tasks SET status='running', message='正在恢复任务', error=NULL, error_message=NULL WHERE task_id=?",
+                    "UPDATE tasks SET status='running', progress=CASE WHEN progress>=100 THEN 0 ELSE progress END, message='正在恢复任务', error=NULL, error_message=NULL WHERE task_id=?",
                     (task_id,),
                 )
                 conn.execute("UPDATE batches SET status='running', completed_at=NULL WHERE task_id=?", (task_id,))
         elif scheduled:
             with connection(self.db_path) as conn:
                 conn.execute(
-                    "UPDATE tasks SET status='queued', message='任务恢复排队', error=NULL, error_message=NULL, finished_at=NULL WHERE task_id=?",
+                    "UPDATE tasks SET status='queued', progress=CASE WHEN progress>=100 THEN 0 ELSE progress END, message='任务恢复排队', error=NULL, error_message=NULL, finished_at=NULL WHERE task_id=?",
                     (task_id,),
                 )
                 conn.execute("UPDATE batches SET status='queued', completed_at=NULL WHERE task_id=?", (task_id,))
         else:
             with connection(self.db_path) as conn:
                 conn.execute(
-                    "UPDATE tasks SET status='queued', message='任务恢复排队', error=NULL, error_message=NULL, finished_at=NULL WHERE task_id=?",
+                    "UPDATE tasks SET status='queued', progress=CASE WHEN progress>=100 THEN 0 ELSE progress END, message='任务恢复排队', error=NULL, error_message=NULL, finished_at=NULL WHERE task_id=?",
                     (task_id,),
                 )
                 conn.execute("UPDATE batches SET status='queued', completed_at=NULL WHERE task_id=?", (task_id,))

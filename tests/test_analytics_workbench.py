@@ -137,6 +137,15 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
         public_note_metrics = analytics_data(self.db_path, source="xhs_import")
         self.assertIn("note-b", {item["note_id"] for item in public_note_metrics["charts"]["note_metrics"]})
 
+    def test_body_wordcloud_ignores_platform_topic_badges(self) -> None:
+        with connection(self.db_path) as conn:
+            conn.execute("UPDATE notes SET body=? WHERE note_id='note-a'", ("护肤分享 #护肤[话题]# raw 正文",))
+
+        result = notes_data(self.db_path, note_id="note-a")
+        words = {item["word"] for item in result["text_analysis"]["body"]["frequencies"]}
+        self.assertNotIn("话题", words)
+        self.assertIn("raw", words)
+
     def test_audience_profiles_keep_raw_categories_and_group_by_source_and_period(self) -> None:
         profile_fields = {
             "gender_share": {"female": "92.98%", "male": "7.01%"},

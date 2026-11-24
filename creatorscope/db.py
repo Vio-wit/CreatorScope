@@ -200,17 +200,25 @@ JOIN batches AS b ON b.batch_id = r.batch_id;
 
 
 @contextmanager
-def connection(db_path: Path) -> Iterator[sqlite3.Connection]:
+def connection(db_path: Path, *, readonly: bool = False) -> Iterator[sqlite3.Connection]:
     db_path = Path(db_path)
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(db_path), timeout=20)
+    if readonly:
+        if not db_path.is_file():
+            raise FileNotFoundError(f"只读数据库不存在: {db_path}")
+        conn = sqlite3.connect(f"{db_path.resolve().as_uri()}?mode=ro", uri=True, timeout=20)
+        conn.execute("PRAGMA query_only=ON")
+    else:
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(db_path), timeout=20)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     try:
         yield conn
-        conn.commit()
+        if not readonly:
+            conn.commit()
     except Exception:
-        conn.rollback()
+        if not readonly:
+            conn.rollback()
         raise
     finally:
         conn.close()
