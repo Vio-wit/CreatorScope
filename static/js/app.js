@@ -22,6 +22,8 @@
   let unifiedCreatorOffset = 0;
   const UNIFIED_CREATOR_PAGE_SIZE = 50;
   let historyNoteOffset = 0;
+  let historyAllView = null;
+  let historyRequestVersion = 0;
   const HISTORY_NOTE_PAGE_SIZE = 12;
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -53,7 +55,7 @@
       'exposureReadChart', 'readingInteractionChart', 'notePublishChart', 'noteTrendChart',
       'audienceGenderChart', 'audienceAgeChart', 'audienceRegionChart', 'audienceInterestChart', 'audienceDeviceChart',
       'creatorCompareBarChart', 'creatorCompareRadarChart', 'noteCompareBarChart', 'noteCompareRadarChart',
-      'historyFollowersChart', 'historyPerformanceChart', 'historyCoverageChart',
+      'historyFollowersChart', 'historyPerformanceChart', 'historyCoverageChart', 'libraryFollowersChart',
     ].forEach((id) => {
       const element = document.getElementById(id);
       if (element && window.echarts) charts[id] = echarts.init(element);
@@ -99,16 +101,7 @@
       charts.fanChart?.setOption({ ...baseChart, grid: { left: 90, right: 24, top: 8, bottom: 13 }, xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 8, color: '#a0a9a2' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, yAxis: { type: 'category', data: fans.map((item) => item.name), axisLabel: { fontSize: 8, color: '#858f88' }, axisTick: { show: false }, axisLine: { show: false } }, series: [{ type: 'bar', data: fans.map((item) => item.value), barWidth: 10, itemStyle: { color: '#8bb79b', borderRadius: 5 }, label: { show: true, position: 'right', formatter: '{c}%', fontSize: 8, color: '#728078' } }] }, true);
     } else setEmptyChart(charts.fanChart, '当前批次没有粉丝比例字段');
 
-    const categories = data.chart_data?.categories || [];
-    if (categories.length) {
-      charts.categoryChart?.setOption({ ...baseChart, color: ['#438f6c', '#78ad86', '#aec9aa', '#e8c58f', '#b6c6d9'], tooltip: { trigger: 'item' }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '48%'], label: { fontSize: 8, color: '#77847b' }, labelLine: { length: 7, length2: 5 }, data: categories }] }, true);
-    } else setEmptyChart(charts.categoryChart, '暂无可统计的内容类目');
 
-    const words = data.chart_data?.word_frequency || [];
-    $('#wordStatus').textContent = data.availability?.word_frequency || '等待可用标题或正文';
-    if (words.length) {
-      charts.wordChart?.setOption({ ...baseChart, grid: { left: 50, right: 15, top: 10, bottom: 24 }, xAxis: { type: 'category', data: words.map((item) => item.word), axisLabel: { interval: 0, rotate: 25, fontSize: 8, color: '#88938c' }, axisLine: { lineStyle: { color: '#e8ece8' } }, axisTick: { show: false } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { fontSize: 8, color: '#a0a9a2' } }, series: [{ type: 'bar', data: words.map((item) => item.count), barWidth: 13, itemStyle: { color: '#bf9465', borderRadius: [3, 3, 0, 0] } }] }, true);
-    } else setEmptyChart(charts.wordChart, '暂无可用标题/正文');
   }
 
   function setBarChart(id, items, horizontal = false, valueSuffix = '') {
@@ -214,7 +207,7 @@
   function renderAnalytics(data) {
     lastAnalyticsData = data;
     const chartsData = data.charts || {};
-    $('#analysisScope').textContent = `${data.scope || ''} · ${data.availability?.history || ''}`;
+    $('#analysisScope').textContent = data.scope || '基于已保存的创作者快照';
     $('#analysisCount').textContent = `${data.counts?.creators || 0} 位创作者 · ${data.counts?.notes || 0} 条笔记`;
     $('#followerDistStatus').textContent = `精确粉丝值 n=${chartsData.follower_sample_count || 0}`;
     $('#quoteDistStatus').textContent = `全部报价精确值 n=${chartsData.quote_sample_count || 0}；起价与区间不进入数值区间`;
@@ -252,29 +245,6 @@
       $('#wordStatus').textContent = data.availability?.word_frequency || '暂无笔记文本';
       setEmptyChart(charts.wordChart, '当前筛选文本不足以分词');
     }
-
-    const correlation = chartsData.correlation;
-    $('#correlationStatus').textContent = data.availability?.correlation || '样本不足';
-    if (correlation?.values?.length) {
-      const cells = [];
-      correlation.values.forEach((row, y) => row.forEach((value, x) => { if (value !== null) cells.push([x, y, value]); }));
-      charts.correlationChart?.setOption({
-        ...baseChart,
-        tooltip: { position: 'top', formatter: (item) => `${correlation.labels[item.data[1]]} × ${correlation.labels[item.data[0]]}<br>${item.data[2]}` },
-        grid: { left: 88, right: 16, top: 12, bottom: 26 },
-        xAxis: { type: 'category', data: correlation.labels, axisLabel: { fontSize: 8, color: '#89948d', interval: 0, rotate: 25 }, splitArea: { show: true } },
-        yAxis: { type: 'category', data: correlation.labels, axisLabel: { fontSize: 8, color: '#89948d' }, splitArea: { show: true } },
-        visualMap: { min: -1, max: 1, calculable: false, orient: 'horizontal', left: 'center', bottom: 0, textStyle: { fontSize: 7 }, inRange: { color: ['#d88a79', '#f5f6f3', '#4b9c78'] } },
-        series: [{ type: 'heatmap', data: cells, label: { show: true, fontSize: 8, formatter: (item) => Number(item.data[2]).toFixed(2) }, emphasis: { itemStyle: { shadowBlur: 6, shadowColor: '#3334' } } }],
-      }, true);
-    } else setEmptyChart(charts.correlationChart, '至少需要 3 位共同完整样本');
-
-    const trend = chartsData.batch_trend || [];
-    $('#trendStatus').textContent = data.availability?.history || '历史快照不足';
-    if (trend.length) {
-      const times = [...new Set(trend.flatMap((group) => group.points.map((point) => point.captured_at)))].sort();
-      charts.trendChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 15, top: 12, bottom: 48 }, xAxis: { type: 'category', data: times, axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, series: trend.map((group) => { const byTime = new Map(group.points.map((point) => [point.captured_at, point.median_followers])); return { name: `${group.source} · ${group.period}`, type: 'line', smooth: true, symbolSize: 6, connectNulls: false, data: times.map((time) => byTime.get(time) ?? null) }; }) }, true);
-    } else setEmptyChart(charts.trendChart, '需要同来源、同周期、重复创作者快照');
 
     $('#followerPriceStatus').textContent = data.availability?.follower_price || '';
     $('#readingStatus').textContent = data.availability?.reading_engagement || '';
@@ -726,6 +696,14 @@
     if ((data.categories || []).includes(previousCategory)) categorySelect.value = previousCategory;
     if ((data.ip_locations || []).includes(previousLocation)) locationSelect.value = previousLocation;
     const groups = data.groups || [];
+    const summary = data.filtered_summary || {};
+    $('#libraryMatched').textContent = formatMetric(data.total_count || 0);
+    $('#libraryFollowersValid').textContent = formatMetric(summary.followers_valid || 0);
+    $('#libraryPerformanceValid').textContent = formatMetric(summary.reading_interaction_valid || 0);
+    $('#libraryCategoryValid').textContent = formatMetric(summary.category_valid || 0);
+    $('#libraryFollowerStatus').textContent = `粉丝数有效 ${formatMetric(summary.followers_valid || 0)} 条；来源记录可能重复`;
+    if (summary.followers_valid) setBarChart('libraryFollowersChart', (summary.follower_distribution || []).map((item) => ({ name: item.label, value: item.count })));
+    else setEmptyChart(charts.libraryFollowersChart, '当前筛选没有粉丝数');
     $('#creatorCount').textContent = `${formatMetric(data.total_count || 0)} 条匹配记录`;
     $('#unifiedCreatorCount').textContent = formatMetric(data.total_count || 0);
     $('#unifiedCreatorGroups').textContent = groups.map((item) => `${item.label} ${formatMetric(item.count || 0)}`).join(' · ');
@@ -898,24 +876,39 @@
   }
 
   async function refreshHistoryAnalysis() {
+    const version = ++historyRequestVersion;
     try {
       const sourcePayload = await requestJson('/api/history-analysis/sources');
+      if (version !== historyRequestVersion) return;
       const select = $('#historySourceSelect');
       const sourceOptions = sourcePayload.sources || [];
-      const selected = sourceOptions.some((item) => item.key === select.value) ? select.value : (sourceOptions[0]?.key || '');
-      select.innerHTML = sourceOptions.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)} · ${formatMetric(item.sample_count)} 条</option>`).join('');
+      const selected = select.value === '__all__' ? '__all__' : (sourceOptions.some((item) => item.key === select.value) ? select.value : (sourceOptions.length ? '__all__' : ''));
+      select.innerHTML = '<option value="__all__">全部数据集（分开展示）</option>' + sourceOptions.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)} · ${formatMetric(item.sample_count)} 条</option>`).join('');
       select.value = selected;
-      if (selected) {
+      const allView = historyAllView ||= window.CreatorScopeHistoryAll.create({ container: $('#historyAllGroups'), requestJson, onSelectSource: (key) => { select.value = key; refreshHistoryAnalysis(); } });
+      if (selected === '__all__') {
+        $('#historySingleSource').hidden = true;
+        $('#historyAnalysisStatus').textContent = '全部历史数据集，按来源分开展示';
+        await allView.show(sourceOptions);
+      } else if (selected) {
+        allView.hide();
+        $('#historySingleSource').hidden = false;
         const params = new URLSearchParams({ source: selected });
-        renderHistoryAnalysis(await requestJson(`/api/history-analysis?${params.toString()}`));
+        const data = await requestJson(`/api/history-analysis?${params.toString()}`);
+        if (version !== historyRequestVersion) return;
+        renderHistoryAnalysis(data);
+        window.requestAnimationFrame(() => ['historyFollowersChart', 'historyPerformanceChart', 'historyCoverageChart'].forEach((id) => charts[id]?.resize()));
       } else {
+        allView.hide();
+        $('#historySingleSource').hidden = false;
         $('#historyAnalysisStatus').textContent = '暂无可用历史样本';
         setEmptyChart(charts.historyFollowersChart, '暂无可用样本');
         setEmptyChart(charts.historyPerformanceChart, '暂无可用样本');
         setEmptyChart(charts.historyCoverageChart, '暂无可用样本');
       }
-      await refreshHistoryNoteLibrary();
+      if (version === historyRequestVersion) await refreshHistoryNoteLibrary();
     } catch (error) {
+      if (version !== historyRequestVersion) return;
       $('#historyAnalysisStatus').textContent = error.message;
       setEmptyChart(charts.historyFollowersChart, '历史数据暂不可用');
       setEmptyChart(charts.historyPerformanceChart, '历史数据暂不可用');

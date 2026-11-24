@@ -85,6 +85,9 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
 
         self.assertEqual(before, after)
         self.assertEqual(page["total_count"], 4)
+        self.assertEqual(page["filtered_summary"]["followers_valid"], 4)
+        self.assertEqual(page["filtered_summary"]["reading_interaction_valid"], 3)
+        self.assertEqual(sum(item["count"] for item in page["filtered_summary"]["follower_distribution"]), 4)
         self.assertEqual(page["all_group_counts"], {"recent": 1, "course": 1, "historical": 2})
         self.assertEqual(page["records"][0]["name"], "新采集达人")
         self.assertEqual(page["records"][0]["bucket"], "recent")
@@ -110,12 +113,14 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
     def test_search_group_and_pagination_use_filtered_union(self) -> None:
         course = unified_creator_library(self.main_db, self.course_db, self.history_db, bucket="course", limit=10)
         self.assertEqual(course["total_count"], 1)
+        self.assertEqual(course["filtered_summary"]["followers_valid"], 1)
         search = unified_creator_library(self.main_db, self.course_db, self.history_db, query="history-profile", limit=10)
         self.assertEqual(search["total_count"], 1)
         self.assertEqual(search["records"][0]["bucket"], "historical")
         first = unified_creator_library(self.main_db, self.course_db, self.history_db, limit=2, offset=0)
         second = unified_creator_library(self.main_db, self.course_db, self.history_db, limit=2, offset=2)
         self.assertEqual(len(first["records"]), 2)
+        self.assertEqual(first["filtered_summary"], second["filtered_summary"])
         self.assertEqual(len(second["records"]), 2)
         self.assertFalse({item["ref"] for item in first["records"]} & {item["ref"] for item in second["records"]})
 
