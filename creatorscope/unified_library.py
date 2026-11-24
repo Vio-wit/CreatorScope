@@ -521,6 +521,90 @@ def unified_creator_library(
     }
 
 
+def unified_library_overview(
+    main_db: Path,
+    course_db: Path | None,
+    history_db: Path | None,
+) -> dict[str, Any]:
+    """Full-library aggregates for the analytics dashboard (read-only projection)."""
+    main_path, course_path, history_path, fingerprint = _database_paths(main_db, course_db, history_db)
+    _counts, _warnings, cached = _load_records(main_path, course_path, history_path, fingerprint)
+
+    def num(value: Any) -> float | None:
+        return value if isinstance(value, (int, float)) and not isinstance(value, bool) \
+            and math.isfinite(value) and value >= 0 else None
+
+    followers_vals: list[float] = []
+    read_vals: list[float] = []
+    interaction_vals: list[float] = []
+    category_terms: list[str] = []
+    location_terms: list[str] = []
+    reading_interaction_scatter: list[dict[str, Any]] = []
+    quote_present = 0
+    quote_missing = 0
+    pair_valid = 0
+
+    for record in cached:
+        fields = record["fields"]
+        followers = num(fields.get("followers"))
+        read = num(fields.get("daily_read_median"))
+        interaction = num(fields.get("daily_interaction_median"))
+        if followers is not None:
+            followers_vals.append(followers)
+        if read is not None:
+            read_vals.append(read)
+        if interaction is not None:
+            interaction_vals.append(interaction)
+        if read is not None and interaction is not None:
+            pair_valid += 1
+            reading_interaction_scatter.append({
+                "name": record.get("name") or "",
+                "x": read,
+                "y": interaction,
+            })
+        if _present(fields.get("category")):
+            category_terms.append(str(fields["category"]))
+        location = fields.get("account_ip_location") or fields.get("historical_region")
+        if _present(location):
+            location_terms.append(str(location))
+        if _present(fields.get("image_fixed_price")) or _present(fields.get("video_fixed_price")):
+            quote_present += 1
+        else:
+            quote_missing += 1
+
+    follower_buckets = _bucketize(
+        followers_vals, [0, 10_000, 50_000, 100_000, 500_000, math.inf],
+        ["1万以下", "1–5万", "5–10万", "10–50万", "50万以上"],
+    )
+    read_buckets = _bucketize(
+        read_vals, [0, 1_000, 5_000, 10_000, 50_000, math.inf],
+        ["1千以下", "1–5千", "5千–1万", "1–5万", "5万以上"],
+    )
+    interaction_buckets = _bucketize(
+        interaction_vals, [0, 100, 500, 1_000, 5_000, math.inf],
+        ["100以下", "100–500", "500–1千", "1–5千", "5千以上"],
+    )
+    return {
+        "total_count": len(cached),
+        "followers_valid": len(followers_vals),
+        "reading_interaction_valid": pair_valid,
+        "category_valid": len(category_terms),
+        "follower_distribution": [{"name": b["label"], "value": b["count"]} for b in follower_buckets],
+        "read_distribution": [{"name": b["label"], "value": b["count"]} for b in read_buckets],
+        "interaction_distribution": [{"name": b["label"], "value": b["count"]} for b in interaction_buckets],
+        "category_distribution": _top_terms(category_terms),
+        "location_distribution": _top_terms(location_terms),
+        "medians": {
+            "followers": _median(followers_vals),
+            "daily_read_median": _median(read_vals),
+            "daily_interaction_median": _median(interaction_vals),
+        },
+        "reading_interaction_scatter": reading_interaction_scatter,
+        "quote_present": quote_present,
+        "quote_missing": quote_missing,
+    }
+
+
 def unified_creator_records_by_refs(
     main_db: Path,
     course_db: Path | None,

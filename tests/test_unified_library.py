@@ -10,7 +10,11 @@ from pathlib import Path
 from creatorscope import create_app
 from creatorscope.db import connection, initialize_database
 from creatorscope.history_evidence import import_file
-from creatorscope.unified_library import COURSE_SAMPLE_BATCH_ID, unified_creator_library
+from creatorscope.unified_library import (
+    COURSE_SAMPLE_BATCH_ID,
+    unified_creator_library,
+    unified_library_overview,
+)
 
 
 class UnifiedCreatorLibraryTests(unittest.TestCase):
@@ -135,6 +139,36 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
         self.assertEqual(set(summary["medians"]), {"followers", "daily_read_median", "daily_interaction_median"})
         buckets = {item["key"]: item["count"] for item in summary["bucket_distribution"]}
         self.assertEqual(sum(buckets.values()), page["total_count"])
+
+    def test_library_overview_aggregates_full_projection(self) -> None:
+        overview = unified_library_overview(self.main_db, self.course_db, self.history_db)
+
+        self.assertEqual(overview["total_count"], 4)
+        self.assertEqual(overview["followers_valid"], 4)
+        self.assertEqual(overview["reading_interaction_valid"], 3)
+        self.assertEqual(
+            sum(item["value"] for item in overview["follower_distribution"]),
+            overview["followers_valid"],
+        )
+        self.assertEqual(len(overview["reading_interaction_scatter"]), 3)
+        for point in overview["reading_interaction_scatter"]:
+            self.assertIn("x", point)
+            self.assertIn("y", point)
+            self.assertIsNotNone(point["x"])
+            self.assertIsNotNone(point["y"])
+
+        categories = {item["name"]: item["count"] for item in overview["category_distribution"]}
+        self.assertIn("美妆", categories)
+        locations = {item["name"]: item["count"] for item in overview["location_distribution"]}
+        self.assertIn("上海", locations)
+        self.assertEqual(
+            overview["quote_present"] + overview["quote_missing"],
+            overview["total_count"],
+        )
+        self.assertEqual(
+            set(overview["medians"]),
+            {"followers", "daily_read_median", "daily_interaction_median"},
+        )
 
     def test_search_group_and_pagination_use_filtered_union(self) -> None:
         course = unified_creator_library(self.main_db, self.course_db, self.history_db, bucket="course", limit=10)

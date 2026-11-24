@@ -120,7 +120,7 @@
     if (!valid.length) return setEmptyChart(chart, '当前样本没有可用字段');
     chart.setOption({
       ...baseChart,
-      grid: { left: horizontal ? 90 : 38, right: 24, top: 12, bottom: horizontal ? 18 : 37 },
+      grid: { left: horizontal ? 90 : 38, right: 24, top: 20, bottom: horizontal ? 24 : 40 },
       xAxis: horizontal
         ? { type: 'value', axisLabel: { fontSize: 8, color: '#9aa39d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }
         : { type: 'category', data: valid.map((item) => item.name), axisLabel: { interval: 0, rotate: 20, fontSize: 8, color: '#89948d' }, axisLine: { lineStyle: { color: Theme.axisLineColor } }, axisTick: { show: false } },
@@ -137,10 +137,10 @@
     if (!points?.length) return setEmptyChart(chart, '没有具备共同字段的创作者');
     chart.setOption({
       ...baseChart,
-      grid: { left: 45, right: 20, top: 15, bottom: 35 },
+      grid: { left: 45, right: 20, top: 22, bottom: 42 },
       tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.data[2])}<br>${escapeHtml(xName)}：${Number(item.data[0]).toLocaleString()}<br>${escapeHtml(yName)}：${Number(item.data[1]).toLocaleString()}` },
-      xAxis: { type: 'value', name: xName, nameTextStyle: { fontSize: 8, color: '#929c95' }, axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
-      yAxis: { type: 'value', name: yName, nameTextStyle: { fontSize: 8, color: '#929c95' }, axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
+      xAxis: { type: 'value', name: xName, nameTextStyle: { fontSize: 8, color: '#929c95' }, axisLabel: { fontSize: 8, color: '#929c95', hideOverlap: true }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
+      yAxis: { type: 'value', name: yName, nameTextStyle: { fontSize: 8, color: '#929c95' }, axisLabel: { fontSize: 8, color: '#929c95', hideOverlap: true }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
       series: [{ type: 'scatter', symbolSize: 9, itemStyle: { color: Theme.scatterGreen, opacity: .78 }, data: points.map((point) => [point.x, point.y, point.name]) }],
     }, true);
   }
@@ -216,24 +216,38 @@
   function renderAnalytics(data) {
     lastAnalyticsData = data;
     const chartsData = data.charts || {};
-    $('#analysisScope').textContent = data.scope || '基于已保存的创作者快照';
-    $('#analysisCount').textContent = `${data.counts?.creators || 0} 位创作者 · ${data.counts?.notes || 0} 条笔记`;
-    $('#followerDistStatus').textContent = `精确粉丝值 n=${chartsData.follower_sample_count || 0}`;
+    const library = data.library_summary || null;
+    $('#analysisScope').textContent = library
+      ? `全量达人库（主库 + 课堂库 + 历史资料，共 ${library.total_count} 条展示记录）`
+      : (data.scope || '基于已保存的创作者快照');
+    $('#analysisCount').textContent = `${library ? library.total_count : (data.counts?.creators || 0)} 位创作者 · ${data.counts?.notes || 0} 条笔记（笔记指标仅当前批次）`;
+
+    const followerItems = library?.follower_distribution?.length ? library.follower_distribution : (chartsData.follower_distribution || []);
+    $('#followerDistStatus').textContent = library
+      ? `全量库粉丝有效 n=${library.followers_valid}`
+      : `精确粉丝值 n=${chartsData.follower_sample_count || 0}`;
     $('#quoteDistStatus').textContent = `全部报价精确值 n=${chartsData.quote_sample_count || 0}；起价与区间不进入数值区间`;
-    $('#quoteTypeStatus').textContent = data.availability?.quote_types || '报价状态未计算';
-    setBarChart('followerDistChart', chartsData.follower_distribution);
+    $('#quoteTypeStatus').textContent = `${data.availability?.quote_types || '报价状态未计算'}；报价口径仅主库快照样本`;
+    setBarChart('followerDistChart', followerItems);
     setBarChart('quoteDistChart', chartsData.quote_distribution, true);
     setBarChart('quoteTypeChart', chartsData.quote_status_distribution, true);
     setScatterChart('followerPriceChart', chartsData.follower_price_scatter, '粉丝数', '报价（元）');
-    setScatterChart('readingEngagementChart', chartsData.reading_engagement_scatter, '阅读中位数', '互动中位数');
-    $('#followerPriceStatus').textContent = `共同有效样本 n=${chartsData.follower_price_sample_count || 0}；仅使用精确全部报价`;
-    $('#readingStatus').textContent = `共同有效样本 n=${chartsData.reading_engagement_sample_count || 0}`;
-    const locations = chartsData.location_distribution || [];
+
+    const readPoints = library?.reading_interaction_scatter?.length ? library.reading_interaction_scatter : (chartsData.reading_engagement_scatter || []);
+    setScatterChart('readingEngagementChart', readPoints, '阅读中位数', '互动中位数');
+    $('#followerPriceStatus').textContent = `共同有效样本 n=${chartsData.follower_price_sample_count || 0}；报价口径仅主库快照`;
+    $('#readingStatus').textContent = library
+      ? `全量库阅读/互动共同有效 n=${library.reading_interaction_valid}`
+      : `共同有效样本 n=${chartsData.reading_engagement_sample_count || 0}`;
+
+    const locations = library?.location_distribution?.length ? library.location_distribution : (chartsData.location_distribution || []);
     $('#locationStatus').textContent = `有效地域 ${locations.reduce((sum, item) => sum + item.value, 0)} 位创作者`;
     setBarChart('locationChart', locations, true);
     setBarChart('fanAggregateChart', (chartsData.fan_analysis || []).map((item) => ({ name: `${item.name} (${item.count})`, value: item.value })), true, '%');
     renderAudienceProfiles(chartsData.audience_groups || []);
-    const categories = chartsData.category_distribution || [];
+
+    const rawCategories = library?.category_distribution?.length ? library.category_distribution : (chartsData.category_distribution || []);
+    const categories = rawCategories.map((item) => ({ name: item.name, value: item.value ?? item.count ?? 0 }));
     if (categories.length) {
       charts.categoryChart?.setOption({ ...baseChart, color: Theme.chartColors, tooltip: { trigger: 'item', formatter: '{b}<br>{c} 位博主 ({d}%)' }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '48%'], label: { fontSize: 8, color: '#77847b' }, labelLine: { length: 7, length2: 5 }, data: categories }] }, true);
     } else setEmptyChart(charts.categoryChart, '当前样本没有内容领域');
@@ -273,7 +287,7 @@
       };
     });
     if (noteMetricSeries.length) {
-      charts.noteMetricsChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 14, top: 10, bottom: 48 }, xAxis: { type: 'category', data: metricKeys, axisLabel: { fontSize: 7, rotate: 22 } }, yAxis: { type: 'value', minInterval: 1 }, series: noteMetricSeries }, true);
+      charts.noteMetricsChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 14, top: 18, bottom: 48 }, xAxis: { type: 'category', data: metricKeys, axisLabel: { fontSize: 7, rotate: 22 } }, yAxis: { type: 'value', minInterval: 1 }, series: noteMetricSeries }, true);
     } else setEmptyChart(charts.noteMetricsChart, '当前筛选没有笔记指标');
   }
 
@@ -381,7 +395,7 @@
     const validGroups = (groups || []).filter((group) => group.items?.length);
     if (!validGroups.length) return setEmptyChart(charts[chartId], '当前筛选没有可用指标');
     const labels = [...new Set(validGroups.flatMap((group) => group.items.slice(0, 7).map((item) => item.label)))];
-    charts[chartId]?.setOption({ ...baseChart, color: Theme.chartColors, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 118, right: 18, top: 12, bottom: 35 }, tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } }, xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } }, series: validGroups.map((group) => { const values = new Map(group.items.slice(0, 7).map((item) => [item.label, item.value])); return { name: group.source, type: 'bar', barMaxWidth: 12, data: labels.map((label) => values.get(label) ?? null) }; }) }, true);
+    charts[chartId]?.setOption({ ...baseChart, color: Theme.chartColors, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 118, right: 18, top: 20, bottom: 40 }, tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } }, xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } }, series: validGroups.map((group) => { const values = new Map(group.items.slice(0, 7).map((item) => [item.label, item.value])); return { name: group.source, type: 'bar', barMaxWidth: 12, data: labels.map((label) => values.get(label) ?? null) }; }) }, true);
     if (statusId) $(`#${statusId}`).textContent = validGroups.length > 1 ? `按来源分别排名（${validGroups.length} 组）` : `来源：${validGroups[0].source}`;
   }
 
@@ -397,7 +411,7 @@
       ...baseChart,
       color: Theme.chartColors,
       legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } },
-      grid: { left: 44, right: 14, top: 12, bottom: 46 },
+      grid: { left: 44, right: 14, top: 20, bottom: 48 },
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
       xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } },
       yAxis: { type: 'value', minInterval: 1, name: '样本数' },
@@ -417,7 +431,7 @@
     $('#interactionBoxStatus').textContent = `有效互动指标 n=${items.reduce((sum, item) => sum + item.sample_count, 0)}；每箱按来源和指标分组`;
     charts.interactionBoxChart?.setOption({
       ...baseChart,
-      grid: { left: 48, right: 18, top: 12, bottom: 76 },
+      grid: { left: 48, right: 18, top: 20, bottom: 76 },
       tooltip: { trigger: 'item', formatter: (params) => `${escapeHtml(labels[params.dataIndex] || '')}<br>最小 ${params.data[0]} · Q1 ${params.data[1]} · 中位数 ${params.data[2]} · Q3 ${params.data[3]} · 最大 ${params.data[4]}` },
       xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, rotate: 25, width: 100, overflow: 'truncate' } },
       yAxis: { type: 'value', min: 0, name: '互动数' },
@@ -434,15 +448,16 @@
     });
     $(`#${statusId}`).textContent = `有效共同样本 n=${points.length}；${groups.size} 个来源组`;
     if (!points.length) return setEmptyChart(charts[chartId], '没有具备共同精确字段的笔记');
+    const shortName = (source) => (source.length > 16 ? `${source.slice(0, 16)}…` : source);
     charts[chartId]?.setOption({
       ...baseChart,
       color: Theme.chartColors,
-      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } },
-      grid: { left: 58, right: 18, top: 12, bottom: 40 },
+      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 }, formatter: (name) => shortName(name) },
+      grid: { left: 58, right: 18, top: 20, bottom: 52 },
       tooltip: { trigger: 'item', formatter: (params) => `${escapeHtml(params.value[2])}<br>${xName}：${params.value[0]}<br>${yName}：${params.value[1]}` },
-      xAxis: { type: 'value', name: xName },
-      yAxis: { type: 'value', name: yName },
-      series: [...groups.entries()].map(([source, data]) => ({ name: source, type: 'scatter', symbolSize: 9, data })),
+      xAxis: { type: 'value', name: xName, axisLabel: { hideOverlap: true } },
+      yAxis: { type: 'value', name: yName, axisLabel: { hideOverlap: true } },
+      series: [...groups.entries()].map(([source, data]) => ({ name: shortName(source), type: 'scatter', symbolSize: 9, data })),
     }, true);
   }
 
@@ -494,7 +509,7 @@
     renderGroupedScatter('exposureReadChart', chartsData.exposure_read_scatter || [], '曝光量', '阅读量', 'exposureReadStatus');
     renderGroupedScatter('readingInteractionChart', chartsData.reading_interaction_scatter || [], '阅读量', '互动量', 'readingInteractionStatus');
     const publish = chartsData.publish_distribution || [];
-    if (publish.length) charts.notePublishChart?.setOption({ ...baseChart, grid: { left: 38, right: 12, top: 12, bottom: 30 }, xAxis: { type: 'category', data: publish.map((item) => item.month), axisLabel: { fontSize: 8, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, series: [{ type: 'bar', data: publish.map((item) => item.count), barMaxWidth: 24, itemStyle: { color: Theme.seriesBlue, borderRadius: [4, 4, 0, 0] } }] }, true);
+    if (publish.length) charts.notePublishChart?.setOption({ ...baseChart, grid: { left: 38, right: 12, top: 20, bottom: 34 }, xAxis: { type: 'category', data: publish.map((item) => item.month), axisLabel: { fontSize: 8, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, series: [{ type: 'bar', data: publish.map((item) => item.count), barMaxWidth: 24, itemStyle: { color: Theme.seriesBlue, borderRadius: [4, 4, 0, 0] } }] }, true);
     else setEmptyChart(charts.notePublishChart, '没有可解析的发布时间');
     const trends = chartsData.metric_trends || [];
     $('#noteTrendStatus').textContent = data.availability?.metric_trends || '等待重复快照';
