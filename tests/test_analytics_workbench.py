@@ -114,6 +114,24 @@ class AnalyticsWorkbenchTests(unittest.TestCase):
         self.assertTrue(all(series["source"] == "pgy_visible" and series["metric_key"] for series in result["charts"]["metric_trends"]))
         self.assertEqual(notes_data(self.db_path, topic="#护肤", date_from="2026-11-13")["count"], 0)
 
+    def test_note_metric_english_aliases_resolve(self) -> None:
+        with connection(self.db_path) as conn:
+            self._record(
+                conn, "batch-c", "note_detail", "2026-11-03T11:00:00", "creator-b", "note-b",
+                {"reads": "800", "likes": "80", "favorites": "30", "comments": "12",
+                 "shares": "4", "exposure": "9000", "follows": "3"}, "累计",
+            )
+        result = notes_data(self.db_path, note_id="note-b")
+        note = next(n for n in result["notes"] if n["note_id"] == "note-b")
+        self.assertEqual(note["read_count"], 800)
+        self.assertEqual(note["like_count"], 80)
+        self.assertEqual(note["favorite_count"], 30)
+        self.assertEqual(note["interaction_comment_count"], 12)
+        self.assertEqual(note["share_count"], 4)
+        self.assertEqual(note["exposure_count"], 9000)
+        self.assertEqual(note["follow_count"], 3)
+        self.assertEqual(result["history_texts"], {})
+
     def test_note_analysis_uses_note_bodies_and_separates_source_distributions(self) -> None:
         all_notes = notes_data(self.db_path)
         self.assertEqual(all_notes["count"], 2)

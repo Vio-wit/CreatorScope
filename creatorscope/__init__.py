@@ -739,6 +739,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             note_type=request.args.get("note_type", "").strip(),
             topic=request.args.get("topic", "").strip(),
             query=request.args.get("q", "").strip(),
+            history_db=app.config["HISTORY_EVIDENCE_DB"],
         )
         return jsonify(data)
 

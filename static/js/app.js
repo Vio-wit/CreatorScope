@@ -60,7 +60,7 @@
       'followerDistChart', 'quoteDistChart', 'quoteTypeChart', 'locationChart', 'followerPriceChart', 'readingEngagementChart',
       'fanAggregateChart', 'correlationChart', 'trendChart', 'noteMetricsChart', 'sourceShareChart',
       'noteReadRankChart', 'noteInteractionRankChart', 'metricDistributionChart', 'interactionBoxChart',
-      'exposureReadChart', 'readingInteractionChart', 'notePublishChart', 'noteTrendChart',
+      'exposureReadChart', 'readingInteractionChart', 'notePublishChart', 'noteTopicChart', 'noteTrendChart',
       'audienceGenderChart', 'audienceAgeChart', 'audienceRegionChart', 'audienceInterestChart', 'audienceDeviceChart',
       'creatorCompareBarChart', 'creatorCompareRadarChart', 'noteCompareBarChart', 'noteCompareRadarChart',
       'historyFollowersChart', 'historyPerformanceChart', 'historyCoverageChart', 'libraryFollowersChart',
@@ -511,6 +511,13 @@
     const publish = chartsData.publish_distribution || [];
     if (publish.length) charts.notePublishChart?.setOption({ ...baseChart, grid: { left: 38, right: 12, top: 20, bottom: 34 }, xAxis: { type: 'category', data: publish.map((item) => item.month), axisLabel: { fontSize: 8, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, series: [{ type: 'bar', data: publish.map((item) => item.count), barMaxWidth: 24, itemStyle: { color: Theme.seriesBlue, borderRadius: [4, 4, 0, 0] } }] }, true);
     else setEmptyChart(charts.notePublishChart, '没有可解析的发布时间');
+    const topicFreq = (data.text_analysis?.topics?.frequencies || []).map((item) => ({ name: item.word, value: item.count }));
+    const historyTexts = data.history_texts || {};
+    $('#noteTopicStatus').textContent = historyTexts.topics_count
+      ? `含历史资料话题候选 ${formatMetric(historyTexts.topics_count || 0)} 篇；话题不代表互动表现`
+      : '话题来自当前批次笔记；不代表互动表现';
+    if (topicFreq.length) setBarChart('noteTopicChart', topicFreq.slice(0, 15), true);
+    else setEmptyChart(charts.noteTopicChart, '当前筛选没有可用话题');
     const trends = chartsData.metric_trends || [];
     $('#noteTrendStatus').textContent = data.availability?.metric_trends || '等待重复快照';
     if (trends.length) {

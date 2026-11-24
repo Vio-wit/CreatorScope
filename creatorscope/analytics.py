@@ -12,6 +12,7 @@ import jieba
 import pandas as pd
 
 from .db import connection
+from .history_analytics import history_note_library
 from .ingest import normalize_value
 
 
@@ -21,6 +22,17 @@ TYPE_LABELS = {
     "creator_content_performance": "内容表现",
     "fan_analysis": "粉丝分析",
     "note_detail": "笔记详情面板",
+}
+
+# 单篇笔记指标的中英文别名归一；同一 note_detail 记录可能只存英文键。
+METRIC_ALIASES: dict[str, tuple[str, ...]] = {
+    "read": ("阅读量", "阅读数", "reads", "read_count", "read"),
+    "like": ("点赞量", "点赞数", "likes", "like_count", "like"),
+    "favorite": ("收藏量", "收藏数", "favorites", "favorite_count", "fav", "collect"),
+    "comment": ("评论量", "评论数", "comments", "comment_count", "comment"),
+    "share": ("分享量", "分享数", "shares", "share_count", "share"),
+    "exposure": ("曝光量", "曝光数", "exposure", "exposure_count", "impressions"),
+    "follow": ("新增关注", "新增关注量", "关注量", "follows", "follow_count", "new_followers"),
 }
 
 
@@ -327,6 +339,14 @@ def dashboard_data(
 def _metric_value(fields: dict[str, Any], key: str) -> float | None:
     value, _unit, status = normalize_value(key, fields.get(key))
     return float(value) if status == "parsed" and value is not None else None
+
+
+def _metric_value_by_alias(fields: dict[str, Any], canonical: str) -> float | None:
+    for alias in METRIC_ALIASES[canonical]:
+        value = _metric_value(fields, alias)
+        if value is not None:
+            return value
+    return None
 
 
 def _metric_detail(fields: dict[str, Any], key: str) -> dict[str, Any]:
@@ -657,6 +677,48 @@ def _note_text_analysis(notes: list[dict[str, Any]]) -> dict[str, dict[str, Any]
     return result
 
 
+def _history_note_texts(history_db: Path | None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Load history note title/body/topic candidates as main-note-shaped dicts."""
+    if history_db is None:
+        return [], {}
+    try:
+        library = history_note_library(history_db, limit=5000)
+    except Exception:
+        return [], {}
+    samples = library.get("samples") or []
+    notes = [{
+        "title_raw": sample.get("title") or "",
+        "body": sample.get("body") or "",
+        "topics": sample.get("topics") or [],
+    } for sample in samples]
+    meta = {
+        "total_count": library.get("total_count", 0),
+        "title_count": library.get("title_count", 0),
+        "body_count": library.get("body_count", 0),
+        "topics_count": library.get("topics_count", 0),
+        "samples": [
+            {"title": sample.get("title") or "", "author": sample.get("author") or "", "topics": sample.get("topics") or []}
+            for sample in samples[:20]
+        ],
+    }
+    return notes, meta
+
+
+def _merge_text_analysis(main: dict[str, Any], history: dict[str, Any]) -> None:
+    for kind in ("title", "body", "topics"):
+        hist = history.get(kind)
+        if not hist:
+            continue
+        bucket = main.setdefault(kind, {"sample_count": 0, "token_count": 0, "frequencies": []})
+        merged = Counter(
+            {item["word"]: item["count"] for item in bucket["frequencies"]}
+        )
+        merged.update({item["word"]: item["count"] for item in hist["frequencies"]})
+        bucket["frequencies"] = [{"word": word, "count": count} for word, count in merged.most_common(100)]
+        bucket["sample_count"] += hist["sample_count"]
+        bucket["token_count"] += hist["token_count"]
+
+
 def _percent_detail(raw: Any) -> dict[str, Any]:
     if raw is None:
         return {"raw_value": None, "value": None}
@@ -826,6 +888,7 @@ def notes_data(
     note_type: str = "",
     topic: str = "",
     query: str = "",
+    history_db: Path | None = None,
 ) -> dict[str, Any]:
     with connection(db_path) as conn:
         creators = [dict(row) for row in conn.execute(
@@ -967,7 +1030,13 @@ def notes_data(
         if query and query.casefold() not in text_for_search.casefold():
             continue
         metrics = metric_values.get(int(row["metric_record_id"]), {}) if row["metric_record_id"] is not None else {}
-        get_metric = lambda *keys: next((metrics[key]["value"] for key in keys if key in metrics), None)
+
+        def get_metric(canonical: str) -> Any:
+            for alias in METRIC_ALIASES[canonical]:
+                if alias in metrics:
+                    return metrics[alias]["value"]
+            return None
+
         item = {
             "note_id": row["note_id"], "local_note_id": row["note_id"],
             "platform_note_id": row["platform_note_id"], "source_url": row["source_url"],
@@ -979,11 +1048,11 @@ def notes_data(
             "category": row["creator_category"] or "", "published_at": row["published_at"],
             "note_type": row["note_type"] or "", "source": source or row["metric_source"] or row["note_source"] or "未知来源",
             "batch_id": row["metric_batch_id"] or "", "metric_captured_at": row["metric_captured_at"] or "",
-            "comment_count": int(row["comment_count"] or 0), "read_count": get_metric("阅读量", "阅读数"),
-            "like_count": get_metric("点赞量", "点赞数"), "favorite_count": get_metric("收藏量", "收藏数"),
-            "interaction_comment_count": get_metric("评论量", "评论数"), "share_count": get_metric("分享量", "分享数"),
-            "exposure_count": get_metric("曝光量", "曝光数"),
-            "follow_count": get_metric("新增关注", "新增关注量", "关注量"),
+            "comment_count": int(row["comment_count"] or 0), "read_count": get_metric("read"),
+            "like_count": get_metric("like"), "favorite_count": get_metric("favorite"),
+            "interaction_comment_count": get_metric("comment"), "share_count": get_metric("share"),
+            "exposure_count": get_metric("exposure"),
+            "follow_count": get_metric("follow"),
             "metrics": metrics,
         }
         if item["read_count"] is not None:
@@ -1084,6 +1153,9 @@ def notes_data(
 
     public_rows = filtered
     text_analysis = _note_text_analysis(filtered)
+    history_notes, history_meta = _history_note_texts(history_db)
+    if history_notes:
+        _merge_text_analysis(text_analysis, _note_text_analysis(history_notes))
     return {
         "count": len(filtered), "notes": public_rows, "creators": creators,
         "note_options": [
@@ -1101,6 +1173,7 @@ def notes_data(
             "reading_interaction_scatter": reading_interaction_scatter,
         },
         "text_analysis": text_analysis,
+        "history_texts": history_meta,
         "availability": {
             "read_rankings": "按来源分组，使用每篇笔记最新可用指标快照" if any(group["items"] for group in top_read) else "当前筛选没有可比较的阅读指标",
             "metric_trends": "仅展示同一笔记、来源、指标和统计周期的重复快照" if metric_trends else "缺少同一笔记、来源、指标和统计周期的重复快照",
@@ -1341,10 +1414,14 @@ def analytics_data(
             "note_id": row.get("note_id"),
             "published_at": fields.get("发布时间"),
         }
-        for key in ("曝光量", "阅读量", "点赞量", "收藏量", "评论量", "分享量", "新增关注"):
-            value = _metric_value(fields, key)
+        for canonical, label in (
+            ("exposure", "曝光量"), ("read", "阅读量"), ("like", "点赞量"),
+            ("favorite", "收藏量"), ("comment", "评论量"), ("share", "分享量"),
+            ("follow", "新增关注"),
+        ):
+            value = _metric_value_by_alias(fields, canonical)
             if value is not None:
-                item[key] = value
+                item[label] = value
         note_metrics.append(item)
 
     fan_keys = ("活跃粉丝占比", "阅读粉丝占比", "互动粉丝占比", "下单粉丝占比")

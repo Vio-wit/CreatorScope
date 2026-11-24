@@ -68,6 +68,20 @@ def _present(value: Any) -> bool:
     return math.isfinite(number) and number >= 0
 
 
+UNKNOWN_LOCATION = "未知 · 待确认"
+_LOCATION_PLACEHOLDER_TOKENS = ("待确认", "未知", "主页ip属地", "地域", "地区身份", "其他", "不区分")
+
+
+def _clean_location(value: Any) -> str:
+    text = str(value or "").strip()
+    lowered = text.casefold()
+    if any(token in lowered for token in _LOCATION_PLACEHOLDER_TOKENS):
+        return UNKNOWN_LOCATION
+    if not text or lowered in EMPTY_TEXT:
+        return ""
+    return text
+
+
 def _number(value: Any) -> float | None:
     if not _present(value):
         return None
@@ -143,6 +157,7 @@ def _app_record(creator: dict[str, Any], scope: str) -> dict[str, Any]:
     quote_fields = creator.get("quote_fields") or {}
     image_quote = quote_fields.get("图文笔记一口价", {})
     video_quote = quote_fields.get("视频笔记一口价", {})
+    all_quote = quote_fields.get("全部报价", {})
     likes = _number(_first(raw_fields, ("获赞与收藏", "获赞和收藏", "获赞收藏")))
     published = _number(_first(raw_fields, ("发布笔记数", "发布笔记", "笔记数")))
     fields = {
@@ -155,6 +170,7 @@ def _app_record(creator: dict[str, Any], scope: str) -> dict[str, Any]:
         "published_notes": published,
         "image_fixed_price": image_quote.get("raw_value"),
         "video_fixed_price": video_quote.get("raw_value"),
+        "all_price": all_quote.get("normalized_value") or all_quote.get("raw_value"),
         "category": category,
         "account_ip_location": ip_location,
         "historical_region": "",
@@ -201,6 +217,10 @@ def _history_record(source: dict[str, Any]) -> dict[str, Any]:
     detail_values = {str(item.get("key") or ""): item for item in (source.get("details") or [])}
     image_price = detail_values.get("image_fixed_price", {}).get("raw_value")
     video_price = detail_values.get("video_fixed_price", {}).get("raw_value")
+    all_price_detail = detail_values.get("all_price", {})
+    all_price = all_price_detail.get("numeric_value")
+    if all_price is None:
+        all_price = all_price_detail.get("raw_value")
     fields = {
         "name": source.get("name"),
         "platform_id": source.get("xiaohongshu_account") or source.get("xiaohongshu_profile_id") or source.get("pgy_creator_id"),
@@ -211,6 +231,7 @@ def _history_record(source: dict[str, Any]) -> dict[str, Any]:
         "published_notes": _number(source.get("published_notes")),
         "image_fixed_price": image_price,
         "video_fixed_price": video_price,
+        "all_price": all_price,
         "category": source.get("category") or "",
         "account_ip_location": "",
         "historical_region": source.get("region") or "",
@@ -465,9 +486,10 @@ def unified_creator_library(
     interaction_vals = [record["fields"]["daily_interaction_median"] for record in records if has_numeric(record, "daily_interaction_median")]
     category_terms = [record["fields"].get("category") for record in records if _present(record["fields"].get("category"))]
     location_terms = [
-        record["fields"].get("account_ip_location") or record["fields"].get("historical_region")
-        for record in records
-        if _present(record["fields"].get("account_ip_location") or record["fields"].get("historical_region"))
+        cleaned for record in records
+        if (cleaned := _clean_location(
+            record["fields"].get("account_ip_location") or record["fields"].get("historical_region")
+        ))
     ]
     bucket_counts = {key: 0 for key, _ in BUCKETS}
     for record in records:
@@ -564,10 +586,12 @@ def unified_library_overview(
             })
         if _present(fields.get("category")):
             category_terms.append(str(fields["category"]))
-        location = fields.get("account_ip_location") or fields.get("historical_region")
-        if _present(location):
-            location_terms.append(str(location))
-        if _present(fields.get("image_fixed_price")) or _present(fields.get("video_fixed_price")):
+        cleaned_location = _clean_location(
+            fields.get("account_ip_location") or fields.get("historical_region")
+        )
+        if cleaned_location:
+            location_terms.append(cleaned_location)
+        if _present(fields.get("all_price")) or _present(fields.get("image_fixed_price")) or _present(fields.get("video_fixed_price")):
             quote_present += 1
         else:
             quote_missing += 1

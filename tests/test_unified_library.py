@@ -12,6 +12,8 @@ from creatorscope.db import connection, initialize_database
 from creatorscope.history_evidence import import_file
 from creatorscope.unified_library import (
     COURSE_SAMPLE_BATCH_ID,
+    UNKNOWN_LOCATION,
+    _clean_location,
     unified_creator_library,
     unified_library_overview,
 )
@@ -169,6 +171,14 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
             set(overview["medians"]),
             {"followers", "daily_read_median", "daily_interaction_median"},
         )
+
+    def test_location_placeholder_is_normalized(self) -> None:
+        self.assertEqual(_clean_location("地区身份待确认"), UNKNOWN_LOCATION)
+        self.assertEqual(_clean_location("地区身份待确认 / 韩国"), UNKNOWN_LOCATION)
+        self.assertEqual(_clean_location("不区分"), UNKNOWN_LOCATION)
+        self.assertEqual(_clean_location("未知"), UNKNOWN_LOCATION)
+        self.assertEqual(_clean_location("韩国"), "韩国")
+        self.assertEqual(_clean_location(""), "")
 
     def test_search_group_and_pagination_use_filtered_union(self) -> None:
         course = unified_creator_library(self.main_db, self.course_db, self.history_db, bucket="course", limit=10)
