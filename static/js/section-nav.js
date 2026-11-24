@@ -16,8 +16,7 @@
     if (location.pathname === '/ai') return 'smart';
     if (location.pathname !== '/') return '';
     if (location.hash === '#creators') return 'creators';
-    if (location.hash === '#collection') return 'collection';
-    if (location.hash === '#records') return 'records';
+    if (location.hash === '#collection' || location.hash === '#records') return 'collection';
     return 'analytics';
   }
 
