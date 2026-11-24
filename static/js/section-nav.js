@@ -61,13 +61,14 @@
   }
 
   function positionProgress(group, link) {
-    const nav = group.querySelector('.section-nav');
+    const track = group.querySelector('.section-nav-track');
     const span = group.querySelector('.section-nav-progress');
-    if (!nav || !span) return;
-    const navHeight = nav.offsetHeight || 1;
+    if (!track || !span) return;
+    const trackTop = track.offsetTop;
+    const trackHeight = track.offsetHeight || 1;
     const center = link.offsetTop + link.offsetHeight / 2;
-    const ratio = Math.max(0, Math.min(1, center / navHeight));
-    span.style.top = `${ratio * 100}%`;
+    const ratio = Math.max(0, Math.min(1, (center - trackTop) / trackHeight));
+    span.style.height = `${ratio * 100}%`;
   }
 
   function updateProgress() {
