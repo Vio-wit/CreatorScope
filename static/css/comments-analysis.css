@@ -4,28 +4,28 @@
 .comment-sample-notice { display: flex; flex-direction: column; gap: 5px; margin: 0 0 20px; padding: 14px 18px; border: 1px solid #d7e4d9; border-radius: 12px; background: #f0f7f1; color: #344e3c; }
 .comment-sample-notice strong { font-size: 14px; }
 .comment-sample-notice span { color: #64766a; font-size: 12px; }
-.comment-filter-panel { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)) minmax(220px, 1.5fr) auto auto; gap: 12px; align-items: end; margin-bottom: 20px; padding: 16px; border: 1px solid #e7ebe7; border-radius: 14px; background: #fff; }
+.comment-filter-panel { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)) minmax(220px, 1.5fr) auto auto; gap: 12px; align-items: end; margin-bottom: 20px; padding: 16px; border: 1px solid #e7ebe7; border-radius: 14px; background: var(--bg-surface); }
 .comment-filter-panel label { display: flex; flex-direction: column; gap: 6px; color: #69746b; font-size: 12px; }
-.comment-filter-panel select, .comment-filter-panel input { width: 100%; min-width: 0; height: 38px; padding: 0 10px; border: 1px solid #dfe5df; border-radius: 8px; background: #fff; color: #29372e; font: inherit; }
+.comment-filter-panel select, .comment-filter-panel input { width: 100%; min-width: 0; height: 38px; padding: 0 10px; border: 1px solid #dfe5df; border-radius: 8px; background: var(--bg-surface); color: #29372e; font: inherit; }
 .comment-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .comment-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 22px 0 32px; }
 .comment-chart-grid .chart-card { min-width: 0; }
 .comment-chart-grid .chart-card-wide { grid-column: 1 / -1; }
 .comment-chart { width: 100%; height: 300px; }
 .comment-chart-tall { height: 390px; }
-.comment-word-change-panel { margin: 20px 0 30px; padding: 14px; border: 1px solid #e7ebe7; border-radius: 14px; background: #fff; }
+.comment-word-change-panel { margin: 20px 0 30px; padding: 14px; border: 1px solid #e7ebe7; border-radius: 14px; background: var(--bg-surface); }
 .word-change-controls { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid #eef1ee; }
 .word-change-controls > div { display: flex; flex-direction: column; gap: 5px; min-width: 190px; margin-right: auto; }
 .word-change-controls strong { color: #344239; font-size: 13px; }
 .word-change-controls small, .word-change-controls span { color: #87928a; font-size: 10px; }
 .word-change-controls label { display: flex; flex-direction: column; gap: 5px; color: #69746b; font-size: 10px; }
-.word-change-controls select { min-width: 190px; height: 34px; border: 1px solid #dfe5df; border-radius: 7px; background: #fff; padding: 0 8px; color: #29372e; font: inherit; }
+.word-change-controls select { min-width: 190px; height: 34px; border: 1px solid #dfe5df; border-radius: 7px; background: var(--bg-surface); padding: 0 8px; color: #29372e; font: inherit; }
 .word-change-controls .button { height: 34px; }
 .comment-word-change-panel .comment-chart { height: 310px; }
 .wordcloud-wrap { display: grid; place-items: center; min-height: 300px; overflow: hidden; }
 .wordcloud-wrap img { display: block; width: 100%; max-height: 390px; object-fit: contain; }
 .comment-table-heading { margin-top: 14px; }
-.comment-table-card th { position: sticky; top: 0; z-index: 1; background: #f7f9f7; white-space: nowrap; }
+.comment-table-card th { position: sticky; top: 0; z-index: 1; background: var(--bg-subtle); white-space: nowrap; }
 .comment-table-card th, .comment-table-card td { padding: 12px 14px; font-size: 11px; }
 .comment-table-card td { vertical-align: top; }
 .comment-table-card td.comment-content-cell { min-width: 300px; max-width: 620px; white-space: pre-wrap; overflow-wrap: anywhere; color: #27352c; line-height: 1.65; font-size: 12px; }

@@ -1,5 +1,9 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
+  const Theme = window.CSTheme || {
+    textColor: Theme.textColor, emptyColor: Theme.emptyColor, seriesGreen: Theme.seriesGreen, seriesBlue: Theme.seriesBlue,
+    seriesAmber: Theme.seriesAmber, seriesRed: Theme.seriesRed, seriesPurple: Theme.seriesPurple, chartColors: ['#438f6c', '#d19a64', Theme.seriesBlue, '#c8796d', '#8a78aa', '#78ad86'],
+  };
   const charts = {};
   const ids = ['topWordsChart', 'noteCountChart', 'creatorCommentChart', 'lengthChart', 'lengthBoxplotChart', 'likesChart', 'replyCountChart', 'noteWordsChart', 'lengthLikesChart', 'wordChangeChart', 'sentimentChart', 'tfidfChart', 'topicChart', 'noteTopicChart', 'creatorTopicChart'];
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -56,13 +60,13 @@
   function baseOption() {
     return {
       animationDuration: 250,
-      textStyle: { fontFamily: 'Microsoft YaHei, SimHei, sans-serif', color: '#536158' },
+      textStyle: { fontFamily: 'Microsoft YaHei, SimHei, sans-serif', color: Theme.textColor },
       tooltip: { trigger: 'axis', confine: true },
       grid: { left: 58, right: 26, top: 26, bottom: 72, containLabel: true },
     };
   }
 
-  function setBar(id, labels, values, horizontal = false, color = '#5e9275') {
+  function setBar(id, labels, values, horizontal = false, color = Theme.seriesGreen) {
     const option = baseOption();
     if (horizontal) {
       option.grid.left = 36;
@@ -100,7 +104,7 @@
     const option = baseOption();
     option.xAxis = { type: 'value', name: '评论字符数', nameLocation: 'middle', nameGap: 34 };
     option.yAxis = { type: 'value', name: '精确点赞数', minInterval: 1 };
-    option.series = [{ type: 'scatter', symbolSize: 11, data: points.map((point) => [point.length, point.likes, point.note_title]), itemStyle: { color: '#c77668', opacity: 0.8 }, tooltip: { formatter: (params) => `${escapeHtml(params.value[2])}<br>长度：${params.value[0]}<br>点赞：${params.value[1]}` } }];
+    option.series = [{ type: 'scatter', symbolSize: 11, data: points.map((point) => [point.length, point.likes, point.note_title]), itemStyle: { color: Theme.seriesRed, opacity: 0.8 }, tooltip: { formatter: (params) => `${escapeHtml(params.value[2])}<br>长度：${params.value[0]}<br>点赞：${params.value[1]}` } }];
     chart('lengthLikesChart').setOption(option, true);
   }
 
@@ -110,11 +114,11 @@
     option.xAxis = { type: 'category', data: ['原始评论长度'] };
     option.yAxis = { type: 'value', name: '字符数', minInterval: 1 };
     if (!boxplot?.values?.length) {
-      option.graphic = [{ type: 'text', left: 'center', top: 'middle', style: { text: '当前筛选没有评论', fill: '#9aa39d', fontSize: 13 } }];
+      option.graphic = [{ type: 'text', left: 'center', top: 'middle', style: { text: '当前筛选没有评论', fill: Theme.emptyColor, fontSize: 13 } }];
       option.series = [];
     } else {
       option.tooltip = { trigger: 'item', formatter: () => `最小值：${boxplot.values[0]}<br>Q1：${boxplot.values[1]}<br>中位数：${boxplot.values[2]}<br>Q3：${boxplot.values[3]}<br>最大值：${boxplot.values[4]}<br>有效样本 n=${boxplot.sample_count}` };
-      option.series = [{ type: 'boxplot', data: [boxplot.values], itemStyle: { color: '#dce9df', borderColor: '#5e9275' } }];
+      option.series = [{ type: 'boxplot', data: [boxplot.values], itemStyle: { color: '#dce9df', borderColor: Theme.seriesGreen } }];
     }
     chart('lengthBoxplotChart').setOption(option, true);
   }
@@ -123,7 +127,7 @@
     const populated = (groups || []).filter((group) => group.topics?.length);
     if (!populated.length) {
       chart(id).clear();
-      chart(id).setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: '当前样本没有可比较主题', fill: '#9aa39d', fontSize: 13 } }] });
+      chart(id).setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: '当前样本没有可比较主题', fill: Theme.emptyColor, fontSize: 13 } }] });
       return;
     }
     const totalByTopic = new Map();
@@ -148,7 +152,7 @@
     option.xAxis = { type: 'value', min: 0, axisLabel: { formatter: (value) => Number(value).toFixed(2) } };
     option.yAxis = { type: 'category', data: populated.map((item) => item.word).reverse(), axisLabel: { width: 220, overflow: 'truncate' } };
     if (!populated.length) {
-      option.graphic = [{ type: 'text', left: 'center', top: 'middle', style: { text: '当前筛选没有可计算的关键词', fill: '#9aa39d', fontSize: 13 } }];
+      option.graphic = [{ type: 'text', left: 'center', top: 'middle', style: { text: '当前筛选没有可计算的关键词', fill: Theme.emptyColor, fontSize: 13 } }];
       option.series = [];
     } else {
       const values = populated.map((item) => ({ value: item.score, documentFrequency: item.document_frequency, documentCount: item.document_count })).reverse();
@@ -156,7 +160,7 @@
         const item = params[0];
         return `${escapeHtml(item.name)}<br>TF-IDF 汇总分：${Number(item.value).toFixed(6)}<br>出现评论数：${item.data.documentFrequency} / ${item.data.documentCount}`;
       } };
-      option.series = [{ type: 'bar', data: values, barMaxWidth: 22, itemStyle: { color: '#7596bd', borderRadius: [0, 5, 5, 0] } }];
+      option.series = [{ type: 'bar', data: values, barMaxWidth: 22, itemStyle: { color: Theme.seriesBlue, borderRadius: [0, 5, 5, 0] } }];
     }
     chart('tfidfChart').setOption(option, true);
   }
@@ -177,10 +181,10 @@
       chart('sentimentChart').setOption(option, true);
     } else {
       chart('sentimentChart').clear();
-      chart('sentimentChart').setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: '没有可分析评论', fill: '#9aa39d', fontSize: 13 } }] });
+      chart('sentimentChart').setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: '没有可分析评论', fill: Theme.emptyColor, fontSize: 13 } }] });
     }
     const topics = summary.topic_counts || [];
-    setBar('topicChart', topics.slice(0, 12).map((item) => item.label).reverse(), topics.slice(0, 12).map((item) => item.count).reverse(), true, '#7596bd');
+    setBar('topicChart', topics.slice(0, 12).map((item) => item.label).reverse(), topics.slice(0, 12).map((item) => item.count).reverse(), true, Theme.seriesBlue);
     renderGroupTopicComparison('noteTopicChart', data.by_note || []);
     renderGroupTopicComparison('creatorTopicChart', data.by_creator || []);
   }
@@ -239,15 +243,15 @@
     const top = data.top_words || [];
     setBar('topWordsChart', top.map((item) => item.word).reverse(), top.map((item) => item.count).reverse(), true);
     const notes = data.by_note || [];
-    setBar('noteCountChart', notes.map((item) => item.label), notes.map((item) => item.count), true, '#789c83');
+    setBar('noteCountChart', notes.map((item) => item.label), notes.map((item) => item.count), true, Theme.chartColors[5]);
     const creators = data.by_creator || [];
-    setBar('creatorCommentChart', creators.map((item) => item.label), creators.map((item) => item.count), true, '#7596bd');
-    setBar('lengthChart', data.length_histogram.map((item) => item.label), data.length_histogram.map((item) => item.count), false, '#799cbb');
+    setBar('creatorCommentChart', creators.map((item) => item.label), creators.map((item) => item.count), true, Theme.seriesBlue);
+    setBar('lengthChart', data.length_histogram.map((item) => item.label), data.length_histogram.map((item) => item.count), false, Theme.seriesBlue);
     renderLengthBoxplot(data.length_boxplot);
     const likes = data.like_histogram || [];
-    setBar('likesChart', likes.map((item) => item.label), likes.map((item) => item.count), false, '#dfa05c');
+    setBar('likesChart', likes.map((item) => item.label), likes.map((item) => item.count), false, Theme.seriesAmber);
     const replies = data.reply_histogram || [];
-    setBar('replyCountChart', replies.map((item) => item.label), replies.map((item) => item.count), false, '#8b83ae');
+    setBar('replyCountChart', replies.map((item) => item.label), replies.map((item) => item.count), false, Theme.seriesPurple);
     renderNoteWords(data.note_words || []);
     renderScatter(data.scatter || []);
     renderRows(data.comments || []);
@@ -271,7 +275,7 @@
       const words = data.words || [];
       if (!words.length) {
         chart('wordChangeChart').clear();
-        chart('wordChangeChart').setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: data.message || '没有可比较词频', fill: '#9aa39d', fontSize: 13 } }] });
+        chart('wordChangeChart').setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: data.message || '没有可比较词频', fill: Theme.emptyColor, fontSize: 13 } }] });
         return;
       }
       const option = baseOption();

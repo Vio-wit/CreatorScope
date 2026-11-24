@@ -1,5 +1,13 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
+  const Theme = window.CSTheme || {
+    fontFamily: 'Microsoft YaHei, Noto Sans SC, sans-serif', textColor: '#7e8981',
+    axisLabelColor: '#89948d', axisLabelMuted: '#a0a9a2', axisLineColor: Theme.axisLineColor,
+    splitLineColor: Theme.splitLineColor, emptyColor: '#a5ada7',
+    chartColors: [Theme.scatterGreen, '#d19a64', Theme.seriesBlue, '#c8796d', '#8a78aa', '#78ad86'],
+    seriesGreen: Theme.seriesGreen, seriesGreenSoft: Theme.seriesGreenSoft, seriesBlue: Theme.seriesBlue,
+    seriesAmber: '#dfa05c', seriesRed: '#c77668', seriesPurple: '#8b83ae', scatterGreen: Theme.scatterGreen,
+  };
   const demoMode = document.body.dataset.mode === 'demo';
   const elements = {
     batchSelect: $('#batchSelect'), sourceSelect: $('#sourceSelect'), typeSelect: $('#typeSelect'),
@@ -65,7 +73,7 @@
 
   const baseChart = {
     animationDuration: 500,
-    textStyle: { fontFamily: 'Microsoft YaHei, Noto Sans SC, sans-serif', color: '#7e8981' },
+    textStyle: { fontFamily: Theme.fontFamily, color: Theme.textColor },
     tooltip: { trigger: 'item', confine: true },
   };
 
@@ -74,7 +82,7 @@
     chart.clear();
     chart.setOption({
       ...baseChart,
-      graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: message, fill: '#a5ada7', fontSize: 11 } }],
+      graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: message, fill: Theme.emptyColor, fontSize: 11 } }],
     });
   }
 
@@ -84,7 +92,7 @@
     if (types.length) {
       charts.typeChart?.setOption({
         ...baseChart,
-        color: ['#197b5b', '#59a984', '#9dc8ae', '#e7b979', '#8ba8cf'],
+        color: Theme.chartColors,
         tooltip: { trigger: 'item', formatter: '{b}<br>{c} 条 ({d}%)' },
         legend: { bottom: 0, left: 'center', itemWidth: 7, itemHeight: 7, textStyle: { color: '#88938c', fontSize: 8 } },
         series: [{ type: 'pie', radius: ['43%', '68%'], center: ['50%', '43%'], avoidLabelOverlap: true, itemStyle: { borderColor: '#fff', borderWidth: 3 }, label: { show: false }, data: types.map((item) => ({ name: item.label, value: item.count })) }],
@@ -93,12 +101,12 @@
 
     const noteMetrics = data.chart_data?.note_metrics || [];
     if (noteMetrics.length) {
-      charts.noteChart?.setOption({ ...baseChart, grid: { left: 45, right: 15, top: 12, bottom: 27 }, xAxis: { type: 'category', data: noteMetrics.map((item) => item.name), axisLine: { lineStyle: { color: '#e8ece8' } }, axisTick: { show: false }, axisLabel: { color: '#929c95', fontSize: 8 } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } }, series: [{ type: 'bar', data: noteMetrics.map((item) => item.value), barWidth: 21, itemStyle: { color: '#4a9b75', borderRadius: [4, 4, 0, 0] } }] }, true);
+      charts.noteChart?.setOption({ ...baseChart, grid: { left: 45, right: 15, top: 12, bottom: 27 }, xAxis: { type: 'category', data: noteMetrics.map((item) => item.name), axisLine: { lineStyle: { color: Theme.axisLineColor } }, axisTick: { show: false }, axisLabel: { color: '#929c95', fontSize: 8 } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } }, series: [{ type: 'bar', data: noteMetrics.map((item) => item.value), barWidth: 21, itemStyle: { color: Theme.seriesGreen, borderRadius: [4, 4, 0, 0] } }] }, true);
     } else setEmptyChart(charts.noteChart, '当前批次没有笔记指标');
 
     const fans = data.chart_data?.fan_analysis || [];
     if (fans.length) {
-      charts.fanChart?.setOption({ ...baseChart, grid: { left: 90, right: 24, top: 8, bottom: 13 }, xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 8, color: '#a0a9a2' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, yAxis: { type: 'category', data: fans.map((item) => item.name), axisLabel: { fontSize: 8, color: '#858f88' }, axisTick: { show: false }, axisLine: { show: false } }, series: [{ type: 'bar', data: fans.map((item) => item.value), barWidth: 10, itemStyle: { color: '#8bb79b', borderRadius: 5 }, label: { show: true, position: 'right', formatter: '{c}%', fontSize: 8, color: '#728078' } }] }, true);
+      charts.fanChart?.setOption({ ...baseChart, grid: { left: 90, right: 24, top: 8, bottom: 13 }, xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 8, color: '#a0a9a2' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, yAxis: { type: 'category', data: fans.map((item) => item.name), axisLabel: { fontSize: 8, color: '#858f88' }, axisTick: { show: false }, axisLine: { show: false } }, series: [{ type: 'bar', data: fans.map((item) => item.value), barWidth: 10, itemStyle: { color: Theme.seriesGreenSoft, borderRadius: 5 }, label: { show: true, position: 'right', formatter: '{c}%', fontSize: 8, color: '#728078' } }] }, true);
     } else setEmptyChart(charts.fanChart, '当前批次没有粉丝比例字段');
 
 
@@ -113,12 +121,12 @@
       ...baseChart,
       grid: { left: horizontal ? 90 : 38, right: 24, top: 12, bottom: horizontal ? 18 : 37 },
       xAxis: horizontal
-        ? { type: 'value', axisLabel: { fontSize: 8, color: '#9aa39d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }
-        : { type: 'category', data: valid.map((item) => item.name), axisLabel: { interval: 0, rotate: 20, fontSize: 8, color: '#89948d' }, axisLine: { lineStyle: { color: '#e8ece8' } }, axisTick: { show: false } },
+        ? { type: 'value', axisLabel: { fontSize: 8, color: '#9aa39d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }
+        : { type: 'category', data: valid.map((item) => item.name), axisLabel: { interval: 0, rotate: 20, fontSize: 8, color: '#89948d' }, axisLine: { lineStyle: { color: Theme.axisLineColor } }, axisTick: { show: false } },
       yAxis: horizontal
         ? { type: 'category', data: valid.map((item) => item.name), axisLabel: { fontSize: 8, color: '#89948d' }, axisTick: { show: false }, axisLine: { show: false } }
-        : { type: 'value', axisLabel: { fontSize: 8, color: '#9aa39d', formatter: `{value}${valueSuffix}` }, splitLine: { lineStyle: { color: '#f0f2f0' } } },
-      series: [{ type: 'bar', data: valid.map((item) => item.value), barMaxWidth: 22, itemStyle: { color: '#4a9b75', borderRadius: horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0] } }],
+        : { type: 'value', axisLabel: { fontSize: 8, color: '#9aa39d', formatter: `{value}${valueSuffix}` }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
+      series: [{ type: 'bar', data: valid.map((item) => item.value), barMaxWidth: 22, itemStyle: { color: Theme.seriesGreen, borderRadius: horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0] } }],
     }, true);
   }
 
@@ -130,9 +138,9 @@
       ...baseChart,
       grid: { left: 45, right: 20, top: 15, bottom: 35 },
       tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.data[2])}<br>${escapeHtml(xName)}：${Number(item.data[0]).toLocaleString()}<br>${escapeHtml(yName)}：${Number(item.data[1]).toLocaleString()}` },
-      xAxis: { type: 'value', name: xName, nameTextStyle: { fontSize: 8, color: '#929c95' }, axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: '#f0f2f0' } } },
-      yAxis: { type: 'value', name: yName, nameTextStyle: { fontSize: 8, color: '#929c95' }, axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: '#f0f2f0' } } },
-      series: [{ type: 'scatter', symbolSize: 9, itemStyle: { color: '#438f6c', opacity: .78 }, data: points.map((point) => [point.x, point.y, point.name]) }],
+      xAxis: { type: 'value', name: xName, nameTextStyle: { fontSize: 8, color: '#929c95' }, axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
+      yAxis: { type: 'value', name: yName, nameTextStyle: { fontSize: 8, color: '#929c95' }, axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
+      series: [{ type: 'scatter', symbolSize: 9, itemStyle: { color: Theme.scatterGreen, opacity: .78 }, data: points.map((point) => [point.x, point.y, point.name]) }],
     }, true);
   }
 
@@ -144,9 +152,9 @@
       ...baseChart,
       grid: { left: 118, right: 24, top: 12, bottom: 18 },
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (params) => `${escapeHtml(labels[params[0].dataIndex])}<br>${escapeHtml(metricLabel)}：${Number(params[0].value).toLocaleString('zh-CN')}` },
-      xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: '#f0f2f0' } } },
+      xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
       yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 8, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } },
-      series: [{ type: 'bar', data: values.map((row) => Number(row[key])), barMaxWidth: 22, itemStyle: { color: '#4a9b75', borderRadius: [0, 4, 4, 0] } }],
+      series: [{ type: 'bar', data: values.map((row) => Number(row[key])), barMaxWidth: 22, itemStyle: { color: Theme.seriesGreen, borderRadius: [0, 4, 4, 0] } }],
     }, true);
   }
 
@@ -156,7 +164,7 @@
     const indicators = complete.map((axis) => ({ name: axis.label, max: 100 }));
     charts[chartId]?.setOption({
       ...baseChart,
-      color: ['#438f6c', '#d19a64', '#7596bd', '#c8796d'],
+      color: Theme.chartColors.slice(0, 4),
       legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } },
       tooltip: { trigger: 'item', formatter: (params) => {
         const row = rows.find((item) => item[labelKey] === params.name);
@@ -226,12 +234,12 @@
     renderAudienceProfiles(chartsData.audience_groups || []);
     const categories = chartsData.category_distribution || [];
     if (categories.length) {
-      charts.categoryChart?.setOption({ ...baseChart, color: ['#438f6c', '#78ad86', '#aec9aa', '#e8c58f', '#b6c6d9'], tooltip: { trigger: 'item', formatter: '{b}<br>{c} 位博主 ({d}%)' }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '48%'], label: { fontSize: 8, color: '#77847b' }, labelLine: { length: 7, length2: 5 }, data: categories }] }, true);
+      charts.categoryChart?.setOption({ ...baseChart, color: Theme.chartColors, tooltip: { trigger: 'item', formatter: '{b}<br>{c} 位博主 ({d}%)' }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '48%'], label: { fontSize: 8, color: '#77847b' }, labelLine: { length: 7, length2: 5 }, data: categories }] }, true);
     } else setEmptyChart(charts.categoryChart, '当前样本没有内容领域');
     const words = chartsData.word_frequency || [];
     if (words.length) {
       $('#wordStatus').textContent = data.availability?.word_frequency || '已有分词';
-      charts.wordChart?.setOption({ ...baseChart, grid: { left: 50, right: 15, top: 10, bottom: 24 }, xAxis: { type: 'category', data: words.map((item) => item.word), axisLabel: { interval: 0, rotate: 25, fontSize: 8, color: '#88938c' }, axisLine: { lineStyle: { color: '#e8ece8' } }, axisTick: { show: false } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { fontSize: 8, color: '#a0a9a2' } }, series: [{ type: 'bar', data: words.map((item) => item.count), barWidth: 13, itemStyle: { color: '#bf9465', borderRadius: [3, 3, 0, 0] } }] }, true);
+      charts.wordChart?.setOption({ ...baseChart, grid: { left: 50, right: 15, top: 10, bottom: 24 }, xAxis: { type: 'category', data: words.map((item) => item.word), axisLabel: { interval: 0, rotate: 25, fontSize: 8, color: '#88938c' }, axisLine: { lineStyle: { color: Theme.axisLineColor } }, axisTick: { show: false } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { fontSize: 8, color: '#a0a9a2' } }, series: [{ type: 'bar', data: words.map((item) => item.count), barWidth: 13, itemStyle: { color: Theme.seriesAmber, borderRadius: [3, 3, 0, 0] } }] }, true);
       const cloud = $('#wordCloudImage');
       cloud.hidden = false;
       const cloudParams = getNoteFilterParams();
@@ -365,14 +373,14 @@
     $('#sourceShareScope').textContent = data.source_scope || '按采集来源统计';
     const sources = (data.sources || []).filter((item) => item.total_count > 0);
     if (!sources.length) return setEmptyChart(charts.sourceShareChart, '暂无来源记录');
-    charts.sourceShareChart?.setOption({ ...baseChart, color: ['#438f6c', '#78ad86', '#aec9aa', '#e8c58f', '#b6c6d9', '#d48d7f'], tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.name)}<br>${item.value.toLocaleString()} 行 (${item.percent}%)` }, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '44%'], label: { formatter: '{b} {d}%', fontSize: 8 }, data: sources.map((item) => ({ name: item.source, value: item.total_count })) }] }, true);
+    charts.sourceShareChart?.setOption({ ...baseChart, color: Theme.chartColors, tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.name)}<br>${item.value.toLocaleString()} 行 (${item.percent}%)` }, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '44%'], label: { formatter: '{b} {d}%', fontSize: 8 }, data: sources.map((item) => ({ name: item.source, value: item.total_count })) }] }, true);
   }
 
   function renderGroupedRanking(chartId, groups, statusId = null) {
     const validGroups = (groups || []).filter((group) => group.items?.length);
     if (!validGroups.length) return setEmptyChart(charts[chartId], '当前筛选没有可用指标');
     const labels = [...new Set(validGroups.flatMap((group) => group.items.slice(0, 7).map((item) => item.label)))];
-    charts[chartId]?.setOption({ ...baseChart, color: ['#438f6c', '#d19a64', '#7596bd', '#c8796d', '#8a78aa'], legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 118, right: 18, top: 12, bottom: 35 }, tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } }, xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } }, series: validGroups.map((group) => { const values = new Map(group.items.slice(0, 7).map((item) => [item.label, item.value])); return { name: group.source, type: 'bar', barMaxWidth: 12, data: labels.map((label) => values.get(label) ?? null) }; }) }, true);
+    charts[chartId]?.setOption({ ...baseChart, color: Theme.chartColors, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 118, right: 18, top: 12, bottom: 35 }, tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } }, xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } }, series: validGroups.map((group) => { const values = new Map(group.items.slice(0, 7).map((item) => [item.label, item.value])); return { name: group.source, type: 'bar', barMaxWidth: 12, data: labels.map((label) => values.get(label) ?? null) }; }) }, true);
     if (statusId) $(`#${statusId}`).textContent = validGroups.length > 1 ? `按来源分别排名（${validGroups.length} 组）` : `来源：${validGroups[0].source}`;
   }
 
@@ -386,7 +394,7 @@
     $('#metricDistributionStatus').textContent = groups.map((group) => `${group.source} n=${group.sample_count}`).join(' · ');
     charts.metricDistributionChart?.setOption({
       ...baseChart,
-      color: ['#438f6c', '#d19a64', '#7596bd', '#c8796d', '#8a78aa'],
+      color: Theme.chartColors,
       legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } },
       grid: { left: 44, right: 14, top: 12, bottom: 46 },
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
@@ -412,7 +420,7 @@
       tooltip: { trigger: 'item', formatter: (params) => `${escapeHtml(labels[params.dataIndex] || '')}<br>最小 ${params.data[0]} · Q1 ${params.data[1]} · 中位数 ${params.data[2]} · Q3 ${params.data[3]} · 最大 ${params.data[4]}` },
       xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, rotate: 25, width: 100, overflow: 'truncate' } },
       yAxis: { type: 'value', min: 0, name: '互动数' },
-      series: [{ type: 'boxplot', data: items.map((item) => item.values), itemStyle: { color: '#dcebe0', borderColor: '#438f6c' } }],
+      series: [{ type: 'boxplot', data: items.map((item) => item.values), itemStyle: { color: '#dcebe0', borderColor: Theme.scatterGreen } }],
     }, true);
   }
 
@@ -427,7 +435,7 @@
     if (!points.length) return setEmptyChart(charts[chartId], '没有具备共同精确字段的笔记');
     charts[chartId]?.setOption({
       ...baseChart,
-      color: ['#438f6c', '#d19a64', '#7596bd', '#c8796d', '#8a78aa'],
+      color: Theme.chartColors,
       legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } },
       grid: { left: 58, right: 18, top: 12, bottom: 40 },
       tooltip: { trigger: 'item', formatter: (params) => `${escapeHtml(params.value[2])}<br>${xName}：${params.value[0]}<br>${yName}：${params.value[1]}` },
@@ -485,13 +493,13 @@
     renderGroupedScatter('exposureReadChart', chartsData.exposure_read_scatter || [], '曝光量', '阅读量', 'exposureReadStatus');
     renderGroupedScatter('readingInteractionChart', chartsData.reading_interaction_scatter || [], '阅读量', '互动量', 'readingInteractionStatus');
     const publish = chartsData.publish_distribution || [];
-    if (publish.length) charts.notePublishChart?.setOption({ ...baseChart, grid: { left: 38, right: 12, top: 12, bottom: 30 }, xAxis: { type: 'category', data: publish.map((item) => item.month), axisLabel: { fontSize: 8, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, series: [{ type: 'bar', data: publish.map((item) => item.count), barMaxWidth: 24, itemStyle: { color: '#7596bd', borderRadius: [4, 4, 0, 0] } }] }, true);
+    if (publish.length) charts.notePublishChart?.setOption({ ...baseChart, grid: { left: 38, right: 12, top: 12, bottom: 30 }, xAxis: { type: 'category', data: publish.map((item) => item.month), axisLabel: { fontSize: 8, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, series: [{ type: 'bar', data: publish.map((item) => item.count), barMaxWidth: 24, itemStyle: { color: Theme.seriesBlue, borderRadius: [4, 4, 0, 0] } }] }, true);
     else setEmptyChart(charts.notePublishChart, '没有可解析的发布时间');
     const trends = chartsData.metric_trends || [];
     $('#noteTrendStatus').textContent = data.availability?.metric_trends || '等待重复快照';
     if (trends.length) {
       const times = [...new Set(trends.flatMap((series) => series.points.map((point) => point.captured_at)))].sort();
-      charts.noteTrendChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 15, top: 12, bottom: 48 }, xAxis: { type: 'category', data: times, axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, series: trends.map((group) => { const byTime = new Map(group.points.map((point) => [point.captured_at, point.value])); return { name: group.label, type: 'line', symbolSize: 5, connectNulls: false, data: times.map((time) => byTime.get(time) ?? null) }; }) }, true);
+      charts.noteTrendChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 15, top: 12, bottom: 48 }, xAxis: { type: 'category', data: times, axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, series: trends.map((group) => { const byTime = new Map(group.points.map((point) => [point.captured_at, point.value])); return { name: group.label, type: 'line', symbolSize: 5, connectNulls: false, data: times.map((time) => byTime.get(time) ?? null) }; }) }, true);
     } else setEmptyChart(charts.noteTrendChart, '缺少同笔记、来源、指标和统计周期的重复快照');
     const rows = data.notes || [];
     $('#noteRows').innerHTML = rows.length ? rows.map((row) => `<tr><td>${escapeHtml(row.creator_name)}</td><td>${escapeHtml(row.title)}</td><td>${escapeHtml(row.published_at || '—')}</td><td>${escapeHtml(row.note_type || '—')}</td><td>${escapeHtml((row.topics || []).join('、') || '—')}</td><td>${escapeHtml(row.source)}<br><small>${escapeHtml(row.batch_id || '—')}</small></td><td>${formatMetric(row.read_count)}</td><td>${formatMetric(row.like_count)}</td><td>${formatMetric(row.favorite_count)}</td><td>${formatMetric(row.interaction_comment_count)}</td><td>${formatMetric(row.share_count)}</td><td>${row.comment_count}</td></tr>`).join('') : '<tr><td colspan="12" class="empty-cell">当前筛选下没有笔记</td></tr>';
@@ -804,8 +812,8 @@
         grid: { left: 48, right: 16, top: 12, bottom: 38 },
         tooltip: { trigger: 'axis', formatter: (items) => `${escapeHtml(items[0]?.name || '')}<br>${formatMetric(items[0]?.value || 0)} 个字段` },
         xAxis: { type: 'category', data: coverageDistribution.map((item) => item.label), axisTick: { show: false }, axisLabel: { color: '#929c95', fontSize: 8, interval: 0 } },
-        yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
-        series: [{ type: 'bar', data: coverageDistribution.map((item) => item.count), barMaxWidth: 38, itemStyle: { color: '#638d75', borderRadius: [4, 4, 0, 0] } }],
+        yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        series: [{ type: 'bar', data: coverageDistribution.map((item) => item.count), barMaxWidth: 38, itemStyle: { color: Theme.seriesGreen, borderRadius: [4, 4, 0, 0] } }],
       }, true);
     } else setEmptyChart(charts.historyCoverageChart, '暂无字段记录');
     $('#historyCoverageBody').innerHTML = coverageFields.map((item) => {
@@ -822,8 +830,8 @@
         grid: { left: 48, right: 16, top: 12, bottom: 32 },
         tooltip: { trigger: 'axis', formatter: (items) => `${escapeHtml(items[0]?.name || '')}<br>${formatMetric(items[0]?.value || 0)} 条样本` },
         xAxis: { type: 'category', data: bucketRows.map((item) => item.label), axisTick: { show: false }, axisLabel: { color: '#929c95', fontSize: 8, interval: 0, rotate: 16 } },
-        yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
-        series: [{ type: 'bar', data: bucketRows.map((item) => item.count), barMaxWidth: 32, itemStyle: { color: '#4a9b75', borderRadius: [4, 4, 0, 0] } }],
+        yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        series: [{ type: 'bar', data: bucketRows.map((item) => item.count), barMaxWidth: 32, itemStyle: { color: Theme.seriesGreen, borderRadius: [4, 4, 0, 0] } }],
       }, true);
     } else setEmptyChart(charts.historyFollowersChart, '暂无可用粉丝数');
 
@@ -833,9 +841,9 @@
         ...baseChart,
         grid: { left: 48, right: 14, top: 12, bottom: 37 },
         tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.data.name)}<br>日常阅读：${formatMetric(item.value[0])} 次<br>日常互动：${formatMetric(item.value[1])} 次` },
-        xAxis: { type: 'value', name: '日常阅读中位数', nameTextStyle: { fontSize: 8 }, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
-        yAxis: { type: 'value', name: '日常互动中位数', nameTextStyle: { fontSize: 8 }, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
-        series: [{ type: 'scatter', symbolSize: 8, itemStyle: { color: '#4a9b75', opacity: 0.7 }, data: pairs.map((item) => ({ name: item.sample, value: [item.reading, item.interaction] })) }],
+        xAxis: { type: 'value', name: '日常阅读中位数', nameTextStyle: { fontSize: 8 }, splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        yAxis: { type: 'value', name: '日常互动中位数', nameTextStyle: { fontSize: 8 }, splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        series: [{ type: 'scatter', symbolSize: 8, itemStyle: { color: Theme.seriesGreen, opacity: 0.7 }, data: pairs.map((item) => ({ name: item.sample, value: [item.reading, item.interaction] })) }],
       }, true);
     } else setEmptyChart(charts.historyPerformanceChart, '暂无共同有效样本');
 

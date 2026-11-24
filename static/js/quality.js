@@ -1,5 +1,9 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
+  const Theme = window.CSTheme || {
+    splitLineColor: '#f0f2f0', emptyColor: '#a5ada7', scatterGreen: '#438f6c',
+    seriesAmber: '#d19a64', seriesRed: '#c8796d',
+  };
   const charts = {};
   const TYPE_LABELS = {
     blogger_list_sample: '博主列表',
@@ -45,7 +49,7 @@
   };
   const emptyChart = (chart, message) => {
     chart?.clear();
-    chart?.setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: message, fill: '#a5ada7', fontSize: 11 } }] });
+    chart?.setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: message, fill: Theme.emptyColor, fontSize: 11 } }] });
   };
 
   const state = { batches: [], selected: null };
@@ -99,7 +103,7 @@
       return;
     }
     chart.setOption({
-      color: ['#438f6c'],
+      color: [Theme.scatterGreen],
       grid: { left: 190, right: 42, top: 12, bottom: 30 },
       tooltip: {
         trigger: 'axis',
@@ -109,7 +113,7 @@
           return `${typeLabel(item.record_type)} · ${item.field_name}<br/>覆盖率 ${percent(item.coverage_pct)}<br/>已捕获 ${number(item.captured_records)} / 应有 ${number(item.expected_records)}`;
         },
       },
-      xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } },
+      xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
       yAxis: {
         type: 'category',
         data: items.map((item) => `${typeLabel(item.record_type)} · ${item.field_name}`),
@@ -121,7 +125,7 @@
         barWidth: 11,
         label: { show: true, position: 'right', formatter: '{c}%', fontSize: 8, color: '#7f8982' },
         itemStyle: {
-          color: (params) => (params.value >= 90 ? '#438f6c' : params.value >= 60 ? '#d19a64' : '#c8796d'),
+          color: (params) => (params.value >= 90 ? Theme.scatterGreen : params.value >= 60 ? Theme.seriesAmber : Theme.seriesRed),
           borderRadius: [0, 4, 4, 0],
         },
       }],

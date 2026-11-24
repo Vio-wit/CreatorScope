@@ -7,7 +7,7 @@
   </a>
   <div class="nav-label">工作区</div>
   <div class="nav-group" data-nav-group="creators">
-    <div class="nav-group-heading"><a class="nav-item" data-primary-section="creators" href="/#creators"><span class="nav-icon">◎</span>达人库</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开达人库目录">⌄</button></div>
+    <div class="nav-group-heading"><a class="nav-item" data-primary-section="creators" href="/#creators"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5c1.4-3 3.9-4.5 6.5-4.5s5.1 1.5 6.5 4.5"/></svg>达人库</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开达人库目录">⌄</button></div>
     <nav class="section-nav" aria-label="达人库目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
       <a href="/#creators" data-target="#creators" data-view="creators">达人库概览</a>
       <a href="/#creators" data-target="#creatorLibraryStats" data-view="creators">达人统计</a>
@@ -15,7 +15,7 @@
     </nav>
   </div>
   <div class="nav-group" data-nav-group="analytics">
-    <div class="nav-group-heading"><a class="nav-item {% if request.path == '/' %}active{% endif %}" data-primary-section="analytics" href="/#analytics"><span class="nav-icon">◷</span>数据分析</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开数据分析目录">⌄</button></div>
+    <div class="nav-group-heading"><a class="nav-item {% if request.path == '/' %}active{% endif %}" data-primary-section="analytics" href="/#analytics"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><rect x="6" y="11" width="3.4" height="6" rx="1"/><rect x="10.8" y="7" width="3.4" height="10" rx="1"/><rect x="15.6" y="13" width="3.4" height="4" rx="1"/></svg>数据分析</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开数据分析目录">⌄</button></div>
     <nav class="section-nav" aria-label="数据分析目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
       <a href="/#analytics" data-target="#overview" data-view="analytics">数据总览</a>
       <a href="/#analytics" data-target="#historyAnalysis" data-view="analytics">实际数据分析</a>
@@ -23,7 +23,7 @@
     </nav>
   </div>
   <div class="nav-group" data-nav-group="smart">
-    <div class="nav-group-heading"><a class="nav-item {% if request.path == '/ai' %}active{% endif %}" data-primary-section="smart" href="/ai"><span class="nav-icon">✦</span>智能筛选与采集</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开智能筛选与采集目录">⌄</button></div>
+    <div class="nav-group-heading"><a class="nav-item {% if request.path == '/ai' %}active{% endif %}" data-primary-section="smart" href="/ai"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L4.5 9l5.2-.8z"/></svg>智能筛选与采集</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开智能筛选与采集目录">⌄</button></div>
     <nav class="section-nav" aria-label="智能筛选与采集目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
       <a href="/ai" data-target=".unified-selector-card" data-page="ai">达人筛选与对比</a>
       <a href="/ai" data-target=".ai-settings-card:not(.unified-selector-card)" data-page="ai">模型服务配置</a>
