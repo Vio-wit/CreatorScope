@@ -1005,7 +1005,7 @@
 
   function syncPrimaryNavigation() {
     const hash = window.location.hash;
-    const activeSection = hash === '#creators' ? 'creators' : hash === '#collection' ? 'smart' : 'analytics';
+    const activeSection = hash === '#creators' ? 'creators' : hash === '#collection' ? 'collection' : hash === '#records' ? 'records' : 'analytics';
     document.querySelectorAll('[data-primary-section]').forEach((link) => {
       link.classList.toggle('active', link.dataset.primarySection === activeSection);
     });

@@ -59,7 +59,7 @@
         <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>数据来源占比</h2><p id="sourceShareScope">记录行与评论行</p></div></div><div class="chart" id="sourceShareChart"></div></article>
       </section>
 
-      <section class="collection-panel" id="collection" data-primary-view="smart">
+      <section class="collection-panel" id="collection" data-primary-view="collection">
         <div class="panel-copy">
           <div class="panel-icon">↗</div>
           <div>
@@ -98,7 +98,7 @@
         <div class="browser-hint" id="browserHint"><span class="status-dot muted"></span><span>{% if demo_mode %}离线演示不会打开浏览器或发起网络请求。{% else %}新建隔离浏览器配置；请在窗口内正常登录并手动打开要验证的页面。应用只读取蒲公英域名下当前可见页面的少量字段。{% endif %}</span></div>
       </section>
 
-      <section class="kpi-grid" aria-label="数据概览" data-primary-view="smart">
+      <section class="kpi-grid" aria-label="数据概览" data-primary-view="records">
         <article class="kpi-card"><div class="kpi-label">所选范围记录<span class="kpi-symbol">▤</span></div><div class="kpi-value" id="recordCount">—</div><div class="kpi-foot" id="batchCount">历史批次 0</div></article>
         <article class="kpi-card"><div class="kpi-label">字段覆盖率<span class="kpi-symbol green">◉</span></div><div class="kpi-value" id="coverageRate">—</div><div class="kpi-foot" id="fieldCount">—</div></article>
         <article class="kpi-card"><div class="kpi-label">粉丝规模<span class="kpi-symbol blue">◎</span></div><div class="kpi-value compact" id="followersValue">—</div><div class="kpi-foot">当前可用博主样本</div></article>
@@ -252,7 +252,7 @@
         <section class="charts-grid comparison-chart-grid"><article class="chart-card"><div class="card-heading"><div><h2>笔记单指标对比</h2><p>不同单位分开展示，缺失值不补零</p></div></div><div class="chart" id="noteCompareBarChart"></div></article><article class="chart-card"><div class="card-heading"><div><h2>笔记相对表现雷达</h2><p>只纳入所有入选笔记都有精确值的互动指标，按组内最大值归一</p></div></div><div class="chart" id="noteCompareRadarChart"></div></article></section>
       </section>
 
-      <section class="data-grid" id="records" data-primary-view="smart">
+      <section class="data-grid" id="records" data-primary-view="records">
         <article class="table-card">
           <div class="card-heading table-heading"><div><h2>当前样本字段</h2><p>原始显示值与字段覆盖情况</p></div><span class="table-count" id="tableCount">0 条记录</span></div>
           <div class="table-scroll"><table><thead><tr><th>数据类型</th><th>字段数</th><th>有效字段</th><th>覆盖率</th><th>采集时间</th></tr></thead><tbody id="coverageBody"><tr><td colspan="5" class="empty-cell">导入基线样本后显示字段覆盖</td></tr></tbody></table></div>
@@ -263,12 +263,12 @@
         </article>
       </section>
 
-      <section class="record-detail-card" data-primary-view="smart">
+      <section class="record-detail-card" data-primary-view="records">
         <div class="card-heading table-heading"><div><h2>样本字段值</h2><p>保留来源页面显示值，数值清洗结果单独存储</p></div></div>
         <div class="record-detail-grid" id="recordDetails"><div class="empty-cell">当前批次暂无样本字段</div></div>
       </section>
 
-      <section class="table-card field-dictionary-card" data-primary-view="smart">
+      <section class="table-card field-dictionary-card" id="fieldDictionary" data-primary-view="records">
         <details>
           <summary><strong>蒲公英字段目录</strong><span>字段名称、单位与页面统计口径 · <span id="dictionaryCount">—</span></span></summary>
           <div class="table-scroll"><table><thead><tr><th>分组</th><th>字段名称</th><th>页面/存储单位</th><th>统计周期</th></tr></thead><tbody id="dictionaryBody"><tr><td colspan="4" class="empty-cell">加载字段目录…</td></tr></tbody></table></div>

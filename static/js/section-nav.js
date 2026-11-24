@@ -16,7 +16,8 @@
     if (location.pathname === '/ai') return 'smart';
     if (location.pathname !== '/') return '';
     if (location.hash === '#creators') return 'creators';
-    if (location.hash === '#collection') return 'smart';
+    if (location.hash === '#collection') return 'collection';
+    if (location.hash === '#records') return 'records';
     return 'analytics';
   }
 
@@ -114,7 +115,7 @@
           try { sessionStorage.setItem('creatorscope-nav-target', link.dataset.target); } catch (_) { /* Navigation still works without storage. */ }
           if (location.pathname === '/' && link.dataset.view) {
             event.preventDefault();
-            location.hash = link.dataset.view === 'smart' ? '#collection' : `#${link.dataset.view}`;
+            location.hash = `#${link.dataset.view}`;
           }
           return;
         }
