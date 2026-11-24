@@ -648,6 +648,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 daily_read_max=read_max,
                 daily_interaction_min=interaction_min,
                 daily_interaction_max=interaction_max,
+                batch_id=request.args.get("batch_id", ""),
+                source=request.args.get("source", ""),
                 offset=offset,
                 limit=limit,
             )

@@ -109,6 +109,20 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
             with self.assertRaises(sqlite3.OperationalError):
                 conn.execute("UPDATE creators SET pseudonym='must-not-write' WHERE creator_id='new-creator'")
 
+    def test_batch_filter_scopes_library_to_single_collection_batch(self) -> None:
+        batch = "batch-main-new-creator"
+        page = unified_creator_library(self.main_db, self.course_db, self.history_db, batch_id=batch, limit=20)
+        self.assertEqual(page["total_count"], 1)
+        self.assertEqual(page["records"][0]["name"], "新采集达人")
+        self.assertEqual(page["records"][0]["batch_id"], batch)
+
+        all_page = unified_creator_library(self.main_db, self.course_db, self.history_db, batch_id="__all__", limit=20)
+        self.assertEqual(all_page["total_count"], 4)
+
+        # 全量概览不随清单批次收窄，始终合并主库 + 课堂 + 历史。
+        overview = unified_library_overview(self.main_db, self.course_db, self.history_db)
+        self.assertEqual(overview["total_count"], 4)
+
     def test_readonly_connection_does_not_create_missing_database(self) -> None:
         missing = self.root / "missing" / "must-not-exist.sqlite3"
         with self.assertRaises(FileNotFoundError):
@@ -214,6 +228,9 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
             self.assertIn("美妆", payload["categories"])
             self.assertIn("上海", payload["ip_locations"])
             self.assertEqual(app.test_client().get("/api/unified-creators?limit=201").status_code, 400)
+            batch_page = app.test_client().get("/api/unified-creators?batch_id=batch-main-new-creator&limit=10")
+            self.assertEqual(batch_page.status_code, 200)
+            self.assertEqual(batch_page.get_json()["total_count"], 1)
             refs = [item["ref"] for item in payload["records"][:2]]
             compare_query = "&".join(f"ref={ref}" for ref in refs)
             compare = app.test_client().get(f"/api/unified-creators/compare?{compare_query}")

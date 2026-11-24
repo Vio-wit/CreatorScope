@@ -717,6 +717,8 @@
       offset: String(unifiedCreatorOffset),
       limit: String(UNIFIED_CREATOR_PAGE_SIZE),
     });
+    if (elements.batchSelect.value && elements.batchSelect.value !== '__all__') params.set('batch_id', elements.batchSelect.value);
+    if (elements.sourceSelect.value) params.set('source', elements.sourceSelect.value);
     const data = await requestJson(`/api/unified-creators?${params.toString()}`);
     const categorySelect = $('#categoryFilter');
     const locationSelect = $('#locationFilter');
@@ -1125,10 +1127,12 @@
       }
     });
     elements.batchSelect.addEventListener('change', () => {
-      Promise.all([refreshDashboard(), refreshAnalytics(), refreshNotes()]).catch((error) => toast(error.message, true));
+      unifiedCreatorOffset = 0;
+      Promise.all([refreshDashboard(), refreshAnalytics(), refreshNotes(), refreshCreatorLibrary()]).catch((error) => toast(error.message, true));
     });
     elements.sourceSelect.addEventListener('change', () => {
-      Promise.all([refreshDashboard(), refreshAnalytics(), refreshNotes()]).catch((error) => toast(error.message, true));
+      unifiedCreatorOffset = 0;
+      Promise.all([refreshDashboard(), refreshAnalytics(), refreshNotes(), refreshCreatorLibrary()]).catch((error) => toast(error.message, true));
     });
     elements.typeSelect.addEventListener('change', refreshDashboard);
     $('#filterCreators').addEventListener('click', () => { unifiedCreatorOffset = 0; refreshCreatorLibrary().catch((error) => toast(error.message, true)); });

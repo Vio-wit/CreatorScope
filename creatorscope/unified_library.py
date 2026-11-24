@@ -421,6 +421,8 @@ def unified_creator_library(
     daily_read_max: float | None = None,
     daily_interaction_min: float | None = None,
     daily_interaction_max: float | None = None,
+    batch_id: str = "",
+    source: str = "",
     offset: int = 0,
     limit: int = 50,
 ) -> dict[str, Any]:
@@ -445,9 +447,15 @@ def unified_creator_library(
     q = query.strip().casefold()
     category_query = category.strip().casefold()
     location_query = ip_location.strip().casefold()
+    batch_filter = "" if batch_id in ("", "__all__") else batch_id.strip()
+    source_filter = source.strip()
     for record in cached_records:
         fields = record["fields"]
         if bucket != "all" and record["bucket"] != bucket:
+            continue
+        if batch_filter and record.get("batch_id") != batch_filter:
+            continue
+        if source_filter and str(record.get("source_name") or "") != source_filter:
             continue
         search_blob = " ".join(str(value) for value in (
             record.get("name"), *record.get("aliases", []), *record.get("identifiers", {}).values(),
