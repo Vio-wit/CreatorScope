@@ -7,6 +7,7 @@
   <title>CreatorScope · 课程数据工作台</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <script defer src="{{ url_for('static', filename='vendor/echarts.min.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/history-all.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/chart-export.js') }}"></script>
 </head>
@@ -108,7 +109,7 @@
           <div class="chart" id="typeChart"></div>
         </article>
         <article class="chart-card">
-          <div class="card-heading"><div><h2>笔记互动指标</h2><p>采集值转换为数值后展示</p></div><span class="card-menu">···</span></div>
+          <div class="card-heading"><div><h2>最近一条笔记详情指标</h2><p>当前范围内最新笔记详情中的可用指标</p></div><span class="card-menu">···</span></div>
           <div class="chart" id="noteChart"></div>
         </article>
         <article class="chart-card" hidden>
@@ -143,6 +144,8 @@
           <label class="select-wrap"><span>数据集</span><select id="historySourceSelect" aria-label="选择历史数据集"><option value="">加载中…</option></select></label>
         </div>
         <p class="history-status" id="historyAnalysisStatus" role="status">正在读取本机历史样本…</p>
+        <div id="historyAllGroups" hidden></div>
+        <div id="historySingleSource" hidden>
         <section class="history-kpi-grid" aria-label="历史样本概况">
           <article class="kpi-card"><div class="kpi-label">数据样本<span class="kpi-symbol">▤</span></div><div class="kpi-value" id="historySampleCount">—</div><div class="kpi-foot" id="historySourceFiles">—</div></article>
           <article class="kpi-card"><div class="kpi-label">平均粉丝数<span class="kpi-symbol blue">◎</span></div><div class="kpi-value compact" id="historyFollowersAverage">—</div><div class="kpi-foot" id="historyFollowersCount">—</div></article>
@@ -166,6 +169,7 @@
           <div class="card-heading table-heading"><div><h3>样本横向比较</h3><p>每行对应一条来源记录；空值保持为空</p></div><span class="table-count" id="historyRecordCount">—</span></div>
           <div class="table-scroll"><table><thead><tr><th>样本</th><th>粉丝数</th><th>日常阅读中位数</th><th>日常互动中位数</th></tr></thead><tbody id="historyRecordBody"><tr><td colspan="4" class="empty-cell">读取中…</td></tr></tbody></table></div>
         </article>
+        </div>
         <section class="history-note-section">
           <div class="card-heading"><div><h3>历史笔记正文与话题</h3><p id="historyNoteStatus">按真实笔记原文展示，可搜索标题、正文和话题</p></div><span class="analysis-count" id="historyNoteCount">—</span></div>
           <div class="history-note-controls"><label>搜索笔记<input id="historyNoteQuery" type="search" placeholder="标题、正文或话题关键词"></label><button class="button button-primary" id="filterHistoryNotes" type="button">搜索</button><span id="historyNotePageStatus">—</span></div>
@@ -187,6 +191,16 @@
       <section class="section-heading" id="creators" data-primary-view="creators">
         <div><p class="eyebrow">CREATOR LIBRARY</p><h2>达人库</h2><p class="subheading">统一查看新采集、五人课堂样本与本地历史资料；缺失字段保留为空。</p></div>
       </section>
+      <section id="creatorLibraryStats" data-primary-view="creators">
+        <div class="card-heading"><div><h3>当前筛选概览</h3><p>统计筛选后的展示记录，可能包含跨来源重复达人。</p></div></div>
+        <div class="kpi-grid">
+          <article class="kpi-card"><div class="kpi-label">匹配记录</div><div class="kpi-value" id="libraryMatched">—</div><div class="kpi-foot">当前筛选范围</div></article>
+          <article class="kpi-card"><div class="kpi-label">粉丝数有效</div><div class="kpi-value" id="libraryFollowersValid">—</div><div class="kpi-foot">缺失值不计入</div></article>
+          <article class="kpi-card"><div class="kpi-label">阅读与互动共同有效</div><div class="kpi-value" id="libraryPerformanceValid">—</div><div class="kpi-foot">两项均有数值</div></article>
+          <article class="kpi-card"><div class="kpi-label">领域有值</div><div class="kpi-value" id="libraryCategoryValid">—</div><div class="kpi-foot">按已取得的领域文本</div></article>
+        </div>
+        <article class="chart-card"><div class="card-heading"><div><h3>粉丝规模分布</h3><p id="libraryFollowerStatus">当前筛选中粉丝数有效的展示记录</p></div></div><div class="chart" id="libraryFollowersChart"></div></article>
+      </section>
       <section class="creator-filter-panel" data-primary-view="creators">
         <label>名称 / ID 搜索<input id="creatorQuery" type="search" placeholder="输入名称或平台 ID"></label>
         <label>领域<select id="categoryFilter"><option value="">全部领域</option></select></label>
@@ -198,7 +212,7 @@
         <span id="creatorCount">读取中…</span>
         <button class="button button-secondary" id="compareSelectedCreators" type="button" disabled>去智能分析对比（0/4）</button>
       </section>
-      <section class="table-card creator-table-card unified-creator-table-card" data-primary-view="creators">
+      <section class="table-card creator-table-card unified-creator-table-card" id="creatorLibraryList" data-primary-view="creators">
         <div class="card-heading table-heading"><div><h3>统一达人清单</h3><p>新采集 → 五人课堂采集 → 既有资料；组内按字段完整度排序。筛选后共 <span id="unifiedCreatorCount">—</span> 条展示记录。</p></div><span class="table-count" id="unifiedCreatorGroups">—</span></div>
         <div class="table-scroll"><table><thead><tr><th>创作者 / 平台标识</th><th>粉丝数</th><th>日常阅读中位数</th><th>日常互动中位数</th><th>领域</th><th>蒲公英账号 IP</th><th>字段完整度</th><th>来源与时间</th><th>详情 / 对比</th></tr></thead><tbody id="unifiedCreatorBody"><tr><td colspan="9" class="empty-cell">读取中…</td></tr></tbody></table></div>
         <div class="history-library-pager"><button class="button" id="unifiedCreatorPrev" type="button">上一页</button><span id="unifiedCreatorPageStatus">—</span><button class="button" id="unifiedCreatorNext" type="button">下一页</button></div>

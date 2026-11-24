@@ -1,12 +1,37 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='css/section-nav.css') }}">
+<script defer src="{{ url_for('static', filename='js/section-nav.js') }}"></script>
 <aside class="sidebar{% if request.path == '/report' %} no-print{% endif %}">
   <a class="brand" href="/" aria-label="CreatorScope 首页">
     <span class="brand-mark">C</span>
     <span><strong>CreatorScope</strong><small>课程数据工作台</small></span>
   </a>
   <div class="nav-label">工作区</div>
-  <a class="nav-item" data-primary-section="creators" href="/#creators"><span class="nav-icon">◎</span>达人库</a>
-  <a class="nav-item {% if request.path == '/' %}active{% endif %}" data-primary-section="analytics" href="/#analytics"><span class="nav-icon">◷</span>数据分析</a>
-  <a class="nav-item {% if request.path == '/ai' %}active{% endif %}" data-primary-section="smart" href="/ai"><span class="nav-icon">✦</span>智能筛选与采集</a>
+  <div class="nav-group" data-nav-group="creators">
+    <div class="nav-group-heading"><a class="nav-item" data-primary-section="creators" href="/#creators"><span class="nav-icon">◎</span>达人库</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开达人库目录">⌄</button></div>
+    <nav class="section-nav" aria-label="达人库目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
+      <a href="/#creators" data-target="#creators" data-view="creators">达人库概览</a>
+      <a href="/#creators" data-target="#creatorLibraryStats" data-view="creators">达人统计</a>
+      <a href="/#creators" data-target="#creatorLibraryList" data-view="creators">达人清单</a>
+    </nav>
+  </div>
+  <div class="nav-group" data-nav-group="analytics">
+    <div class="nav-group-heading"><a class="nav-item {% if request.path == '/' %}active{% endif %}" data-primary-section="analytics" href="/#analytics"><span class="nav-icon">◷</span>数据分析</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开数据分析目录">⌄</button></div>
+    <nav class="section-nav" aria-label="数据分析目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
+      <a href="/#analytics" data-target="#overview" data-view="analytics">数据总览</a>
+      <a href="/#analytics" data-target="#historyAnalysis" data-view="analytics">实际数据分析</a>
+      <a href="/#analytics" data-target="#notes" data-view="analytics">笔记内容分析</a>
+    </nav>
+  </div>
+  <div class="nav-group" data-nav-group="smart">
+    <div class="nav-group-heading"><a class="nav-item {% if request.path == '/ai' %}active{% endif %}" data-primary-section="smart" href="/ai"><span class="nav-icon">✦</span>智能筛选与采集</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开智能筛选与采集目录">⌄</button></div>
+    <nav class="section-nav" aria-label="智能筛选与采集目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
+      <a href="/ai" data-target=".unified-selector-card" data-page="ai">达人筛选与对比</a>
+      <a href="/ai" data-target=".ai-settings-card:not(.unified-selector-card)" data-page="ai">模型服务配置</a>
+      <a href="/ai" data-target=".ai-scope-card" data-page="ai">AI 分析与建议</a>
+      <a href="/#collection" data-target="#collection" data-view="smart">采集工作台</a>
+      <a href="/#collection" data-target="#records" data-view="smart">采集成果</a>
+    </nav>
+  </div>
   <details class="nav-more" {% if request.path in ['/comments', '/quality', '/report', '/news'] %}open{% endif %}>
     <summary>更多工具</summary>
     <a class="nav-item {% if request.path == '/quality' %}active{% endif %}" href="/quality">数据质量</a>

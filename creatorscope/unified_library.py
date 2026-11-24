@@ -416,8 +416,22 @@ def unified_creator_library(
             continue
         records.append(record)
     page = records[offset:offset + limit]
+    def has_numeric(record: dict[str, Any], field: str) -> bool:
+        value = record["fields"].get(field)
+        return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value >= 0
+
+    follower_buckets = [
+        {"label": label, "count": sum(1 for record in records if has_numeric(record, "followers") and lower <= record["fields"]["followers"] < upper)}
+        for label, lower, upper in (("1万以下", 0, 10000), ("1–5万", 10000, 50000), ("5–10万", 50000, 100000), ("10–50万", 100000, 500000), ("50万以上", 500000, math.inf))
+    ]
     return {
         "total_count": len(records),
+        "filtered_summary": {
+            "followers_valid": sum(has_numeric(record, "followers") for record in records),
+            "reading_interaction_valid": sum(has_numeric(record, "daily_read_median") and has_numeric(record, "daily_interaction_median") for record in records),
+            "category_valid": sum(_present(record["fields"].get("category")) for record in records),
+            "follower_distribution": follower_buckets,
+        },
         "offset": offset,
         "limit": limit,
         "records": page,
