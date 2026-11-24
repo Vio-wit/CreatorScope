@@ -3,6 +3,8 @@
   if (!groups.length) return;
 
   const STORAGE_KEY = 'creatorscope-nav-open';
+  let pinnedLink = null;
+  let pinnedAt = 0;
 
   function readOpenState() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (_) { return {}; }
@@ -58,6 +60,16 @@
     return location.pathname === '/' && link.dataset.view === currentGroup();
   }
 
+  function positionProgress(group, link) {
+    const nav = group.querySelector('.section-nav');
+    const span = group.querySelector('.section-nav-progress');
+    if (!nav || !span) return;
+    const navHeight = nav.offsetHeight || 1;
+    const center = link.offsetTop + link.offsetHeight / 2;
+    const ratio = Math.max(0, Math.min(1, center / navHeight));
+    span.style.top = `${ratio * 100}%`;
+  }
+
   function updateProgress() {
     const name = currentGroup();
     const group = groups.find((item) => item.dataset.navGroup === name);
@@ -73,24 +85,29 @@
       link.removeAttribute('aria-current');
       if (target && target.getClientRects().length) entries.push({ link, target });
     });
-    if (!entries.length) return;
-    const viewportLine = Math.min(150, window.innerHeight * 0.25);
-    let current = entries[0];
-    entries.forEach((entry) => {
-      if (entry.target.getBoundingClientRect().top <= viewportLine) current = entry;
-    });
-    const sections = location.pathname === '/ai'
-      ? [...document.querySelectorAll('main > section')].filter((node) => node.getClientRects().length)
-      : [...document.querySelectorAll(`[data-primary-view="${name}"]`)].filter((node) => node.getClientRects().length);
-    if (!sections.length) return;
-    const start = sections[0].getBoundingClientRect().top + window.scrollY;
-    const end = sections[sections.length - 1].getBoundingClientRect().bottom + window.scrollY;
-    if (window.scrollY + window.innerHeight >= end - 10) current = entries[entries.length - 1];
+
+    const pinValid = pinnedLink && !pinnedLink.hidden && matchesCurrentPage(pinnedLink)
+      && (Date.now() - pinnedAt < 400);
+    let current = null;
+    if (pinValid) {
+      current = { link: pinnedLink };
+    } else if (entries.length) {
+      const viewportLine = Math.min(150, window.innerHeight * 0.25);
+      current = entries[0];
+      entries.forEach((entry) => {
+        if (entry.target.getBoundingClientRect().top <= viewportLine) current = entry;
+      });
+      const sections = location.pathname === '/ai'
+        ? [...document.querySelectorAll('main > section')].filter((node) => node.getClientRects().length)
+        : [...document.querySelectorAll(`[data-primary-view="${name}"]`)].filter((node) => node.getClientRects().length);
+      if (sections.length && window.scrollY + window.innerHeight >= sections[sections.length - 1].getBoundingClientRect().bottom + window.scrollY - 10) {
+        current = entries[entries.length - 1];
+      }
+    }
+    if (!current) return;
     current.link.classList.add('is-current');
     current.link.setAttribute('aria-current', 'location');
-    const span = Math.max(1, end - start - window.innerHeight);
-    const progress = Math.max(0, Math.min(1, (window.scrollY - start) / span));
-    group.querySelector('.section-nav-progress').style.height = `${progress * 100}%`;
+    positionProgress(group, current.link);
   }
 
   groups.forEach((group) => {
@@ -121,6 +138,9 @@
         const target = targetFor(link);
         if (!target) return;
         event.preventDefault();
+        pinnedLink = link;
+        pinnedAt = Date.now();
+        updateProgress();
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
