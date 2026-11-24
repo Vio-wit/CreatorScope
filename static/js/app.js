@@ -287,7 +287,7 @@
       };
     });
     if (noteMetricSeries.length) {
-      charts.noteMetricsChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 14, top: 18, bottom: 48 }, xAxis: { type: 'category', data: metricKeys, axisLabel: { fontSize: 7, rotate: 22 } }, yAxis: { type: 'value', minInterval: 1 }, series: noteMetricSeries }, true);
+      charts.noteMetricsChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, grid: { left: 45, right: 14, top: 18, bottom: 48 }, xAxis: { type: 'category', data: metricKeys, axisLabel: { fontSize: 8, rotate: 22 } }, yAxis: { type: 'value', minInterval: 1 }, series: noteMetricSeries }, true);
     } else setEmptyChart(charts.noteMetricsChart, '当前筛选没有笔记指标');
   }
 
@@ -395,7 +395,7 @@
     const validGroups = (groups || []).filter((group) => group.items?.length);
     if (!validGroups.length) return setEmptyChart(charts[chartId], '当前筛选没有可用指标');
     const labels = [...new Set(validGroups.flatMap((group) => group.items.slice(0, 7).map((item) => item.label)))];
-    charts[chartId]?.setOption({ ...baseChart, color: Theme.chartColors, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 118, right: 18, top: 20, bottom: 40 }, tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } }, xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } }, series: validGroups.map((group) => { const values = new Map(group.items.slice(0, 7).map((item) => [item.label, item.value])); return { name: group.source, type: 'bar', barMaxWidth: 12, data: labels.map((label) => values.get(label) ?? null) }; }) }, true);
+    charts[chartId]?.setOption({ ...baseChart, color: Theme.chartColors, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, grid: { left: 118, right: 18, top: 20, bottom: 40 }, tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } }, xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 8, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } }, series: validGroups.map((group) => { const values = new Map(group.items.slice(0, 7).map((item) => [item.label, item.value])); return { name: group.source, type: 'bar', barMaxWidth: 12, data: labels.map((label) => values.get(label) ?? null) }; }) }, true);
     if (statusId) $(`#${statusId}`).textContent = validGroups.length > 1 ? `按来源分别排名（${validGroups.length} 组）` : `来源：${validGroups[0].source}`;
   }
 
@@ -410,10 +410,10 @@
     charts.metricDistributionChart?.setOption({
       ...baseChart,
       color: Theme.chartColors,
-      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } },
+      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } },
       grid: { left: 44, right: 14, top: 20, bottom: 48 },
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-      xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } },
+      xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 8, rotate: 20, color: '#89948d' } },
       yAxis: { type: 'value', minInterval: 1, name: '样本数' },
       series: groups.map((group) => {
         const counts = new Map(group.bins.map((item) => [item.label, item.count]));
@@ -433,7 +433,7 @@
       ...baseChart,
       grid: { left: 48, right: 18, top: 20, bottom: 76 },
       tooltip: { trigger: 'item', formatter: (params) => `${escapeHtml(labels[params.dataIndex] || '')}<br>最小 ${params.data[0]} · Q1 ${params.data[1]} · 中位数 ${params.data[2]} · Q3 ${params.data[3]} · 最大 ${params.data[4]}` },
-      xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, rotate: 25, width: 100, overflow: 'truncate' } },
+      xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 8, rotate: 25, width: 100, overflow: 'truncate' } },
       yAxis: { type: 'value', min: 0, name: '互动数' },
       series: [{ type: 'boxplot', data: items.map((item) => item.values), itemStyle: { color: '#dcebe0', borderColor: Theme.scatterGreen } }],
     }, true);
@@ -452,7 +452,7 @@
     charts[chartId]?.setOption({
       ...baseChart,
       color: Theme.chartColors,
-      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 }, formatter: (name) => shortName(name) },
+      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 }, formatter: (name) => shortName(name) },
       grid: { left: 58, right: 18, top: 20, bottom: 52 },
       tooltip: { trigger: 'item', formatter: (params) => `${escapeHtml(params.value[2])}<br>${xName}：${params.value[0]}<br>${yName}：${params.value[1]}` },
       xAxis: { type: 'value', name: xName, axisLabel: { hideOverlap: true } },
@@ -522,7 +522,7 @@
     $('#noteTrendStatus').textContent = data.availability?.metric_trends || '等待重复快照';
     if (trends.length) {
       const times = [...new Set(trends.flatMap((series) => series.points.map((point) => point.captured_at)))].sort();
-      charts.noteTrendChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 15, top: 12, bottom: 48 }, xAxis: { type: 'category', data: times, axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, series: trends.map((group) => { const byTime = new Map(group.points.map((point) => [point.captured_at, point.value])); return { name: group.label, type: 'line', symbolSize: 5, connectNulls: false, data: times.map((time) => byTime.get(time) ?? null) }; }) }, true);
+      charts.noteTrendChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, grid: { left: 45, right: 15, top: 12, bottom: 48 }, xAxis: { type: 'category', data: times, axisLabel: { fontSize: 8, rotate: 20, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, series: trends.map((group) => { const byTime = new Map(group.points.map((point) => [point.captured_at, point.value])); return { name: group.label, type: 'line', symbolSize: 5, connectNulls: false, data: times.map((time) => byTime.get(time) ?? null) }; }) }, true);
     } else setEmptyChart(charts.noteTrendChart, '缺少同笔记、来源、指标和统计周期的重复快照');
     const rows = data.notes || [];
     $('#noteRows').innerHTML = rows.length ? rows.map((row) => `<tr><td>${escapeHtml(row.creator_name)}</td><td>${escapeHtml(row.title)}</td><td>${escapeHtml(row.published_at || '—')}</td><td>${escapeHtml(row.note_type || '—')}</td><td>${escapeHtml((row.topics || []).join('、') || '—')}</td><td>${escapeHtml(row.source)}<br><small>${escapeHtml(row.batch_id || '—')}</small></td><td>${formatMetric(row.read_count)}</td><td>${formatMetric(row.like_count)}</td><td>${formatMetric(row.favorite_count)}</td><td>${formatMetric(row.interaction_comment_count)}</td><td>${formatMetric(row.share_count)}</td><td>${row.comment_count}</td></tr>`).join('') : '<tr><td colspan="12" class="empty-cell">当前筛选下没有笔记</td></tr>';

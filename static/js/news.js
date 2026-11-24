@@ -54,7 +54,7 @@
         legend: { bottom: 0, textStyle: { fontSize: 8 } },
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
         xAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
-        yAxis: { type: 'category', data: rows.map((item) => item.label), axisLabel: { fontSize: 7, width: 140, overflow: 'truncate' } },
+        yAxis: { type: 'category', data: rows.map((item) => item.label), axisLabel: { fontSize: 8, width: 140, overflow: 'truncate' } },
         series: [
           { name: '热点前', type: 'bar', data: rows.map((item) => item.before) },
           { name: '当天', type: 'bar', data: rows.map((item) => item.on) },
@@ -74,7 +74,7 @@
         color: [colors[0], colors[2]], grid: { left: 150, right: 18, top: 10, bottom: 38 },
         legend: { bottom: 0, textStyle: { fontSize: 8 } }, tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
         xAxis: { type: 'value', splitLine: { lineStyle: { color: Theme.splitLineColor } } },
-        yAxis: { type: 'category', data: rows.map((item) => item.label), axisLabel: { fontSize: 7, width: 140, overflow: 'truncate' } },
+        yAxis: { type: 'category', data: rows.map((item) => item.label), axisLabel: { fontSize: 8, width: 140, overflow: 'truncate' } },
         series: [
           { name: '热点前平均互动数', type: 'bar', data: rows.map((item) => item.before) },
           { name: '热点后平均互动数', type: 'bar', data: rows.map((item) => item.after) },
