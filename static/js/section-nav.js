@@ -2,6 +2,16 @@
   const groups = [...document.querySelectorAll('.nav-group')];
   if (!groups.length) return;
 
+  const STORAGE_KEY = 'creatorscope-nav-open';
+
+  function readOpenState() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (_) { return {}; }
+  }
+
+  function writeOpenState(state) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) { /* 隐私模式下忽略持久化 */ }
+  }
+
   function currentGroup() {
     if (location.pathname === '/ai') return 'smart';
     if (location.pathname !== '/') return '';
@@ -10,19 +20,31 @@
     return 'analytics';
   }
 
+  function persistOpen(group, open) {
+    const state = readOpenState();
+    state[group.dataset.navGroup] = open;
+    writeOpenState(state);
+  }
+
   function setOpen(group, open) {
     group.querySelector('.section-nav').hidden = !open;
     const button = group.querySelector('.nav-expand');
     button.setAttribute('aria-expanded', String(open));
     const title = group.querySelector('[data-primary-section]').textContent.trim();
     button.setAttribute('aria-label', `${open ? '收起' : '展开'}${title}目录`);
+    persistOpen(group, open);
   }
 
   function syncGroups() {
     const current = currentGroup();
+    const saved = readOpenState();
     groups.forEach((group) => {
-      // 只展开当前分组；其余分组保留用户手动展开/收起的状态，切换视图时不强制收起。
-      if (group.dataset.navGroup === current) setOpen(group, true);
+      if (group.dataset.navGroup === current) {
+        setOpen(group, true);
+      } else {
+        // 恢复上次持久化的展开状态；无记录时保持收起，不强制展开其余分组。
+        setOpen(group, saved[group.dataset.navGroup] === true);
+      }
     });
     updateProgress();
   }
