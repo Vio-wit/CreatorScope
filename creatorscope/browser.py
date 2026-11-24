@@ -1514,6 +1514,8 @@ class PgyVisibleBrowser:
         )
         for value in text.splitlines():
             line = re.sub(r"\s+", " ", value).strip(" ·|\t")
+            line = re.sub(r"#\S+", "", line).strip(" ·|\t")
+            line = re.sub(r"(?:…|\.{2,})\s*$", "", line).strip()
             if len(line) < 4 or len(line) > 240 or excluded.search(line):
                 continue
             if re.fullmatch(r"[\d.,+%¥￥元万wW:：—–-]+", line):
@@ -1523,7 +1525,9 @@ class PgyVisibleBrowser:
 
     @staticmethod
     def _titles_match(expected: str | None, actual: str | None) -> bool:
-        normalize = lambda value: re.sub(r"[^\w\u3400-\u9fff]+", "", str(value or "").casefold())
+        normalize = lambda value: re.sub(
+            r"[^\w\u3400-\u9fff]+", "", str(value or "").casefold()
+        ).rstrip("…")
         left, right = normalize(expected), normalize(actual)
         if not left or not right:
             return False
@@ -1654,7 +1658,8 @@ class PgyVisibleBrowser:
     ) -> dict[str, Any] | None:
         title = self._visible_first_text(
             page,
-            (".note-content .title", ".note-detail-mask .title", "h1"),
+            (".note-content .title", ".note-detail-mask .title", "#detail-title",
+             ".note-title", ".title-text", "h1"),
         )
         body = self._visible_first_text(
             page,
@@ -1776,16 +1781,31 @@ class PgyVisibleBrowser:
                   const visible = (el) => { const r=el.getBoundingClientRect(), s=getComputedStyle(el);
                     return r.width>0 && r.height>0 && s.display!=='none' && s.visibility!=='hidden'; };
                   const value = (root, selector) => { const el=root.querySelector(selector);
-                    if(!el || !visible(el)) return null; const v=(el.innerText||el.textContent||''); return v.length?v:null; };
+                    if(!el || !visible(el)) return null; const v=(el.innerText||el.textContent||'').trim(); return v.length?v:null; };
+                  const LIKE_SELS = ['.interactions .like .count', '.interactions .like-wrapper .count',
+                    '.interactions .like .num', '.interactions [class*="like"] [class*="count"]',
+                    '.interactions [class*="like"] [class*="num"]'];
+                  const REPLY_SELS = ['.interactions .reply .count', '.interactions .reply-wrapper .count',
+                    '.interactions .reply .num', '.interactions [class*="reply"] [class*="count"]',
+                    '.interactions [class*="comment"] [class*="count"]'];
+                  const pickCount = (root, sels) => {
+                    for (const sel of sels) { const el=root.querySelector(sel);
+                      if(el){ const v=(el.innerText||el.textContent||'').trim(); if(/\\d/.test(v)) return v; } }
+                    const box=root.querySelector('.interactions');
+                    if(box){ for(const el of box.querySelectorAll('[class*="count"],[class*="num"],span,em,i')){
+                      const v=(el.innerText||el.textContent||'').trim();
+                      if(/^\\d+(?:\\.\\d+)?(?:万|w|千|\\+)?$/.test(v)) return v; } }
+                    return null;
+                  };
                   const rows=[];
                   for (const el of document.querySelectorAll(rootsSelector)) if(visible(el)) rows.push({
                     text:value(el,'.content .note-text'), time:value(el,'.date > span:not(.location)'),
-                    likes:value(el,'.interactions .like .count'), replies:value(el,'.interactions .reply .count'),
+                    likes:pickCount(el,LIKE_SELS), replies:pickCount(el,REPLY_SELS),
                     pinned:!!el.querySelector('.labels .top'), level:1, parent_text:null, parent_time:null});
                   for (const el of document.querySelectorAll(repliesSelector)) if(visible(el)) {
                     const parent=el.closest('.parent-comment')?.querySelector(':scope > .comment-item:not(.comment-item-sub)');
                     rows.push({text:value(el,'.content .note-text'), time:value(el,'.date > span:not(.location)'),
-                      likes:value(el,'.interactions .like .count'), replies:value(el,'.interactions .reply .count'),
+                      likes:pickCount(el,LIKE_SELS), replies:pickCount(el,REPLY_SELS),
                       pinned:null, level:2, parent_text:parent?value(parent,'.content .note-text'):null,
                       parent_time:parent?value(parent,'.date > span:not(.location)'):null});
                   }

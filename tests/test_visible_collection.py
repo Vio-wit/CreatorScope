@@ -1034,6 +1034,15 @@ class VisibleCollectionTests(unittest.TestCase):
         self.assertTrue(PgyVisibleBrowser._titles_match(title, "谁说北京过冬只能穿黑羽绒服，厉娜"))
         self.assertTrue(PgyVisibleBrowser._titles_match(title, "谁说北京过冬只能穿黑羽绒服"))
         self.assertFalse(PgyVisibleBrowser._titles_match(title, "另一个创作者的笔记"))
+        # 行内话题标签与尾部省略号应被剥离，emoji 不影响归一匹配。
+        topic_title = PgyVisibleBrowser._note_card_title_from_text(
+            "新晋韩妆品牌！8支ins爆🔥唇釉试色～ #唇釉试色\n阅读量 3,200"
+        )
+        self.assertEqual(topic_title, "新晋韩妆品牌！8支ins爆🔥唇釉试色～")
+        self.assertTrue(PgyVisibleBrowser._titles_match(topic_title, "新晋韩妆品牌！8支ins爆🔥唇釉试色～"))
+        ellipsis_title = PgyVisibleBrowser._note_card_title_from_text("万能开眼角教程…\n阅读量 800")
+        self.assertEqual(ellipsis_title, "万能开眼角教程")
+        self.assertTrue(PgyVisibleBrowser._titles_match(ellipsis_title, "万能开眼角教程！我们内眦赘皮有救了"))
         first = PgyVisibleBrowser._comment_fingerprint("batch-a", "note", "正文", "1天前", 1, None)
         second = PgyVisibleBrowser._comment_fingerprint("batch-b", "note", "正文", "1天前", 1, None)
         self.assertNotEqual(first, second)

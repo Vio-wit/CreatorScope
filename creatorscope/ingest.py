@@ -86,6 +86,24 @@ NON_METRIC_FIELD_KEYS = {
     "创作者名称", "平台公开ID", "公开平台ID", "公开ID", "博主信息原始显示",
 }
 
+# 评论区交互按钮的占位文案：未展示计数时按钮上只有动作词，不应当作数字字段落库。
+_INTERACTION_ACTION_WORDS = {
+    "赞", "点赞", "回复", "评论", "收藏", "分享", "转发", "赞藏", "推荐", "收起", "展开",
+}
+
+
+def _clean_interaction_raw(raw_value: Any) -> str | None:
+    """清洗评论点赞/回复原始文案；纯动作文案且不含数字时返回 None。"""
+    if raw_value is None:
+        return None
+    text = str(raw_value).strip()
+    if not text:
+        return None
+    if not re.search(r"\d", text) and text in _INTERACTION_ACTION_WORDS:
+        return None
+    return text
+
+
 
 def normalize_value(key: str, raw_value: Any) -> tuple[float | None, str, str]:
     if raw_value is None:
@@ -731,8 +749,11 @@ def ingest_comment_snapshots(
             safe_payload.setdefault("parent_comment_id_origin", parent_id_origin)
             if local_id_origin.startswith("generated_"):
                 safe_payload.setdefault("local_comment_key", str(item.get("local_comment_key") or local_id))
-            like_raw = item.get("like_count_raw")
+            like_raw = _clean_interaction_raw(item.get("like_count_raw"))
+            reply_raw = _clean_interaction_raw(item.get("reply_count_raw"))
             like_value = normalize_value("点赞量", like_raw)[0] if like_raw else None
+            safe_payload["like_count_raw"] = like_raw
+            safe_payload["reply_count_raw"] = reply_raw
             cursor = conn.execute(
                 """INSERT OR IGNORE INTO comment_snapshots
                    (batch_id, note_id, local_comment_id_hash, parent_comment_id_hash,
@@ -750,9 +771,7 @@ def ingest_comment_snapshots(
                     str(item.get("displayed_time") or "") or None,
                     str(like_raw) if like_raw is not None else None,
                     int(like_value) if like_value is not None else None,
-                    str(item.get("reply_count_raw"))
-                    if item.get("reply_count_raw") is not None
-                    else None,
+                    str(reply_raw) if reply_raw is not None else None,
                     level,
                     None
                     if item.get("is_pinned") is None
