@@ -276,6 +276,44 @@ class HistoryAnalyticsTests(unittest.TestCase):
         finally:
             app.extensions["creatorscope_tasks"].shutdown()
 
+    def test_optional_history_endpoints_return_empty_when_store_is_absent(self) -> None:
+        app = create_app({
+            "TESTING": True,
+            "DATABASE_PATH": self.root / "app-without-history.sqlite3",
+            "HISTORY_EVIDENCE_DB": self.root / "not-created.sqlite3",
+            "AI_REPORTS_PATH": self.root / "ai-reports-without-history",
+            "NEWS_DATA_PATH": self.root / "news-without-history.jsonl",
+            "BASELINE_PATH": self.root / "missing-baseline.json",
+        })
+        try:
+            client = app.test_client()
+            sources = client.get("/api/history-analysis/sources")
+            self.assertEqual(sources.status_code, 200)
+            self.assertEqual(sources.get_json(), {"sources": []})
+
+            note_samples = client.get("/api/history-analysis/note-samples")
+            self.assertEqual(note_samples.status_code, 200)
+            self.assertEqual(note_samples.get_json(), {"sample_count": 0, "samples": []})
+
+            note_library = client.get("/api/history-analysis/note-library?offset=3&limit=5")
+            self.assertEqual(note_library.status_code, 200)
+            self.assertEqual(note_library.get_json(), {
+                "total_count": 0,
+                "result_count": 0,
+                "title_count": 0,
+                "body_count": 0,
+                "topics_count": 0,
+                "offset": 3,
+                "limit": 5,
+                "samples": [],
+            })
+
+            library_sources = client.get("/api/history-analysis/library-sources")
+            self.assertEqual(library_sources.status_code, 200)
+            self.assertEqual(library_sources.get_json(), {"sources": []})
+        finally:
+            app.extensions["creatorscope_tasks"].shutdown()
+
 
 if __name__ == "__main__":
     unittest.main()

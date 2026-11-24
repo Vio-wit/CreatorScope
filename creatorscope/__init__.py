@@ -119,6 +119,10 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     app.extensions["creatorscope_tasks"] = tasks
     app.register_blueprint(comment_analysis_bp)
 
+    def history_evidence_available() -> bool:
+        path = app.config["HISTORY_EVIDENCE_DB"]
+        return path is not None and Path(path).expanduser().is_file()
+
     @app.before_request
     def block_demo_writes():
         demo_read_only_post = request.method == "POST" and request.path == "/api/ai/preview"
@@ -400,6 +404,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.get("/api/history-analysis/sources")
     def api_history_analysis_sources():
+        if not history_evidence_available():
+            return jsonify({"sources": []})
         try:
             return jsonify(history_source_options(app.config["HISTORY_EVIDENCE_DB"]))
         except HistoryAnalyticsError as exc:
@@ -418,6 +424,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.get("/api/history-analysis/note-samples")
     def api_history_analysis_note_samples():
+        if not history_evidence_available():
+            return jsonify({"sample_count": 0, "samples": []})
         try:
             return jsonify(history_note_samples(app.config["HISTORY_EVIDENCE_DB"]))
         except HistoryAnalyticsError as exc:
@@ -433,6 +441,17 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 raise ValueError("分页参数必须是整数") from exc
             if offset < 0 or limit < 1 or limit > 100:
                 raise ValueError("笔记分页范围无效（limit 最大为 100）")
+            if not history_evidence_available():
+                return jsonify({
+                    "total_count": 0,
+                    "result_count": 0,
+                    "title_count": 0,
+                    "body_count": 0,
+                    "topics_count": 0,
+                    "offset": offset,
+                    "limit": limit,
+                    "samples": [],
+                })
             return jsonify(history_note_library(
                 app.config["HISTORY_EVIDENCE_DB"],
                 query=request.args.get("q", ""),
@@ -446,6 +465,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.get("/api/history-analysis/library-sources")
     def api_history_analysis_library_sources():
+        if not history_evidence_available():
+            return jsonify({"sources": []})
         try:
             return jsonify(history_library_source_options(app.config["HISTORY_EVIDENCE_DB"]))
         except HistoryAnalyticsError as exc:
