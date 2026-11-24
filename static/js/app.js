@@ -254,7 +254,8 @@
     const words = chartsData.word_frequency || [];
     if (words.length) {
       $('#wordStatus').textContent = data.availability?.word_frequency || '已有分词';
-      charts.wordChart?.setOption({ ...baseChart, grid: { left: 50, right: 15, top: 10, bottom: 24 }, xAxis: { type: 'category', data: words.map((item) => item.word), axisLabel: { interval: 0, rotate: 25, fontSize: 8, color: '#88938c' }, axisLine: { lineStyle: { color: Theme.axisLineColor } }, axisTick: { show: false } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { fontSize: 8, color: '#a0a9a2' } }, series: [{ type: 'bar', data: words.map((item) => item.count), barWidth: 13, itemStyle: { color: Theme.seriesAmber, borderRadius: [3, 3, 0, 0] } }] }, true);
+      const topWords = words.slice(0, 8);
+      charts.wordChart?.setOption({ ...baseChart, grid: { left: 44, right: 15, top: 10, bottom: 30 }, xAxis: { type: 'category', data: topWords.map((item) => item.word), axisLabel: { interval: 0, rotate: 30, fontSize: 8, color: '#88938c' }, axisLine: { lineStyle: { color: Theme.axisLineColor } }, axisTick: { show: false } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { fontSize: 8, color: '#a0a9a2' } }, series: [{ type: 'bar', data: topWords.map((item) => item.count), barWidth: 15, itemStyle: { color: Theme.seriesAmber, borderRadius: [3, 3, 0, 0] } }] }, true);
       const cloud = $('#wordCloudImage');
       cloud.hidden = false;
       const cloudParams = getNoteFilterParams();
@@ -391,9 +392,9 @@
     charts.sourceShareChart?.setOption({ ...baseChart, color: Theme.chartColors, tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.name)}<br>${item.value.toLocaleString()} 行 (${item.percent}%)` }, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '44%'], label: { formatter: '{b} {d}%', fontSize: 8 }, data: sources.map((item) => ({ name: item.source, value: item.total_count })) }] }, true);
   }
 
-  function renderGroupedRanking(chartId, groups, statusId = null) {
+  function renderGroupedRanking(chartId, groups, statusId = null, emptyMessage = '当前筛选没有可用指标') {
     const validGroups = (groups || []).filter((group) => group.items?.length);
-    if (!validGroups.length) return setEmptyChart(charts[chartId], '当前筛选没有可用指标');
+    if (!validGroups.length) return setEmptyChart(charts[chartId], emptyMessage);
     const labels = [...new Set(validGroups.flatMap((group) => group.items.slice(0, 7).map((item) => item.label)))];
     charts[chartId]?.setOption({ ...baseChart, color: Theme.chartColors, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, grid: { left: 118, right: 18, top: 20, bottom: 40 }, tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } }, xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 8, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } }, series: validGroups.map((group) => { const values = new Map(group.items.slice(0, 7).map((item) => [item.label, item.value])); return { name: group.source, type: 'bar', barMaxWidth: 12, data: labels.map((label) => values.get(label) ?? null) }; }) }, true);
     if (statusId) $(`#${statusId}`).textContent = validGroups.length > 1 ? `按来源分别排名（${validGroups.length} 组）` : `来源：${validGroups[0].source}`;
@@ -439,7 +440,7 @@
     }, true);
   }
 
-  function renderGroupedScatter(chartId, points, xName, yName, statusId) {
+  function renderGroupedScatter(chartId, points, xName, yName, statusId, emptyMessage = '没有具备共同精确字段的笔记') {
     const groups = new Map();
     points.forEach((point) => {
       const group = groups.get(point.source) || [];
@@ -447,7 +448,7 @@
       groups.set(point.source, group);
     });
     $(`#${statusId}`).textContent = `有效共同样本 n=${points.length}；${groups.size} 个来源组`;
-    if (!points.length) return setEmptyChart(charts[chartId], '没有具备共同精确字段的笔记');
+    if (!points.length) return setEmptyChart(charts[chartId], emptyMessage);
     const shortName = (source) => (source.length > 16 ? `${source.slice(0, 16)}…` : source);
     charts[chartId]?.setOption({
       ...baseChart,
@@ -502,12 +503,12 @@
     const params = getNoteFilterParams();
     $('#exportNotes').href = `/api/notes/export.csv?${params.toString()}`;
     const chartsData = data.charts || {};
-    renderGroupedRanking('noteReadRankChart', chartsData.top_read, 'noteReadStatus');
+    renderGroupedRanking('noteReadRankChart', chartsData.top_read, 'noteReadStatus', '公开笔记页不展示阅读量；阅读排行需蒲公英详情快照');
     renderGroupedRanking('noteInteractionRankChart', chartsData.top_interactions);
     renderNoteMetricDistribution(chartsData, $('#noteMetricSelect').value);
     renderInteractionBoxplot(chartsData.interaction_boxplot || []);
-    renderGroupedScatter('exposureReadChart', chartsData.exposure_read_scatter || [], '曝光量', '阅读量', 'exposureReadStatus');
-    renderGroupedScatter('readingInteractionChart', chartsData.reading_interaction_scatter || [], '阅读量', '互动量', 'readingInteractionStatus');
+    renderGroupedScatter('exposureReadChart', chartsData.exposure_read_scatter || [], '曝光量', '阅读量', 'exposureReadStatus', '公开笔记页不展示阅读量/曝光量；散点需蒲公英详情快照');
+    renderGroupedScatter('readingInteractionChart', chartsData.reading_interaction_scatter || [], '阅读量', '互动量', 'readingInteractionStatus', '公开笔记页不展示阅读量；阅读×互动散点需蒲公英详情快照');
     const publish = chartsData.publish_distribution || [];
     if (publish.length) charts.notePublishChart?.setOption({ ...baseChart, grid: { left: 38, right: 12, top: 20, bottom: 34 }, xAxis: { type: 'category', data: publish.map((item) => item.month), axisLabel: { fontSize: 8, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, series: [{ type: 'bar', data: publish.map((item) => item.count), barMaxWidth: 24, itemStyle: { color: Theme.seriesBlue, borderRadius: [4, 4, 0, 0] } }] }, true);
     else setEmptyChart(charts.notePublishChart, '没有可解析的发布时间');

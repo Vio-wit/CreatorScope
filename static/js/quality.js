@@ -95,16 +95,27 @@
   }
 
   function renderCoverageChart(report) {
-    const items = (report.field_coverage || []).filter((item) => item.coverage_pct !== null).slice(0, 15);
+    const items = (report.field_coverage || []).filter((item) => item.coverage_pct !== null)
+      .slice(0, 15)
+      .sort((a, b) => (b.coverage_pct - a.coverage_pct) || a.field_name.localeCompare(b.field_name, 'zh'));
     const chart = charts.coverageChart;
     if (!chart) return;
     if (!items.length) {
       emptyChart(chart, '本批次没有可计算的字段覆盖率');
       return;
     }
+    const SHORT_FIELD = {
+      '互动中位数（合作）': '互动·合作',
+      '互动中位数（日常）': '互动·日常',
+      '曝光中位数（合作）': '曝光·合作',
+      '曝光中位数（日常）': '曝光·日常',
+      '阅读中位数（合作）': '阅读·合作',
+      '阅读中位数（日常）': '阅读·日常',
+    };
+    const shortName = (name) => SHORT_FIELD[name] || name;
     chart.setOption({
       color: [Theme.scatterGreen],
-      grid: { left: 190, right: 42, top: 12, bottom: 30 },
+      grid: { left: 132, right: 52, top: 12, bottom: 24 },
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'shadow' },
@@ -116,14 +127,17 @@
       xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
       yAxis: {
         type: 'category',
-        data: items.map((item) => `${typeLabel(item.record_type)} · ${item.field_name}`),
-        axisLabel: { fontSize: 8, width: 180, overflow: 'truncate', color: '#6c756f' },
+        inverse: true,
+        data: items.map((item) => shortName(item.field_name)),
+        axisLabel: { fontSize: 8, color: '#6c756f' },
+        axisTick: { show: false },
+        axisLine: { show: false },
       },
       series: [{
         type: 'bar',
         data: items.map((item) => item.coverage_pct),
-        barWidth: 11,
-        label: { show: true, position: 'right', formatter: '{c}%', fontSize: 8, color: '#7f8982' },
+        barWidth: 13,
+        label: { show: true, position: 'right', formatter: '{c}%', fontSize: 9, color: '#7f8982' },
         itemStyle: {
           color: (params) => (params.value >= 90 ? Theme.scatterGreen : params.value >= 60 ? Theme.seriesAmber : Theme.seriesRed),
           borderRadius: [0, 4, 4, 0],
