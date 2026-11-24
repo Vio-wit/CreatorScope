@@ -20,7 +20,10 @@
 
   function syncGroups() {
     const current = currentGroup();
-    groups.forEach((group) => setOpen(group, group.dataset.navGroup === current));
+    groups.forEach((group) => {
+      // 只展开当前分组；其余分组保留用户手动展开/收起的状态，切换视图时不强制收起。
+      if (group.dataset.navGroup === current) setOpen(group, true);
+    });
     updateProgress();
   }
 
