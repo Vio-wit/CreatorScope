@@ -64,6 +64,7 @@
       'audienceGenderChart', 'audienceAgeChart', 'audienceRegionChart', 'audienceInterestChart', 'audienceDeviceChart',
       'creatorCompareBarChart', 'creatorCompareRadarChart', 'noteCompareBarChart', 'noteCompareRadarChart',
       'historyFollowersChart', 'historyPerformanceChart', 'historyCoverageChart', 'libraryFollowersChart',
+      'libraryReadChart', 'libraryInteractionChart', 'libraryCategoryChart', 'libraryLocationChart',
     ].forEach((id) => {
       const element = document.getElementById(id);
       if (element && window.echarts) charts[id] = echarts.init(element);
@@ -705,13 +706,23 @@
     if ((data.ip_locations || []).includes(previousLocation)) locationSelect.value = previousLocation;
     const groups = data.groups || [];
     const summary = data.filtered_summary || {};
+    const medians = summary.medians || {};
     $('#libraryMatched').textContent = formatMetric(data.total_count || 0);
     $('#libraryFollowersValid').textContent = formatMetric(summary.followers_valid || 0);
     $('#libraryPerformanceValid').textContent = formatMetric(summary.reading_interaction_valid || 0);
     $('#libraryCategoryValid').textContent = formatMetric(summary.category_valid || 0);
+    $('#libraryFollowersMedian').textContent = formatMetric(medians.followers, ' 人');
+    $('#libraryReadMedian').textContent = formatMetric(medians.daily_read_median, ' 次');
+    $('#libraryInteractionMedian').textContent = formatMetric(medians.daily_interaction_median, ' 次');
     $('#libraryFollowerStatus').textContent = `粉丝数有效 ${formatMetric(summary.followers_valid || 0)} 条；来源记录可能重复`;
-    if (summary.followers_valid) setBarChart('libraryFollowersChart', (summary.follower_distribution || []).map((item) => ({ name: item.label, value: item.count })));
+    const toBuckets = (items) => (items || []).map((item) => ({ name: item.label, value: item.count }));
+    const toTerms = (items) => (items || []).map((item) => ({ name: item.name, value: item.count }));
+    if (summary.followers_valid) setBarChart('libraryFollowersChart', toBuckets(summary.follower_distribution));
     else setEmptyChart(charts.libraryFollowersChart, '当前筛选没有粉丝数');
+    setBarChart('libraryReadChart', toBuckets(summary.read_distribution));
+    setBarChart('libraryInteractionChart', toBuckets(summary.interaction_distribution));
+    setBarChart('libraryCategoryChart', toTerms(summary.category_distribution), true);
+    setBarChart('libraryLocationChart', toTerms(summary.location_distribution), true);
     $('#creatorCount').textContent = `${formatMetric(data.total_count || 0)} 条匹配记录`;
     $('#unifiedCreatorCount').textContent = formatMetric(data.total_count || 0);
     $('#unifiedCreatorGroups').textContent = groups.map((item) => `${item.label} ${formatMetric(item.count || 0)}`).join(' · ');

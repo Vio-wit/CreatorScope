@@ -92,6 +92,46 @@ def _first(raw: dict[str, Any], names: tuple[str, ...]) -> Any:
     return None
 
 
+def _median(values: list[Any]) -> float | None:
+    nums = sorted(
+        v for v in values
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and v >= 0
+    )
+    if not nums:
+        return None
+    n = len(nums)
+    return nums[n // 2] if n % 2 else (nums[n // 2 - 1] + nums[n // 2]) / 2
+
+
+def _bucketize(numeric_values: list[float], edges: list[float], labels: list[str]) -> list[dict[str, Any]]:
+    buckets = [{"label": label, "count": 0} for label in labels]
+    for value in numeric_values:
+        if value is None:
+            continue
+        index = len(labels) - 1
+        for i in range(len(edges) - 1):
+            if edges[i] <= value < edges[i + 1]:
+                index = i
+                break
+        buckets[index]["count"] += 1
+    return buckets
+
+
+def _top_terms(strings: list[str], limit: int = 10) -> list[dict[str, Any]]:
+    counter: dict[str, int] = {}
+    for raw in strings:
+        if not raw:
+            continue
+        for part in str(raw).split("、"):
+            term = part.strip()
+            if term:
+                counter[term] = counter.get(term, 0) + 1
+    return [
+        {"name": term, "count": count}
+        for term, count in sorted(counter.items(), key=lambda item: (-item[1], item[0]))[:limit]
+    ]
+
+
 def _app_record(creator: dict[str, Any], scope: str) -> dict[str, Any]:
     raw_fields = creator.get("fields") if isinstance(creator.get("fields"), dict) else {}
     name = str(creator.get("pseudonym") or creator.get("creator_name") or "").strip()
@@ -420,18 +460,51 @@ def unified_creator_library(
         value = record["fields"].get(field)
         return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value >= 0
 
-    follower_buckets = [
-        {"label": label, "count": sum(1 for record in records if has_numeric(record, "followers") and lower <= record["fields"]["followers"] < upper)}
-        for label, lower, upper in (("1万以下", 0, 10000), ("1–5万", 10000, 50000), ("5–10万", 50000, 100000), ("10–50万", 100000, 500000), ("50万以上", 500000, math.inf))
+    followers_vals = [record["fields"]["followers"] for record in records if has_numeric(record, "followers")]
+    read_vals = [record["fields"]["daily_read_median"] for record in records if has_numeric(record, "daily_read_median")]
+    interaction_vals = [record["fields"]["daily_interaction_median"] for record in records if has_numeric(record, "daily_interaction_median")]
+    category_terms = [record["fields"].get("category") for record in records if _present(record["fields"].get("category"))]
+    location_terms = [
+        record["fields"].get("account_ip_location") or record["fields"].get("historical_region")
+        for record in records
+        if _present(record["fields"].get("account_ip_location") or record["fields"].get("historical_region"))
     ]
+    bucket_counts = {key: 0 for key, _ in BUCKETS}
+    for record in records:
+        bucket_counts[record["bucket"]] = bucket_counts.get(record["bucket"], 0) + 1
+
+    follower_buckets = _bucketize(
+        followers_vals, [0, 10_000, 50_000, 100_000, 500_000, math.inf],
+        ["1万以下", "1–5万", "5–10万", "10–50万", "50万以上"],
+    )
+    read_buckets = _bucketize(
+        read_vals, [0, 1_000, 5_000, 10_000, 50_000, math.inf],
+        ["1千以下", "1–5千", "5千–1万", "1–5万", "5万以上"],
+    )
+    interaction_buckets = _bucketize(
+        interaction_vals, [0, 100, 500, 1_000, 5_000, math.inf],
+        ["100以下", "100–500", "500–1千", "1–5千", "5千以上"],
+    )
+
+    filtered_summary = {
+        "followers_valid": len(followers_vals),
+        "reading_interaction_valid": sum(has_numeric(record, "daily_read_median") and has_numeric(record, "daily_interaction_median") for record in records),
+        "category_valid": sum(_present(record["fields"].get("category")) for record in records),
+        "follower_distribution": follower_buckets,
+        "read_distribution": read_buckets,
+        "interaction_distribution": interaction_buckets,
+        "category_distribution": _top_terms(category_terms),
+        "location_distribution": _top_terms(location_terms),
+        "bucket_distribution": [{"key": key, "label": label, "count": bucket_counts.get(key, 0)} for key, label in BUCKETS],
+        "medians": {
+            "followers": _median(followers_vals),
+            "daily_read_median": _median(read_vals),
+            "daily_interaction_median": _median(interaction_vals),
+        },
+    }
     return {
         "total_count": len(records),
-        "filtered_summary": {
-            "followers_valid": sum(has_numeric(record, "followers") for record in records),
-            "reading_interaction_valid": sum(has_numeric(record, "daily_read_median") and has_numeric(record, "daily_interaction_median") for record in records),
-            "category_valid": sum(_present(record["fields"].get("category")) for record in records),
-            "follower_distribution": follower_buckets,
-        },
+        "filtered_summary": filtered_summary,
         "offset": offset,
         "limit": limit,
         "records": page,

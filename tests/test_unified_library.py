@@ -110,6 +110,32 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
                 pass
         self.assertFalse(missing.exists())
 
+    def test_filtered_summary_distributions_and_medians(self) -> None:
+        page = unified_creator_library(self.main_db, self.course_db, self.history_db, limit=20)
+        summary = page["filtered_summary"]
+
+        for key in ("follower_distribution", "read_distribution", "interaction_distribution"):
+            self.assertIn(key, summary)
+            for bucket in summary[key]:
+                self.assertIn("label", bucket)
+                self.assertIsInstance(bucket["count"], int)
+
+        followers_valid = sum(1 for r in page["records"] if r["fields"].get("followers") is not None)
+        read_valid = sum(1 for r in page["records"] if r["fields"].get("daily_read_median") is not None)
+        interaction_valid = sum(1 for r in page["records"] if r["fields"].get("daily_interaction_median") is not None)
+        self.assertEqual(sum(b["count"] for b in summary["follower_distribution"]), followers_valid)
+        self.assertEqual(sum(b["count"] for b in summary["read_distribution"]), read_valid)
+        self.assertEqual(sum(b["count"] for b in summary["interaction_distribution"]), interaction_valid)
+
+        categories = {item["name"]: item["count"] for item in summary["category_distribution"]}
+        self.assertIn("美妆", categories)
+        locations = {item["name"]: item["count"] for item in summary["location_distribution"]}
+        self.assertIn("上海", locations)
+
+        self.assertEqual(set(summary["medians"]), {"followers", "daily_read_median", "daily_interaction_median"})
+        buckets = {item["key"]: item["count"] for item in summary["bucket_distribution"]}
+        self.assertEqual(sum(buckets.values()), page["total_count"])
+
     def test_search_group_and_pagination_use_filtered_union(self) -> None:
         course = unified_creator_library(self.main_db, self.course_db, self.history_db, bucket="course", limit=10)
         self.assertEqual(course["total_count"], 1)

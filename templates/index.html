@@ -194,14 +194,23 @@
         <div><p class="eyebrow">CREATOR LIBRARY</p><h2>达人库</h2><p class="subheading">统一查看新采集、五人课堂样本与本地历史资料；缺失字段保留为空。</p></div>
       </section>
       <section id="creatorLibraryStats" data-primary-view="creators">
-        <div class="card-heading"><div><h3>当前筛选概览</h3><p>统计筛选后的展示记录，可能包含跨来源重复达人。</p></div></div>
+        <div class="card-heading"><div><h3>当前筛选概览</h3><p>统计筛选后的全量展示记录，可能包含跨来源重复达人。</p></div></div>
         <div class="kpi-grid">
           <article class="kpi-card"><div class="kpi-label">匹配记录</div><div class="kpi-value" id="libraryMatched">—</div><div class="kpi-foot">当前筛选范围</div></article>
           <article class="kpi-card"><div class="kpi-label">粉丝数有效</div><div class="kpi-value" id="libraryFollowersValid">—</div><div class="kpi-foot">缺失值不计入</div></article>
           <article class="kpi-card"><div class="kpi-label">阅读与互动共同有效</div><div class="kpi-value" id="libraryPerformanceValid">—</div><div class="kpi-foot">两项均有数值</div></article>
           <article class="kpi-card"><div class="kpi-label">领域有值</div><div class="kpi-value" id="libraryCategoryValid">—</div><div class="kpi-foot">按已取得的领域文本</div></article>
+          <article class="kpi-card"><div class="kpi-label">粉丝中位数</div><div class="kpi-value compact" id="libraryFollowersMedian">—</div><div class="kpi-foot">粉丝数有效样本</div></article>
+          <article class="kpi-card"><div class="kpi-label">阅读中位数</div><div class="kpi-value compact" id="libraryReadMedian">—</div><div class="kpi-foot">日常阅读中位数</div></article>
+          <article class="kpi-card"><div class="kpi-label">互动中位数</div><div class="kpi-value compact" id="libraryInteractionMedian">—</div><div class="kpi-foot">日常互动中位数</div></article>
         </div>
-        <article class="chart-card"><div class="card-heading"><div><h3>粉丝规模分布</h3><p id="libraryFollowerStatus">当前筛选中粉丝数有效的展示记录</p></div></div><div class="chart" id="libraryFollowersChart"></div></article>
+        <section class="charts-grid" data-primary-view="creators">
+          <article class="chart-card"><div class="card-heading"><div><h3>粉丝规模分布</h3><p id="libraryFollowerStatus">当前筛选中粉丝数有效的展示记录</p></div></div><div class="chart" id="libraryFollowersChart"></div></article>
+          <article class="chart-card"><div class="card-heading"><div><h3>日常阅读中位数分布</h3><p>按日常阅读中位数分桶统计</p></div></div><div class="chart" id="libraryReadChart"></div></article>
+          <article class="chart-card"><div class="card-heading"><div><h3>日常互动中位数分布</h3><p>按日常互动中位数分桶统计</p></div></div><div class="chart" id="libraryInteractionChart"></div></article>
+          <article class="chart-card"><div class="card-heading"><div><h3>领域分布</h3><p>按已取得的领域文本拆分计数</p></div></div><div class="chart" id="libraryCategoryChart"></div></article>
+          <article class="chart-card"><div class="card-heading"><div><h3>属地分布</h3><p>蒲公英 IP 属地与历史地域合并统计</p></div></div><div class="chart" id="libraryLocationChart"></div></article>
+        </section>
       </section>
       <section class="creator-filter-panel" data-primary-view="creators">
         <label>名称 / ID 搜索<input id="creatorQuery" type="search" placeholder="输入名称或平台 ID"></label>
