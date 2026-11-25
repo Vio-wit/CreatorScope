@@ -1,0 +1,239 @@
+{
+  "batch_id": "R42-20261120T215215+0800",
+  "target_note_count": 3,
+  "notes_opened_successfully": 3,
+  "notes_with_comment_dom": 3,
+  "actual_comment_records": 29,
+  "root_comment_records": 28,
+  "reply_records": 1,
+  "by_note": [
+    {
+      "note_id": "6af9bf01000000002a02adec",
+      "creator_name": "汪雨橦TONG",
+      "title": "分币不花的预算，没想到花得分币不剩",
+      "status": "opened",
+      "page_title_matches_sample": true,
+      "login_prompt_seen": true,
+      "login_prompt_closed_by_visible_x": true,
+      "root_dom_count_initial": 10,
+      "reply_dom_count_initial": 9,
+      "root_dom_count_before_scroll": 10,
+      "reply_dom_count_before_scroll": 9,
+      "root_records_saved": 9,
+      "reply_records_saved": 0,
+      "duplicate_records_removed": 0,
+      "reply_expansion": {
+        "attempted": false,
+        "expanded": false,
+        "before": 0,
+        "after": 0
+      },
+      "scroll_attempts": 3,
+      "scrolls": [
+        {
+          "pixels": 650,
+          "scroll_top_before": 0,
+          "scroll_top_after": 650.4000244140625,
+          "root_dom_count": 10,
+          "reply_dom_count": 9,
+          "page_scroll_height": 3557
+        },
+        {
+          "pixels": 650,
+          "scroll_top_before": 650.4000244140625,
+          "scroll_top_after": 1300,
+          "root_dom_count": 10,
+          "reply_dom_count": 9,
+          "page_scroll_height": 3557
+        },
+        {
+          "pixels": 650,
+          "scroll_top_before": 1300,
+          "scroll_top_after": 1950.4000244140625,
+          "root_dom_count": 10,
+          "reply_dom_count": 9,
+          "page_scroll_height": 3557
+        }
+      ],
+      "screenshot": "comment_excerpt_6af9bf01000000002a02adec.png"
+    },
+    {
+      "note_id": "6afc317600000000180288af",
+      "creator_name": "汪雨橦TONG",
+      "title": "谁说北京过冬只能穿黑羽绒服，厉娜",
+      "status": "opened",
+      "page_title_matches_sample": true,
+      "login_prompt_seen": true,
+      "login_prompt_closed_by_visible_x": true,
+      "root_dom_count_initial": 10,
+      "reply_dom_count_initial": 5,
+      "root_dom_count_before_scroll": 10,
+      "reply_dom_count_before_scroll": 5,
+      "root_records_saved": 9,
+      "reply_records_saved": 1,
+      "duplicate_records_removed": 0,
+      "reply_expansion": {
+        "attempted": true,
+        "expanded": false,
+        "before": 5,
+        "after": 5
+      },
+      "scroll_attempts": 1,
+      "scrolls": [
+        {
+          "pixels": 650,
+          "scroll_top_before": 635.2000122070312,
+          "scroll_top_after": 635.2000122070312,
+          "root_dom_count": 10,
+          "reply_dom_count": 5,
+          "page_scroll_height": 2717
+        }
+      ],
+      "screenshot": "comment_excerpt_6afc317600000000180288af.png"
+    },
+    {
+      "note_id": "6af2dd5f000000001802d246",
+      "creator_name": "Winnie维尼",
+      "title": "超爽开箱： 购物欲像鬼一样缠着我",
+      "status": "opened",
+      "page_title_matches_sample": true,
+      "login_prompt_seen": true,
+      "login_prompt_closed_by_visible_x": true,
+      "root_dom_count_initial": 10,
+      "reply_dom_count_initial": 10,
+      "root_dom_count_before_scroll": 10,
+      "reply_dom_count_before_scroll": 10,
+      "root_records_saved": 10,
+      "reply_records_saved": 0,
+      "duplicate_records_removed": 0,
+      "reply_expansion": {
+        "attempted": false,
+        "expanded": false,
+        "before": 0,
+        "after": 0
+      },
+      "scroll_attempts": 3,
+      "scrolls": [
+        {
+          "pixels": 650,
+          "scroll_top_before": 0,
+          "scroll_top_after": 650.4000244140625,
+          "root_dom_count": 10,
+          "reply_dom_count": 10,
+          "page_scroll_height": 3368
+        },
+        {
+          "pixels": 650,
+          "scroll_top_before": 650.4000244140625,
+          "scroll_top_after": 1300,
+          "root_dom_count": 10,
+          "reply_dom_count": 10,
+          "page_scroll_height": 3368
+        },
+        {
+          "pixels": 650,
+          "scroll_top_before": 1300,
+          "scroll_top_after": 1950.4000244140625,
+          "root_dom_count": 10,
+          "reply_dom_count": 10,
+          "page_scroll_height": 3368
+        }
+      ],
+      "screenshot": "comment_excerpt_6af2dd5f000000001802d246.png"
+    }
+  ],
+  "field_non_empty": {
+    "local_comment_id": {
+      "non_empty": 29,
+      "rate_percent": 100.0
+    },
+    "batch_id": {
+      "non_empty": 29,
+      "rate_percent": 100.0
+    },
+    "note_id": {
+      "non_empty": 29,
+      "rate_percent": 100.0
+    },
+    "source": {
+      "non_empty": 29,
+      "rate_percent": 100.0
+    },
+    "comment_text": {
+      "non_empty": 29,
+      "rate_percent": 100.0
+    },
+    "displayed_time": {
+      "non_empty": 29,
+      "rate_percent": 100.0
+    },
+    "like_count_raw": {
+      "non_empty": 13,
+      "rate_percent": 44.8
+    },
+    "like_count_normalized": {
+      "non_empty": 8,
+      "rate_percent": 27.6
+    },
+    "reply_count_raw": {
+      "non_empty": 24,
+      "rate_percent": 82.8
+    },
+    "is_pinned": {
+      "non_empty": 29,
+      "rate_percent": 100.0
+    },
+    "comment_level": {
+      "non_empty": 29,
+      "rate_percent": 100.0
+    },
+    "parent_comment_id": {
+      "non_empty": 1,
+      "rate_percent": 3.4
+    },
+    "capture_time": {
+      "non_empty": 29,
+      "rate_percent": 100.0
+    }
+  },
+  "duplicate_records_removed": 0,
+  "same_batch_local_id_unique": true,
+  "local_comment_id_scope": "intra_batch_fingerprint_only",
+  "end_to_end_repeat_collection_tested": false,
+  "cross_batch_identity_limitations": [
+    "displayed_time is relative and can change between captures, so the hash may drift",
+    "commenter identity is intentionally omitted, so identical text may collide"
+  ],
+  "commenter_identity_fields_saved": [],
+  "failed_notes": [],
+  "total_scroll_attempts": 7,
+  "total_new_root_dom_items_after_scroll": 0,
+  "root_dom_items_seen_before_scroll": 30,
+  "root_text_extraction_rate_percent": 93.3,
+  "scroll_events_with_position_change": 6,
+  "scroll_events_without_position_change": 1,
+  "reply_expansion_test": {
+    "notes_attempted": 1,
+    "notes_with_new_reply_rows": 0
+  },
+  "same_batch_repeatability_check": {
+    "input_rows": 58,
+    "output_rows": 29,
+    "duplicate_rows_removed": 29,
+    "passed": true
+  },
+  "dom_quality": {
+    "comment_container_pages": 3,
+    "opened_pages": 3,
+    "root_dom_items": 30,
+    "root_comment_texts_saved": 28,
+    "root_text_extraction_rate_percent": 93.3
+  },
+  "root_dom_items_without_extractable_text": 2,
+  "reply_dom_items_seen_initial": 24,
+  "exact_like_count_conversion": {
+    "raw_count_values": 13,
+    "normalized_exact_integers": 8,
+    "rate_percent_of_raw_values": 61.5
+  }
+}

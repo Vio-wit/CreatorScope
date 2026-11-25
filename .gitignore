@@ -7,3 +7,37 @@ instance/*.sqlite3-wal
 instance/ai_reports/
 instance/news_items.jsonl
 *.log
+
+# 历史证据库、备份库与离线依赖包（由接力压缩包单独携带，不进版本库）
+_preview/
+_backup/
+vendor_sources/
+.playwright-cli/
+output/playwright/.playwright-cli/
+task_id.txt
+
+# research 原始快照、运行日志与分析产物
+research/**/*.txt
+research/**/*.jsonl
+research/**/*.csv
+research/**/*.png
+research/**/*.sqlite3
+research/**/*.sqlite3-shm
+research/**/*.sqlite3-wal
+research/**/charts/
+research/**/exports/
+research/**/screenshots/
+research/**/collection_log.json
+research/**/run_log.json
+research/**/access_errors.json
+research/**/collection_batches.json
+research/**/collection_errors.json
+research/**/data_quality_report.json
+research/**/actual_samples.json
+research/**/comment_dom.json
+research/**/chart_parameters.json
+
+# 分析截图产物（早期指定验收截图除外）
+output/playwright/*.png
+!output/playwright/v13-offline-analytics.png
+!output/playwright/v13-offline-dashboard.png

@@ -1,0 +1,29 @@
+{
+  "records": 29,
+  "charts": [
+    "comment_distribution.png",
+    "comment_length_distribution.png",
+    "comment_length_like_scatter.png",
+    "comment_like_distribution.png",
+    "comment_wordcloud.png",
+    "note_keyword_comparison.png",
+    "top_words.png"
+  ],
+  "quality_report": {
+    "source_record_count": 29,
+    "filtered_record_count": 29,
+    "root_comments": 28,
+    "replies": 1,
+    "notes": 3,
+    "creators": 2,
+    "original_text_nonempty_rate_percent": 100.0,
+    "cleaned_text_nonempty_rate_percent": 100.0,
+    "precise_like_values": 8,
+    "like_value_coverage_percent": 27.6,
+    "reply_count_exact_values": 20,
+    "sample_notice": "课程实验小样本，仅描述本批数据",
+    "sentiment_classification": "deferred; no reliable ground truth and sample is small",
+    "commenter_identity_fields_present": false
+  },
+  "analysis_report": "K:\\work\\CreatorScope\\research\\r4_3_comment_analysis\\reports\\analysis_report.md"
+}
