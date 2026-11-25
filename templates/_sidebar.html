@@ -5,37 +5,46 @@
     <span class="brand-mark">C</span>
     <span><strong>CreatorScope</strong><small>课程数据工作台</small></span>
   </a>
-  <div class="nav-label">工作区</div>
-  <div class="nav-group" data-nav-group="creators">
-    <div class="nav-group-heading"><a class="nav-item" data-primary-section="creators" href="/#creators"><span class="nav-icon">◎</span>达人库</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开达人库目录">⌄</button></div>
-    <nav class="section-nav" aria-label="达人库目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
-      <a href="/#creators" data-target="#creators" data-view="creators">达人库概览</a>
-      <a href="/#creators" data-target="#creatorLibraryStats" data-view="creators">达人统计</a>
-      <a href="/#creators" data-target="#creatorLibraryList" data-view="creators">达人清单</a>
-    </nav>
+  <div class="sidebar-nav">
+    <div class="nav-label">工作区</div>
+    <div class="nav-group" data-nav-group="creators">
+      <div class="nav-group-heading"><a class="nav-item" data-primary-section="creators" href="/#creators"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5c1.4-3 3.9-4.5 6.5-4.5s5.1 1.5 6.5 4.5"/></svg>达人库</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开达人库目录">⌄</button></div>
+      <nav class="section-nav" aria-label="达人库目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
+        <a href="/#creators" data-target="#creators" data-view="creators">达人库概览</a>
+        <a href="/#creators" data-target="#creatorLibraryStats" data-view="creators">达人统计</a>
+        <a href="/#creators" data-target="#creatorLibraryList" data-view="creators">达人清单</a>
+      </nav>
+    </div>
+    <div class="nav-group" data-nav-group="analytics">
+      <div class="nav-group-heading"><a class="nav-item {% if request.path == '/' %}active{% endif %}" data-primary-section="analytics" href="/#analytics"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><rect x="6" y="11" width="3.4" height="6" rx="1"/><rect x="10.8" y="7" width="3.4" height="10" rx="1"/><rect x="15.6" y="13" width="3.4" height="4" rx="1"/></svg>数据分析</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开数据分析目录">⌄</button></div>
+      <nav class="section-nav" aria-label="数据分析目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
+        <a href="/#analytics" data-target="#overview" data-view="analytics">数据总览</a>
+        <a href="/#analytics" data-target="#historyAnalysis" data-view="analytics">实际数据分析</a>
+        <a href="/#analytics" data-target="#notes" data-view="analytics">笔记内容分析</a>
+      </nav>
+    </div>
+    <div class="nav-group" data-nav-group="collection">
+      <div class="nav-group-heading"><a class="nav-item" data-primary-section="collection" href="/#collection"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h5"/></svg>采集工作台</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开采集工作台目录">⌄</button></div>
+      <nav class="section-nav" aria-label="采集工作台目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
+        <a href="/#collection" data-target="#collection" data-view="collection">采集工作台</a>
+        <a href="/#records" data-target="#records" data-view="collection">当前样本字段</a>
+        <a href="/#recordDetails" data-target="#recordDetails" data-view="collection">样本字段值</a>
+        <a href="/#fieldDictionary" data-target="#fieldDictionary" data-view="collection">蒲公英字段目录</a>
+      </nav>
+    </div>
+    <div class="nav-group" data-nav-group="smart">
+      <div class="nav-group-heading"><a class="nav-item {% if request.path == '/ai' %}active{% endif %}" data-primary-section="smart" href="/ai"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.4-4.6 2.4.9-5.2L4.5 9l5.2-.8z"/></svg>智能筛选与采集</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开智能筛选与采集目录">⌄</button></div>
+      <nav class="section-nav" aria-label="智能筛选与采集目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
+        <a href="/ai" data-target=".unified-selector-card" data-page="ai">达人筛选与对比</a>
+        <a href="/ai" data-target=".ai-settings-card:not(.unified-selector-card)" data-page="ai">模型服务配置</a>
+        <a href="/ai" data-target=".ai-scope-card" data-page="ai">AI 分析与建议</a>
+      </nav>
+    </div>
+    <details class="nav-more" {% if request.path in ['/comments', '/quality', '/report', '/news'] %}open{% endif %}>
+      <summary>更多工具</summary>
+      <a class="nav-item {% if request.path == '/quality' %}active{% endif %}" href="/quality">数据质量</a>
+    </details>
   </div>
-  <div class="nav-group" data-nav-group="analytics">
-    <div class="nav-group-heading"><a class="nav-item {% if request.path == '/' %}active{% endif %}" data-primary-section="analytics" href="/#analytics"><span class="nav-icon">◷</span>数据分析</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开数据分析目录">⌄</button></div>
-    <nav class="section-nav" aria-label="数据分析目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
-      <a href="/#analytics" data-target="#overview" data-view="analytics">数据总览</a>
-      <a href="/#analytics" data-target="#historyAnalysis" data-view="analytics">实际数据分析</a>
-      <a href="/#analytics" data-target="#notes" data-view="analytics">笔记内容分析</a>
-    </nav>
-  </div>
-  <div class="nav-group" data-nav-group="smart">
-    <div class="nav-group-heading"><a class="nav-item {% if request.path == '/ai' %}active{% endif %}" data-primary-section="smart" href="/ai"><span class="nav-icon">✦</span>智能筛选与采集</a><button class="nav-expand" type="button" aria-expanded="false" aria-label="展开智能筛选与采集目录">⌄</button></div>
-    <nav class="section-nav" aria-label="智能筛选与采集目录" hidden><div class="section-nav-track"><span class="section-nav-progress"></span></div>
-      <a href="/ai" data-target=".unified-selector-card" data-page="ai">达人筛选与对比</a>
-      <a href="/ai" data-target=".ai-settings-card:not(.unified-selector-card)" data-page="ai">模型服务配置</a>
-      <a href="/ai" data-target=".ai-scope-card" data-page="ai">AI 分析与建议</a>
-      <a href="/#collection" data-target="#collection" data-view="smart">采集工作台</a>
-      <a href="/#collection" data-target="#records" data-view="smart">采集成果</a>
-    </nav>
-  </div>
-  <details class="nav-more" {% if request.path in ['/comments', '/quality', '/report', '/news'] %}open{% endif %}>
-    <summary>更多工具</summary>
-    <a class="nav-item {% if request.path == '/quality' %}active{% endif %}" href="/quality">数据质量</a>
-  </details>
   <div class="sidebar-bottom">
     <span class="local-dot"></span>
     <div><strong>本地运行</strong><small>数据保存在本机</small></div>

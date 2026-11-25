@@ -10,7 +10,13 @@ from pathlib import Path
 from creatorscope import create_app
 from creatorscope.db import connection, initialize_database
 from creatorscope.history_evidence import import_file
-from creatorscope.unified_library import COURSE_SAMPLE_BATCH_ID, unified_creator_library
+from creatorscope.unified_library import (
+    COURSE_SAMPLE_BATCH_ID,
+    UNKNOWN_LOCATION,
+    _clean_location,
+    unified_creator_library,
+    unified_library_overview,
+)
 
 
 class UnifiedCreatorLibraryTests(unittest.TestCase):
@@ -103,12 +109,90 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
             with self.assertRaises(sqlite3.OperationalError):
                 conn.execute("UPDATE creators SET pseudonym='must-not-write' WHERE creator_id='new-creator'")
 
+    def test_batch_filter_scopes_library_to_single_collection_batch(self) -> None:
+        batch = "batch-main-new-creator"
+        page = unified_creator_library(self.main_db, self.course_db, self.history_db, batch_id=batch, limit=20)
+        self.assertEqual(page["total_count"], 1)
+        self.assertEqual(page["records"][0]["name"], "新采集达人")
+        self.assertEqual(page["records"][0]["batch_id"], batch)
+
+        all_page = unified_creator_library(self.main_db, self.course_db, self.history_db, batch_id="__all__", limit=20)
+        self.assertEqual(all_page["total_count"], 4)
+
+        # 全量概览不随清单批次收窄，始终合并主库 + 课堂 + 历史。
+        overview = unified_library_overview(self.main_db, self.course_db, self.history_db)
+        self.assertEqual(overview["total_count"], 4)
+
     def test_readonly_connection_does_not_create_missing_database(self) -> None:
         missing = self.root / "missing" / "must-not-exist.sqlite3"
         with self.assertRaises(FileNotFoundError):
             with connection(missing, readonly=True):
                 pass
         self.assertFalse(missing.exists())
+
+    def test_filtered_summary_distributions_and_medians(self) -> None:
+        page = unified_creator_library(self.main_db, self.course_db, self.history_db, limit=20)
+        summary = page["filtered_summary"]
+
+        for key in ("follower_distribution", "read_distribution", "interaction_distribution"):
+            self.assertIn(key, summary)
+            for bucket in summary[key]:
+                self.assertIn("label", bucket)
+                self.assertIsInstance(bucket["count"], int)
+
+        followers_valid = sum(1 for r in page["records"] if r["fields"].get("followers") is not None)
+        read_valid = sum(1 for r in page["records"] if r["fields"].get("daily_read_median") is not None)
+        interaction_valid = sum(1 for r in page["records"] if r["fields"].get("daily_interaction_median") is not None)
+        self.assertEqual(sum(b["count"] for b in summary["follower_distribution"]), followers_valid)
+        self.assertEqual(sum(b["count"] for b in summary["read_distribution"]), read_valid)
+        self.assertEqual(sum(b["count"] for b in summary["interaction_distribution"]), interaction_valid)
+
+        categories = {item["name"]: item["count"] for item in summary["category_distribution"]}
+        self.assertIn("美妆", categories)
+        locations = {item["name"]: item["count"] for item in summary["location_distribution"]}
+        self.assertIn("上海", locations)
+
+        self.assertEqual(set(summary["medians"]), {"followers", "daily_read_median", "daily_interaction_median"})
+        buckets = {item["key"]: item["count"] for item in summary["bucket_distribution"]}
+        self.assertEqual(sum(buckets.values()), page["total_count"])
+
+    def test_library_overview_aggregates_full_projection(self) -> None:
+        overview = unified_library_overview(self.main_db, self.course_db, self.history_db)
+
+        self.assertEqual(overview["total_count"], 4)
+        self.assertEqual(overview["followers_valid"], 4)
+        self.assertEqual(overview["reading_interaction_valid"], 3)
+        self.assertEqual(
+            sum(item["value"] for item in overview["follower_distribution"]),
+            overview["followers_valid"],
+        )
+        self.assertEqual(len(overview["reading_interaction_scatter"]), 3)
+        for point in overview["reading_interaction_scatter"]:
+            self.assertIn("x", point)
+            self.assertIn("y", point)
+            self.assertIsNotNone(point["x"])
+            self.assertIsNotNone(point["y"])
+
+        categories = {item["name"]: item["count"] for item in overview["category_distribution"]}
+        self.assertIn("美妆", categories)
+        locations = {item["name"]: item["count"] for item in overview["location_distribution"]}
+        self.assertIn("上海", locations)
+        self.assertEqual(
+            overview["quote_present"] + overview["quote_missing"],
+            overview["total_count"],
+        )
+        self.assertEqual(
+            set(overview["medians"]),
+            {"followers", "daily_read_median", "daily_interaction_median"},
+        )
+
+    def test_location_placeholder_is_normalized(self) -> None:
+        self.assertEqual(_clean_location("地区身份待确认"), UNKNOWN_LOCATION)
+        self.assertEqual(_clean_location("地区身份待确认 / 韩国"), UNKNOWN_LOCATION)
+        self.assertEqual(_clean_location("不区分"), UNKNOWN_LOCATION)
+        self.assertEqual(_clean_location("未知"), UNKNOWN_LOCATION)
+        self.assertEqual(_clean_location("韩国"), "韩国")
+        self.assertEqual(_clean_location(""), "")
 
     def test_search_group_and_pagination_use_filtered_union(self) -> None:
         course = unified_creator_library(self.main_db, self.course_db, self.history_db, bucket="course", limit=10)
@@ -144,6 +228,9 @@ class UnifiedCreatorLibraryTests(unittest.TestCase):
             self.assertIn("美妆", payload["categories"])
             self.assertIn("上海", payload["ip_locations"])
             self.assertEqual(app.test_client().get("/api/unified-creators?limit=201").status_code, 400)
+            batch_page = app.test_client().get("/api/unified-creators?batch_id=batch-main-new-creator&limit=10")
+            self.assertEqual(batch_page.status_code, 200)
+            self.assertEqual(batch_page.get_json()["total_count"], 1)
             refs = [item["ref"] for item in payload["records"][:2]]
             compare_query = "&".join(f"ref={ref}" for ref in refs)
             compare = app.test_client().get(f"/api/unified-creators/compare?{compare_query}")

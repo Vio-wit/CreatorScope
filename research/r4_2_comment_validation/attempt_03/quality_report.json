@@ -1,0 +1,122 @@
+{
+  "batch_id": "R42-20261120T213631+0800",
+  "target_note_count": 3,
+  "notes_opened_successfully": 1,
+  "notes_with_comment_dom": 1,
+  "actual_comment_records": 10,
+  "root_comment_records": 9,
+  "reply_records": 1,
+  "by_note": [
+    {
+      "note_id": "6afc317600000000180288af",
+      "creator_name": "汪雨橦TONG",
+      "title": "谁说北京过冬只能穿黑羽绒服，厉娜",
+      "status": "opened",
+      "page_title_matches_sample": true,
+      "login_prompt_seen": true,
+      "login_prompt_closed_by_visible_x": true,
+      "root_dom_count_before_scroll": 1,
+      "reply_dom_count_before_scroll": 1,
+      "root_records_saved": 9,
+      "reply_records_saved": 1,
+      "duplicate_records_removed": 0,
+      "reply_expansion": {
+        "attempted": true,
+        "expanded": false,
+        "before": 6,
+        "after": 6
+      },
+      "scroll_attempts": 1,
+      "scrolls": [
+        {
+          "pixels": 650,
+          "scroll_top_before": 635.2000122070312,
+          "scroll_top_after": 635.2000122070312,
+          "root_dom_count": 10,
+          "reply_dom_count": 6,
+          "page_scroll_height": 2786
+        }
+      ],
+      "screenshot": "comment_excerpt_6afc317600000000180288af.png"
+    },
+    {
+      "note_id": "6aff0588000000001603e3fa",
+      "title": "素颜旅居穿搭｜怒试21套 舒适美丽姐全得要",
+      "status": "blocked_before_xhs",
+      "reason": "copied_link_note_id_mismatch",
+      "scroll_attempts": 0
+    },
+    {
+      "note_id": "6af2dd5f000000001802d246",
+      "title": "超爽开箱： 购物欲像鬼一样缠着我",
+      "creator_name": "Winnie维尼",
+      "status": "failed",
+      "reason": "TimeoutError"
+    }
+  ],
+  "field_non_empty": {
+    "local_comment_id": {
+      "non_empty": 10,
+      "rate_percent": 100.0
+    },
+    "batch_id": {
+      "non_empty": 10,
+      "rate_percent": 100.0
+    },
+    "note_id": {
+      "non_empty": 10,
+      "rate_percent": 100.0
+    },
+    "source": {
+      "non_empty": 10,
+      "rate_percent": 100.0
+    },
+    "comment_text": {
+      "non_empty": 10,
+      "rate_percent": 100.0
+    },
+    "displayed_time": {
+      "non_empty": 0,
+      "rate_percent": 0.0
+    },
+    "like_count_raw": {
+      "non_empty": 10,
+      "rate_percent": 100.0
+    },
+    "like_count_normalized": {
+      "non_empty": 3,
+      "rate_percent": 30.0
+    },
+    "reply_count_raw": {
+      "non_empty": 10,
+      "rate_percent": 100.0
+    },
+    "is_pinned": {
+      "non_empty": 10,
+      "rate_percent": 100.0
+    },
+    "comment_level": {
+      "non_empty": 10,
+      "rate_percent": 100.0
+    },
+    "parent_comment_id": {
+      "non_empty": 1,
+      "rate_percent": 10.0
+    },
+    "capture_time": {
+      "non_empty": 10,
+      "rate_percent": 100.0
+    }
+  },
+  "duplicate_records_removed": 0,
+  "same_batch_local_id_unique": true,
+  "commenter_identity_fields_saved": [],
+  "failed_notes": [
+    {
+      "note_id": "6af2dd5f000000001802d246",
+      "error_type": "TimeoutError"
+    }
+  ],
+  "total_scroll_attempts": 1,
+  "total_new_root_dom_items_after_scroll": 9
+}

@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f7f4">
   <title>CreatorScope · 课程数据工作台</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <script defer src="{{ url_for('static', filename='vendor/echarts.min.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/theme.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/history-all.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/chart-export.js') }}"></script>
@@ -57,7 +59,7 @@
         <article class="chart-card chart-card-wide"><div class="card-heading"><div><h2>数据来源占比</h2><p id="sourceShareScope">记录行与评论行</p></div></div><div class="chart" id="sourceShareChart"></div></article>
       </section>
 
-      <section class="collection-panel" id="collection" data-primary-view="smart">
+      <section class="collection-panel" id="collection" data-primary-view="collection">
         <div class="panel-copy">
           <div class="panel-icon">↗</div>
           <div>
@@ -96,7 +98,7 @@
         <div class="browser-hint" id="browserHint"><span class="status-dot muted"></span><span>{% if demo_mode %}离线演示不会打开浏览器或发起网络请求。{% else %}新建隔离浏览器配置；请在窗口内正常登录并手动打开要验证的页面。应用只读取蒲公英域名下当前可见页面的少量字段。{% endif %}</span></div>
       </section>
 
-      <section class="kpi-grid" aria-label="数据概览" data-primary-view="smart">
+      <section class="kpi-grid" aria-label="数据概览" data-primary-view="collection">
         <article class="kpi-card"><div class="kpi-label">所选范围记录<span class="kpi-symbol">▤</span></div><div class="kpi-value" id="recordCount">—</div><div class="kpi-foot" id="batchCount">历史批次 0</div></article>
         <article class="kpi-card"><div class="kpi-label">字段覆盖率<span class="kpi-symbol green">◉</span></div><div class="kpi-value" id="coverageRate">—</div><div class="kpi-foot" id="fieldCount">—</div></article>
         <article class="kpi-card"><div class="kpi-label">粉丝规模<span class="kpi-symbol blue">◎</span></div><div class="kpi-value compact" id="followersValue">—</div><div class="kpi-foot">当前可用博主样本</div></article>
@@ -185,21 +187,30 @@
         <article class="chart-card"><div class="card-heading"><div><h2>阅读与互动</h2><p id="readingStatus">等待样本</p></div></div><div class="chart" id="readingEngagementChart"></div></article>
         <article class="chart-card" hidden><div class="card-heading"><div><h2>蒲公英账号 IP 属地</h2><p id="locationStatus">只有确认来源字段为蒲公英账号 IP 后才纳入统计</p></div></div><div class="chart" id="locationChart"></div></article>
         <article class="chart-card" hidden><div class="card-heading"><div><h2>粉丝画像均值</h2><p>当前只展示单达人摘要，不做完整分类比例汇总</p></div></div><div class="chart" id="fanAggregateChart"></div></article>
-        <article class="chart-card"><div class="card-heading"><div><h2>笔记案例指标</h2><p>当前记录中的可用笔记值</p></div></div><div class="chart" id="noteMetricsChart"></div></article>
+        <article class="chart-card" hidden><div class="card-heading"><div><h2>笔记案例指标</h2><p>当前记录中的可用笔记值</p></div></div><div class="chart" id="noteMetricsChart"></div></article>
       </section>
 
       <section class="section-heading" id="creators" data-primary-view="creators">
         <div><p class="eyebrow">CREATOR LIBRARY</p><h2>达人库</h2><p class="subheading">统一查看新采集、五人课堂样本与本地历史资料；缺失字段保留为空。</p></div>
       </section>
       <section id="creatorLibraryStats" data-primary-view="creators">
-        <div class="card-heading"><div><h3>当前筛选概览</h3><p>统计筛选后的展示记录，可能包含跨来源重复达人。</p></div></div>
+        <div class="card-heading"><div><h3>当前筛选概览</h3><p>统计筛选后的全量展示记录，可能包含跨来源重复达人。</p></div></div>
         <div class="kpi-grid">
           <article class="kpi-card"><div class="kpi-label">匹配记录</div><div class="kpi-value" id="libraryMatched">—</div><div class="kpi-foot">当前筛选范围</div></article>
           <article class="kpi-card"><div class="kpi-label">粉丝数有效</div><div class="kpi-value" id="libraryFollowersValid">—</div><div class="kpi-foot">缺失值不计入</div></article>
           <article class="kpi-card"><div class="kpi-label">阅读与互动共同有效</div><div class="kpi-value" id="libraryPerformanceValid">—</div><div class="kpi-foot">两项均有数值</div></article>
           <article class="kpi-card"><div class="kpi-label">领域有值</div><div class="kpi-value" id="libraryCategoryValid">—</div><div class="kpi-foot">按已取得的领域文本</div></article>
+          <article class="kpi-card"><div class="kpi-label">粉丝中位数</div><div class="kpi-value compact" id="libraryFollowersMedian">—</div><div class="kpi-foot">粉丝数有效样本</div></article>
+          <article class="kpi-card"><div class="kpi-label">阅读中位数</div><div class="kpi-value compact" id="libraryReadMedian">—</div><div class="kpi-foot">日常阅读中位数</div></article>
+          <article class="kpi-card"><div class="kpi-label">互动中位数</div><div class="kpi-value compact" id="libraryInteractionMedian">—</div><div class="kpi-foot">日常互动中位数</div></article>
         </div>
-        <article class="chart-card"><div class="card-heading"><div><h3>粉丝规模分布</h3><p id="libraryFollowerStatus">当前筛选中粉丝数有效的展示记录</p></div></div><div class="chart" id="libraryFollowersChart"></div></article>
+        <section class="charts-grid" data-primary-view="creators">
+          <article class="chart-card"><div class="card-heading"><div><h3>粉丝规模分布</h3><p id="libraryFollowerStatus">当前筛选中粉丝数有效的展示记录</p></div></div><div class="chart" id="libraryFollowersChart"></div></article>
+          <article class="chart-card"><div class="card-heading"><div><h3>日常阅读中位数分布</h3><p>按日常阅读中位数分桶统计</p></div></div><div class="chart" id="libraryReadChart"></div></article>
+          <article class="chart-card"><div class="card-heading"><div><h3>日常互动中位数分布</h3><p>按日常互动中位数分桶统计</p></div></div><div class="chart" id="libraryInteractionChart"></div></article>
+          <article class="chart-card"><div class="card-heading"><div><h3>领域分布</h3><p>按已取得的领域文本拆分计数</p></div></div><div class="chart" id="libraryCategoryChart"></div></article>
+          <article class="chart-card"><div class="card-heading"><div><h3>属地分布</h3><p>蒲公英 IP 属地与历史地域合并统计</p></div></div><div class="chart" id="libraryLocationChart"></div></article>
+        </section>
       </section>
       <section class="creator-filter-panel" data-primary-view="creators">
         <label>名称 / ID 搜索<input id="creatorQuery" type="search" placeholder="输入名称或平台 ID"></label>
@@ -241,6 +252,7 @@
         <article class="chart-card"><div class="card-heading"><div><h2>曝光与阅读</h2><p id="exposureReadStatus">有效共同样本 n=0</p></div></div><div class="chart" id="exposureReadChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>阅读与互动</h2><p id="readingInteractionStatus">有效共同样本 n=0</p></div></div><div class="chart" id="readingInteractionChart"></div></article>
         <article class="chart-card"><div class="card-heading"><div><h2>发布时间分布</h2><p>按笔记记录的年月统计</p></div></div><div class="chart" id="notePublishChart"></div></article>
+        <article class="chart-card"><div class="card-heading"><div><h2>话题分布</h2><p id="noteTopicStatus">含历史资料文本候选；话题不代表互动表现</p></div></div><div class="chart" id="noteTopicChart"></div></article>
         <article class="chart-card chart-card-wide" hidden><div class="card-heading"><div><h2>笔记指标历史趋势</h2><p id="noteTrendStatus">本阶段暂不展示长期趋势</p></div></div><div class="chart" id="noteTrendChart"></div></article>
       </section>
       <section class="table-card note-table-card" data-primary-view="analytics"><div class="table-scroll"><table><thead><tr><th>创作者</th><th>笔记标题</th><th>发布时间</th><th>内容类型</th><th>话题</th><th>来源 / 批次</th><th>阅读</th><th>点赞</th><th>收藏</th><th>评论</th><th>分享</th><th>保存评论</th></tr></thead><tbody id="noteRows"><tr><td colspan="12" class="empty-cell">加载笔记…</td></tr></tbody></table></div></section>
@@ -250,7 +262,7 @@
         <section class="charts-grid comparison-chart-grid"><article class="chart-card"><div class="card-heading"><div><h2>笔记单指标对比</h2><p>不同单位分开展示，缺失值不补零</p></div></div><div class="chart" id="noteCompareBarChart"></div></article><article class="chart-card"><div class="card-heading"><div><h2>笔记相对表现雷达</h2><p>只纳入所有入选笔记都有精确值的互动指标，按组内最大值归一</p></div></div><div class="chart" id="noteCompareRadarChart"></div></article></section>
       </section>
 
-      <section class="data-grid" id="records" data-primary-view="smart">
+      <section class="data-grid" id="records" data-primary-view="collection">
         <article class="table-card">
           <div class="card-heading table-heading"><div><h2>当前样本字段</h2><p>原始显示值与字段覆盖情况</p></div><span class="table-count" id="tableCount">0 条记录</span></div>
           <div class="table-scroll"><table><thead><tr><th>数据类型</th><th>字段数</th><th>有效字段</th><th>覆盖率</th><th>采集时间</th></tr></thead><tbody id="coverageBody"><tr><td colspan="5" class="empty-cell">导入基线样本后显示字段覆盖</td></tr></tbody></table></div>
@@ -261,12 +273,12 @@
         </article>
       </section>
 
-      <section class="record-detail-card" data-primary-view="smart">
+      <section class="record-detail-card" data-primary-view="collection">
         <div class="card-heading table-heading"><div><h2>样本字段值</h2><p>保留来源页面显示值，数值清洗结果单独存储</p></div></div>
         <div class="record-detail-grid" id="recordDetails"><div class="empty-cell">当前批次暂无样本字段</div></div>
       </section>
 
-      <section class="table-card field-dictionary-card" data-primary-view="smart">
+      <section class="table-card field-dictionary-card" id="fieldDictionary" data-primary-view="collection">
         <details>
           <summary><strong>蒲公英字段目录</strong><span>字段名称、单位与页面统计口径 · <span id="dictionaryCount">—</span></span></summary>
           <div class="table-scroll"><table><thead><tr><th>分组</th><th>字段名称</th><th>页面/存储单位</th><th>统计周期</th></tr></thead><tbody id="dictionaryBody"><tr><td colspan="4" class="empty-cell">加载字段目录…</td></tr></tbody></table></div>

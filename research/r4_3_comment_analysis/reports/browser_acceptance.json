@@ -1,0 +1,29 @@
+{
+  "started_at": "2026-11-21T00:21:13+08:00",
+  "base_url": "http://127.0.0.1:8766",
+  "main_dashboard_status": 200,
+  "page_status": 200,
+  "title": "CreatorScope · 评论分析",
+  "initial_comment_count": "29",
+  "initial_table_rows": 29,
+  "initial_chart_series": [
+    10,
+    9,
+    10
+  ],
+  "note_filter_count": "9",
+  "note_filter_rows": 9,
+  "filtered_wordcloud_loaded": true,
+  "note_filter_chart": [
+    9
+  ],
+  "keyword_filter_count": "6",
+  "reply_filter_count": "1",
+  "reply_row_level": "汪雨橦TONG\t谁说北京过冬只能穿黑羽绒服，厉娜\n6afc317600000000180288af\t哇捉美橦\t2天前\t—\t—\t回复\t否\tR42-20261120T215215+0800",
+  "cleared_filter_count": "29",
+  "console_errors": [],
+  "http_errors": [],
+  "charts_rendered": true,
+  "finished_at": "2026-11-21T00:21:17+08:00",
+  "status": "PASS"
+}

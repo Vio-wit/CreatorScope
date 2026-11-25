@@ -1,0 +1,162 @@
+{
+  "batch_id": "R42-20261120T214834+0800",
+  "target_note_count": 3,
+  "notes_opened_successfully": 2,
+  "notes_with_comment_dom": 2,
+  "actual_comment_records": 20,
+  "root_comment_records": 19,
+  "reply_records": 1,
+  "by_note": [
+    {
+      "note_id": "6afc317600000000180288af",
+      "creator_name": "汪雨橦TONG",
+      "title": "谁说北京过冬只能穿黑羽绒服，厉娜",
+      "status": "opened",
+      "page_title_matches_sample": true,
+      "login_prompt_seen": true,
+      "login_prompt_closed_by_visible_x": true,
+      "root_dom_count_initial": 10,
+      "reply_dom_count_initial": 5,
+      "root_dom_count_before_scroll": 10,
+      "reply_dom_count_before_scroll": 5,
+      "root_records_saved": 9,
+      "reply_records_saved": 1,
+      "duplicate_records_removed": 0,
+      "reply_expansion": {
+        "attempted": true,
+        "expanded": false,
+        "before": 5,
+        "after": 5
+      },
+      "scroll_attempts": 1,
+      "scrolls": [
+        {
+          "pixels": 650,
+          "scroll_top_before": 635.2000122070312,
+          "scroll_top_after": 635.2000122070312,
+          "root_dom_count": 10,
+          "reply_dom_count": 5,
+          "page_scroll_height": 2717
+        }
+      ],
+      "screenshot": "comment_excerpt_6afc317600000000180288af.png"
+    },
+    {
+      "note_id": "6aff0588000000001603e3fa",
+      "title": "素颜旅居穿搭｜怒试21套 舒适美丽姐全得要",
+      "status": "blocked_before_xhs",
+      "reason": "copied_link_note_id_mismatch",
+      "scroll_attempts": 0
+    },
+    {
+      "note_id": "6af2dd5f000000001802d246",
+      "creator_name": "Winnie维尼",
+      "title": "超爽开箱： 购物欲像鬼一样缠着我",
+      "status": "opened",
+      "page_title_matches_sample": true,
+      "login_prompt_seen": true,
+      "login_prompt_closed_by_visible_x": true,
+      "root_dom_count_initial": 10,
+      "reply_dom_count_initial": 10,
+      "root_dom_count_before_scroll": 10,
+      "reply_dom_count_before_scroll": 10,
+      "root_records_saved": 10,
+      "reply_records_saved": 0,
+      "duplicate_records_removed": 0,
+      "reply_expansion": {
+        "attempted": false,
+        "expanded": false,
+        "before": 0,
+        "after": 0
+      },
+      "scroll_attempts": 3,
+      "scrolls": [
+        {
+          "pixels": 650,
+          "scroll_top_before": 0,
+          "scroll_top_after": 650.4000244140625,
+          "root_dom_count": 10,
+          "reply_dom_count": 10,
+          "page_scroll_height": 3368
+        },
+        {
+          "pixels": 650,
+          "scroll_top_before": 650.4000244140625,
+          "scroll_top_after": 1300,
+          "root_dom_count": 10,
+          "reply_dom_count": 10,
+          "page_scroll_height": 3368
+        },
+        {
+          "pixels": 650,
+          "scroll_top_before": 1300,
+          "scroll_top_after": 1950.4000244140625,
+          "root_dom_count": 10,
+          "reply_dom_count": 10,
+          "page_scroll_height": 3368
+        }
+      ],
+      "screenshot": "comment_excerpt_6af2dd5f000000001802d246.png"
+    }
+  ],
+  "field_non_empty": {
+    "local_comment_id": {
+      "non_empty": 20,
+      "rate_percent": 100.0
+    },
+    "batch_id": {
+      "non_empty": 20,
+      "rate_percent": 100.0
+    },
+    "note_id": {
+      "non_empty": 20,
+      "rate_percent": 100.0
+    },
+    "source": {
+      "non_empty": 20,
+      "rate_percent": 100.0
+    },
+    "comment_text": {
+      "non_empty": 20,
+      "rate_percent": 100.0
+    },
+    "displayed_time": {
+      "non_empty": 20,
+      "rate_percent": 100.0
+    },
+    "like_count_raw": {
+      "non_empty": 7,
+      "rate_percent": 35.0
+    },
+    "like_count_normalized": {
+      "non_empty": 5,
+      "rate_percent": 25.0
+    },
+    "reply_count_raw": {
+      "non_empty": 15,
+      "rate_percent": 75.0
+    },
+    "is_pinned": {
+      "non_empty": 20,
+      "rate_percent": 100.0
+    },
+    "comment_level": {
+      "non_empty": 20,
+      "rate_percent": 100.0
+    },
+    "parent_comment_id": {
+      "non_empty": 1,
+      "rate_percent": 5.0
+    },
+    "capture_time": {
+      "non_empty": 20,
+      "rate_percent": 100.0
+    }
+  },
+  "duplicate_records_removed": 0,
+  "same_batch_local_id_unique": true,
+  "commenter_identity_fields_saved": [],
+  "failed_notes": [],
+  "total_scroll_attempts": 4,
+  "total_new_root_dom_items_after_scroll": 0
+}

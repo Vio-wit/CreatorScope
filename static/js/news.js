@@ -1,11 +1,14 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
+  const Theme = window.CSTheme || {
+    chartColors: ['#438f6c', '#d19a64', '#7596bd', '#c8796d'], splitLineColor: '#f0f2f0', emptyColor: '#a5ada7',
+  };
   const charts = {};
-  const colors = ['#438f6c', '#d19a64', '#7596bd', '#c8796d'];
+  const colors = Theme.chartColors.slice(0, 4);
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const emptyChart = (chart, message) => {
     chart?.clear();
-    chart?.setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: message, fill: '#a5ada7', fontSize: 11 } }] });
+    chart?.setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: message, fill: Theme.emptyColor, fontSize: 11 } }] });
   };
 
   async function requestJson(url, options = {}) {
@@ -50,8 +53,8 @@
         color: colors, grid: { left: 150, right: 18, top: 10, bottom: 38 },
         legend: { bottom: 0, textStyle: { fontSize: 8 } },
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        xAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f2f0' } } },
-        yAxis: { type: 'category', data: rows.map((item) => item.label), axisLabel: { fontSize: 7, width: 140, overflow: 'truncate' } },
+        xAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
+        yAxis: { type: 'category', data: rows.map((item) => item.label), axisLabel: { fontSize: 8, width: 140, overflow: 'truncate' } },
         series: [
           { name: '热点前', type: 'bar', data: rows.map((item) => item.before) },
           { name: '当天', type: 'bar', data: rows.map((item) => item.on) },
@@ -70,8 +73,8 @@
       charts.newsInteractionChart?.setOption({
         color: [colors[0], colors[2]], grid: { left: 150, right: 18, top: 10, bottom: 38 },
         legend: { bottom: 0, textStyle: { fontSize: 8 } }, tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        xAxis: { type: 'value', splitLine: { lineStyle: { color: '#f0f2f0' } } },
-        yAxis: { type: 'category', data: rows.map((item) => item.label), axisLabel: { fontSize: 7, width: 140, overflow: 'truncate' } },
+        xAxis: { type: 'value', splitLine: { lineStyle: { color: Theme.splitLineColor } } },
+        yAxis: { type: 'category', data: rows.map((item) => item.label), axisLabel: { fontSize: 8, width: 140, overflow: 'truncate' } },
         series: [
           { name: '热点前平均互动数', type: 'bar', data: rows.map((item) => item.before) },
           { name: '热点后平均互动数', type: 'bar', data: rows.map((item) => item.after) },

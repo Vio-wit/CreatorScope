@@ -887,6 +887,128 @@ class VisibleCollectionTests(unittest.TestCase):
         browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
         browser._check_page_blocker(Page(), pgy=False)
 
+    def test_login_modal_does_not_treat_sidebar_login_button_as_popup(self) -> None:
+        class _Box:
+            def __init__(self, visible: bool, text: str) -> None:
+                self._visible = visible
+                self._text = text
+
+            def is_visible(self) -> bool:
+                return self._visible
+
+            def inner_text(self, timeout: int) -> str:
+                return self._text
+
+        class _Loc:
+            def __init__(self, boxes: list[_Box]) -> None:
+                self._boxes = boxes
+
+            def count(self) -> int:
+                return len(self._boxes)
+
+            def nth(self, index: int) -> _Box:
+                return self._boxes[index]
+
+        class _Page:
+            def __init__(self, boxes: list[_Box]) -> None:
+                self._boxes = boxes
+
+            def locator(self, _selector: str) -> _Loc:
+                return _Loc(self._boxes)
+
+        # 左侧导航常驻“登录”按钮不在任何模态容器内：不应判定为未关闭弹窗。
+        self.assertFalse(PgyVisibleBrowser._login_modal_visible(_Page([])))
+        # 不可见的模态容器也不算。
+        self.assertFalse(
+            PgyVisibleBrowser._login_modal_visible(_Page([_Box(False, "手机号登录")]))
+        )
+        # 可见且含手机号登录/验证码的模态弹窗才算。
+        self.assertTrue(
+            PgyVisibleBrowser._login_modal_visible(
+                _Page([_Box(True, "手机号登录 输入验证码 获取验证码")])
+            )
+        )
+
+    def test_login_close_button_is_collected_by_icon_class_or_cross(self) -> None:
+        class _Handle:
+            def __init__(self, tag: str) -> None:
+                self.tag = tag
+                self.clicked = False
+
+            def click(self, timeout: int = 5000) -> None:
+                self.clicked = True
+
+        class _El:
+            def __init__(self, tag: str, label: str) -> None:
+                self.handle = _Handle(tag)
+                self._label = label
+
+            def evaluate(self, _script: str) -> str:
+                return self._label
+
+            def element_handle(self) -> _Handle:
+                return self.handle
+
+        class _SubLoc:
+            def __init__(self, els: list[_El]) -> None:
+                self._els = els
+
+            def count(self) -> int:
+                return len(self._els)
+
+            def nth(self, index: int) -> _El:
+                return self._els[index]
+
+        class _Box:
+            def __init__(self, els: list[_El]) -> None:
+                self._els = els
+
+            def is_visible(self) -> bool:
+                return True
+
+            def inner_text(self, timeout: int) -> str:
+                return "手机号登录 验证码"
+
+            def locator(self, _selector: str) -> _SubLoc:
+                return _SubLoc(self._els)
+
+        class _Page:
+            def __init__(self, els: list[_El]) -> None:
+                self._els = els
+
+            def locator(self, _selector: str) -> _SubLoc:
+                return _SubLoc([_Box(self._els)])
+
+            def wait_for_timeout(self, _timeout: int) -> None:
+                return None
+
+        # 图标类名含 close：进入 strong 组。
+        strong, weak = PgyVisibleBrowser._collect_login_close_candidates(
+            _Page([_El("a", "close-circle")])
+        )
+        self.assertEqual(len(strong), 1)
+        self.assertEqual(len(weak), 0)
+
+        # 纯叉号文本：进入 weak 组。
+        strong, weak = PgyVisibleBrowser._collect_login_close_candidates(
+            _Page([_El("b", "×")])
+        )
+        self.assertEqual(len(strong), 0)
+        self.assertEqual(len(weak), 1)
+
+        # 两个 strong 钮：不唯一，不自动点。
+        strong, weak = PgyVisibleBrowser._collect_login_close_candidates(
+            _Page([_El("c", "icon-close"), _El("d", "close-btn")])
+        )
+        self.assertEqual(len(strong), 2)
+
+        # 唯一 strong 钮：关闭流程应自动点击，不转人工。
+        browser = PgyVisibleBrowser.__new__(PgyVisibleBrowser)
+        browser._check_page_blocker = lambda _page, **_kwargs: None
+        page = _Page([_El("e", "close-circle")])
+        browser._close_phone_login_prompt(page)
+        self.assertTrue(page._els[0].handle.clicked)
+
     def test_waiting_for_manual_close_can_be_stopped(self) -> None:
         browser = ManualDismissBrowser()
         manager = TaskManager(self.db_path, self.root / "unused-baseline.json", browser)
@@ -912,6 +1034,15 @@ class VisibleCollectionTests(unittest.TestCase):
         self.assertTrue(PgyVisibleBrowser._titles_match(title, "谁说北京过冬只能穿黑羽绒服，厉娜"))
         self.assertTrue(PgyVisibleBrowser._titles_match(title, "谁说北京过冬只能穿黑羽绒服"))
         self.assertFalse(PgyVisibleBrowser._titles_match(title, "另一个创作者的笔记"))
+        # 行内话题标签与尾部省略号应被剥离，emoji 不影响归一匹配。
+        topic_title = PgyVisibleBrowser._note_card_title_from_text(
+            "新晋韩妆品牌！8支ins爆🔥唇釉试色～ #唇釉试色\n阅读量 3,200"
+        )
+        self.assertEqual(topic_title, "新晋韩妆品牌！8支ins爆🔥唇釉试色～")
+        self.assertTrue(PgyVisibleBrowser._titles_match(topic_title, "新晋韩妆品牌！8支ins爆🔥唇釉试色～"))
+        ellipsis_title = PgyVisibleBrowser._note_card_title_from_text("万能开眼角教程…\n阅读量 800")
+        self.assertEqual(ellipsis_title, "万能开眼角教程")
+        self.assertTrue(PgyVisibleBrowser._titles_match(ellipsis_title, "万能开眼角教程！我们内眦赘皮有救了"))
         first = PgyVisibleBrowser._comment_fingerprint("batch-a", "note", "正文", "1天前", 1, None)
         second = PgyVisibleBrowser._comment_fingerprint("batch-b", "note", "正文", "1天前", 1, None)
         self.assertNotEqual(first, second)

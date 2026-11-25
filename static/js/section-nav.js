@@ -2,12 +2,30 @@
   const groups = [...document.querySelectorAll('.nav-group')];
   if (!groups.length) return;
 
+  const STORAGE_KEY = 'creatorscope-nav-open';
+  let pinnedLink = null;
+  let pinnedAt = 0;
+
+  function readOpenState() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (_) { return {}; }
+  }
+
+  function writeOpenState(state) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) { /* 隐私模式下忽略持久化 */ }
+  }
+
   function currentGroup() {
     if (location.pathname === '/ai') return 'smart';
     if (location.pathname !== '/') return '';
     if (location.hash === '#creators') return 'creators';
-    if (location.hash === '#collection') return 'smart';
+    if (location.hash === '#collection' || location.hash === '#records') return 'collection';
     return 'analytics';
+  }
+
+  function persistOpen(group, open) {
+    const state = readOpenState();
+    state[group.dataset.navGroup] = open;
+    writeOpenState(state);
   }
 
   function setOpen(group, open) {
@@ -16,11 +34,20 @@
     button.setAttribute('aria-expanded', String(open));
     const title = group.querySelector('[data-primary-section]').textContent.trim();
     button.setAttribute('aria-label', `${open ? '收起' : '展开'}${title}目录`);
+    persistOpen(group, open);
   }
 
   function syncGroups() {
     const current = currentGroup();
-    groups.forEach((group) => setOpen(group, group.dataset.navGroup === current));
+    const saved = readOpenState();
+    groups.forEach((group) => {
+      if (group.dataset.navGroup === current) {
+        setOpen(group, true);
+      } else {
+        // 恢复上次持久化的展开状态；无记录时保持收起，不强制展开其余分组。
+        setOpen(group, saved[group.dataset.navGroup] === true);
+      }
+    });
     updateProgress();
   }
 
@@ -31,6 +58,17 @@
   function matchesCurrentPage(link) {
     if (link.dataset.page === 'ai') return location.pathname === '/ai';
     return location.pathname === '/' && link.dataset.view === currentGroup();
+  }
+
+  function positionProgress(group, link) {
+    const track = group.querySelector('.section-nav-track');
+    const span = group.querySelector('.section-nav-progress');
+    if (!track || !span) return;
+    const trackTop = track.offsetTop;
+    const trackHeight = track.offsetHeight || 1;
+    const center = link.offsetTop + link.offsetHeight / 2;
+    const ratio = Math.max(0, Math.min(1, (center - trackTop) / trackHeight));
+    span.style.height = `${ratio * 100}%`;
   }
 
   function updateProgress() {
@@ -48,24 +86,29 @@
       link.removeAttribute('aria-current');
       if (target && target.getClientRects().length) entries.push({ link, target });
     });
-    if (!entries.length) return;
-    const viewportLine = Math.min(150, window.innerHeight * 0.25);
-    let current = entries[0];
-    entries.forEach((entry) => {
-      if (entry.target.getBoundingClientRect().top <= viewportLine) current = entry;
-    });
-    const sections = location.pathname === '/ai'
-      ? [...document.querySelectorAll('main > section')].filter((node) => node.getClientRects().length)
-      : [...document.querySelectorAll(`[data-primary-view="${name}"]`)].filter((node) => node.getClientRects().length);
-    if (!sections.length) return;
-    const start = sections[0].getBoundingClientRect().top + window.scrollY;
-    const end = sections[sections.length - 1].getBoundingClientRect().bottom + window.scrollY;
-    if (window.scrollY + window.innerHeight >= end - 10) current = entries[entries.length - 1];
+
+    const pinValid = pinnedLink && !pinnedLink.hidden && matchesCurrentPage(pinnedLink)
+      && (Date.now() - pinnedAt < 400);
+    let current = null;
+    if (pinValid) {
+      current = { link: pinnedLink };
+    } else if (entries.length) {
+      const viewportLine = Math.min(150, window.innerHeight * 0.25);
+      current = entries[0];
+      entries.forEach((entry) => {
+        if (entry.target.getBoundingClientRect().top <= viewportLine) current = entry;
+      });
+      const sections = location.pathname === '/ai'
+        ? [...document.querySelectorAll('main > section')].filter((node) => node.getClientRects().length)
+        : [...document.querySelectorAll(`[data-primary-view="${name}"]`)].filter((node) => node.getClientRects().length);
+      if (sections.length && window.scrollY + window.innerHeight >= sections[sections.length - 1].getBoundingClientRect().bottom + window.scrollY - 10) {
+        current = entries[entries.length - 1];
+      }
+    }
+    if (!current) return;
     current.link.classList.add('is-current');
     current.link.setAttribute('aria-current', 'location');
-    const span = Math.max(1, end - start - window.innerHeight);
-    const progress = Math.max(0, Math.min(1, (window.scrollY - start) / span));
-    group.querySelector('.section-nav-progress').style.height = `${progress * 100}%`;
+    positionProgress(group, current.link);
   }
 
   groups.forEach((group) => {
@@ -89,13 +132,16 @@
           try { sessionStorage.setItem('creatorscope-nav-target', link.dataset.target); } catch (_) { /* Navigation still works without storage. */ }
           if (location.pathname === '/' && link.dataset.view) {
             event.preventDefault();
-            location.hash = link.dataset.view === 'smart' ? '#collection' : `#${link.dataset.view}`;
+            location.hash = `#${link.dataset.view}`;
           }
           return;
         }
         const target = targetFor(link);
         if (!target) return;
         event.preventDefault();
+        pinnedLink = link;
+        pinnedAt = Date.now();
+        updateProgress();
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });

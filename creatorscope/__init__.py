@@ -20,7 +20,7 @@ from .db import SCHEMA_VERSION, connection, initialize_database, schema_version_
 from .domain import field_dictionary
 from .ingest import MAX_UPLOAD_BYTES
 from .history_analytics import HistoryAnalyticsError, analysis_data as history_analysis_data, history_creator_library, history_note_library, list_library_sources as history_library_source_options, list_sources as history_source_options, note_samples as history_note_samples
-from .unified_library import unified_creator_library, unified_creator_records_by_refs
+from .unified_library import unified_creator_library, unified_library_overview, unified_creator_records_by_refs
 from .news import NEWS_FEEDS, append_news_items, correlate_news_notes, fetch_feed, load_news_items
 from .quality import batch_quality_report, quality_overview
 from .report import build_report, render_docx, render_markdown, report_filename
@@ -384,10 +384,23 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     def api_overview():
         return jsonify(overview_data(app.config["DATABASE_PATH"]))
 
+    def _attach_library_summary(data: dict[str, Any]) -> dict[str, Any]:
+        # 达人属性分布走全量只读投影（主库 + 课堂库 + 历史库合并）；
+        # 笔记维度指标仍来自主库快照，单篇笔记未投影进全量达人库。
+        try:
+            data["library_summary"] = unified_library_overview(
+                app.config["DATABASE_PATH"],
+                app.config["COURSE_SAMPLE_DATABASE"],
+                app.config["HISTORY_EVIDENCE_DB"],
+            )
+        except Exception:
+            data["library_summary"] = None
+        return data
+
     @app.get("/api/analytics")
     def api_analytics():
         raw_batch_id = request.args.get("batch_id") or None
-        return jsonify(analytics_data(
+        data = analytics_data(
             app.config["DATABASE_PATH"],
             batch_id=None if raw_batch_id == "__all__" else raw_batch_id,
             source=request.args.get("source", "").strip(),
@@ -400,7 +413,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             topic=request.args.get("topic", "").strip(),
             query=request.args.get("q", "").strip(),
             word_kind=request.args.get("word_kind", "body").strip(),
-        ))
+        )
+        return jsonify(_attach_library_summary(data))
 
     @app.get("/api/history-analysis/sources")
     def api_history_analysis_sources():
@@ -634,6 +648,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 daily_read_max=read_max,
                 daily_interaction_min=interaction_min,
                 daily_interaction_max=interaction_max,
+                batch_id=request.args.get("batch_id", ""),
+                source=request.args.get("source", ""),
                 offset=offset,
                 limit=limit,
             )
@@ -725,6 +741,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             note_type=request.args.get("note_type", "").strip(),
             topic=request.args.get("topic", "").strip(),
             query=request.args.get("q", "").strip(),
+            history_db=app.config["HISTORY_EVIDENCE_DB"],
         )
         return jsonify(data)
 
@@ -1225,7 +1242,9 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         batch_id = request.args.get("batch_id") or None
         if batch_id == "__all__":
             batch_id = None
-        statistics = analytics_data(app.config["DATABASE_PATH"], batch_id=batch_id)
+        statistics = _attach_library_summary(
+            analytics_data(app.config["DATABASE_PATH"], batch_id=batch_id)
+        )
         payload = {
             "format": "CreatorScope analytics JSON v1",
             "generated_at": generated_at(),

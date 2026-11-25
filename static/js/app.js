@@ -1,5 +1,13 @@
 (() => {
   const $ = (selector) => document.querySelector(selector);
+  const Theme = window.CSTheme || {
+    fontFamily: 'Microsoft YaHei, Noto Sans SC, sans-serif', textColor: '#7e8981',
+    axisLabelColor: '#89948d', axisLabelMuted: '#a0a9a2', axisLineColor: Theme.axisLineColor,
+    splitLineColor: Theme.splitLineColor, emptyColor: '#a5ada7',
+    chartColors: [Theme.scatterGreen, '#d19a64', Theme.seriesBlue, '#c8796d', '#8a78aa', '#78ad86'],
+    seriesGreen: Theme.seriesGreen, seriesGreenSoft: Theme.seriesGreenSoft, seriesBlue: Theme.seriesBlue,
+    seriesAmber: '#dfa05c', seriesRed: '#c77668', seriesPurple: '#8b83ae', scatterGreen: Theme.scatterGreen,
+  };
   const demoMode = document.body.dataset.mode === 'demo';
   const elements = {
     batchSelect: $('#batchSelect'), sourceSelect: $('#sourceSelect'), typeSelect: $('#typeSelect'),
@@ -52,10 +60,11 @@
       'followerDistChart', 'quoteDistChart', 'quoteTypeChart', 'locationChart', 'followerPriceChart', 'readingEngagementChart',
       'fanAggregateChart', 'correlationChart', 'trendChart', 'noteMetricsChart', 'sourceShareChart',
       'noteReadRankChart', 'noteInteractionRankChart', 'metricDistributionChart', 'interactionBoxChart',
-      'exposureReadChart', 'readingInteractionChart', 'notePublishChart', 'noteTrendChart',
+      'exposureReadChart', 'readingInteractionChart', 'notePublishChart', 'noteTopicChart', 'noteTrendChart',
       'audienceGenderChart', 'audienceAgeChart', 'audienceRegionChart', 'audienceInterestChart', 'audienceDeviceChart',
       'creatorCompareBarChart', 'creatorCompareRadarChart', 'noteCompareBarChart', 'noteCompareRadarChart',
       'historyFollowersChart', 'historyPerformanceChart', 'historyCoverageChart', 'libraryFollowersChart',
+      'libraryReadChart', 'libraryInteractionChart', 'libraryCategoryChart', 'libraryLocationChart',
     ].forEach((id) => {
       const element = document.getElementById(id);
       if (element && window.echarts) charts[id] = echarts.init(element);
@@ -65,7 +74,7 @@
 
   const baseChart = {
     animationDuration: 500,
-    textStyle: { fontFamily: 'Microsoft YaHei, Noto Sans SC, sans-serif', color: '#7e8981' },
+    textStyle: { fontFamily: Theme.fontFamily, color: Theme.textColor },
     tooltip: { trigger: 'item', confine: true },
   };
 
@@ -74,7 +83,7 @@
     chart.clear();
     chart.setOption({
       ...baseChart,
-      graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: message, fill: '#a5ada7', fontSize: 11 } }],
+      graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: message, fill: Theme.emptyColor, fontSize: 11 } }],
     });
   }
 
@@ -84,7 +93,7 @@
     if (types.length) {
       charts.typeChart?.setOption({
         ...baseChart,
-        color: ['#197b5b', '#59a984', '#9dc8ae', '#e7b979', '#8ba8cf'],
+        color: Theme.chartColors,
         tooltip: { trigger: 'item', formatter: '{b}<br>{c} 条 ({d}%)' },
         legend: { bottom: 0, left: 'center', itemWidth: 7, itemHeight: 7, textStyle: { color: '#88938c', fontSize: 8 } },
         series: [{ type: 'pie', radius: ['43%', '68%'], center: ['50%', '43%'], avoidLabelOverlap: true, itemStyle: { borderColor: '#fff', borderWidth: 3 }, label: { show: false }, data: types.map((item) => ({ name: item.label, value: item.count })) }],
@@ -93,12 +102,12 @@
 
     const noteMetrics = data.chart_data?.note_metrics || [];
     if (noteMetrics.length) {
-      charts.noteChart?.setOption({ ...baseChart, grid: { left: 45, right: 15, top: 12, bottom: 27 }, xAxis: { type: 'category', data: noteMetrics.map((item) => item.name), axisLine: { lineStyle: { color: '#e8ece8' } }, axisTick: { show: false }, axisLabel: { color: '#929c95', fontSize: 8 } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } }, series: [{ type: 'bar', data: noteMetrics.map((item) => item.value), barWidth: 21, itemStyle: { color: '#4a9b75', borderRadius: [4, 4, 0, 0] } }] }, true);
+      charts.noteChart?.setOption({ ...baseChart, grid: { left: 45, right: 15, top: 12, bottom: 27 }, xAxis: { type: 'category', data: noteMetrics.map((item) => item.name), axisLine: { lineStyle: { color: Theme.axisLineColor } }, axisTick: { show: false }, axisLabel: { color: '#929c95', fontSize: 8 } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } }, series: [{ type: 'bar', data: noteMetrics.map((item) => item.value), barWidth: 21, itemStyle: { color: Theme.seriesGreen, borderRadius: [4, 4, 0, 0] } }] }, true);
     } else setEmptyChart(charts.noteChart, '当前批次没有笔记指标');
 
     const fans = data.chart_data?.fan_analysis || [];
     if (fans.length) {
-      charts.fanChart?.setOption({ ...baseChart, grid: { left: 90, right: 24, top: 8, bottom: 13 }, xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 8, color: '#a0a9a2' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, yAxis: { type: 'category', data: fans.map((item) => item.name), axisLabel: { fontSize: 8, color: '#858f88' }, axisTick: { show: false }, axisLine: { show: false } }, series: [{ type: 'bar', data: fans.map((item) => item.value), barWidth: 10, itemStyle: { color: '#8bb79b', borderRadius: 5 }, label: { show: true, position: 'right', formatter: '{c}%', fontSize: 8, color: '#728078' } }] }, true);
+      charts.fanChart?.setOption({ ...baseChart, grid: { left: 90, right: 24, top: 8, bottom: 13 }, xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 8, color: '#a0a9a2' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, yAxis: { type: 'category', data: fans.map((item) => item.name), axisLabel: { fontSize: 8, color: '#858f88' }, axisTick: { show: false }, axisLine: { show: false } }, series: [{ type: 'bar', data: fans.map((item) => item.value), barWidth: 10, itemStyle: { color: Theme.seriesGreenSoft, borderRadius: 5 }, label: { show: true, position: 'right', formatter: '{c}%', fontSize: 8, color: '#728078' } }] }, true);
     } else setEmptyChart(charts.fanChart, '当前批次没有粉丝比例字段');
 
 
@@ -111,14 +120,14 @@
     if (!valid.length) return setEmptyChart(chart, '当前样本没有可用字段');
     chart.setOption({
       ...baseChart,
-      grid: { left: horizontal ? 90 : 38, right: 24, top: 12, bottom: horizontal ? 18 : 37 },
+      grid: { left: horizontal ? 90 : 38, right: 24, top: 20, bottom: horizontal ? 24 : 40 },
       xAxis: horizontal
-        ? { type: 'value', axisLabel: { fontSize: 8, color: '#9aa39d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }
-        : { type: 'category', data: valid.map((item) => item.name), axisLabel: { interval: 0, rotate: 20, fontSize: 8, color: '#89948d' }, axisLine: { lineStyle: { color: '#e8ece8' } }, axisTick: { show: false } },
+        ? { type: 'value', axisLabel: { fontSize: 8, color: '#9aa39d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }
+        : { type: 'category', data: valid.map((item) => item.name), axisLabel: { interval: 0, rotate: 20, fontSize: 8, color: '#89948d' }, axisLine: { lineStyle: { color: Theme.axisLineColor } }, axisTick: { show: false } },
       yAxis: horizontal
         ? { type: 'category', data: valid.map((item) => item.name), axisLabel: { fontSize: 8, color: '#89948d' }, axisTick: { show: false }, axisLine: { show: false } }
-        : { type: 'value', axisLabel: { fontSize: 8, color: '#9aa39d', formatter: `{value}${valueSuffix}` }, splitLine: { lineStyle: { color: '#f0f2f0' } } },
-      series: [{ type: 'bar', data: valid.map((item) => item.value), barMaxWidth: 22, itemStyle: { color: '#4a9b75', borderRadius: horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0] } }],
+        : { type: 'value', axisLabel: { fontSize: 8, color: '#9aa39d', formatter: `{value}${valueSuffix}` }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
+      series: [{ type: 'bar', data: valid.map((item) => item.value), barMaxWidth: 22, itemStyle: { color: Theme.seriesGreen, borderRadius: horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0] } }],
     }, true);
   }
 
@@ -128,11 +137,11 @@
     if (!points?.length) return setEmptyChart(chart, '没有具备共同字段的创作者');
     chart.setOption({
       ...baseChart,
-      grid: { left: 45, right: 20, top: 15, bottom: 35 },
+      grid: { left: 45, right: 20, top: 22, bottom: 42 },
       tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.data[2])}<br>${escapeHtml(xName)}：${Number(item.data[0]).toLocaleString()}<br>${escapeHtml(yName)}：${Number(item.data[1]).toLocaleString()}` },
-      xAxis: { type: 'value', name: xName, nameTextStyle: { fontSize: 8, color: '#929c95' }, axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: '#f0f2f0' } } },
-      yAxis: { type: 'value', name: yName, nameTextStyle: { fontSize: 8, color: '#929c95' }, axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: '#f0f2f0' } } },
-      series: [{ type: 'scatter', symbolSize: 9, itemStyle: { color: '#438f6c', opacity: .78 }, data: points.map((point) => [point.x, point.y, point.name]) }],
+      xAxis: { type: 'value', name: xName, nameTextStyle: { fontSize: 8, color: '#929c95' }, axisLabel: { fontSize: 8, color: '#929c95', hideOverlap: true }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
+      yAxis: { type: 'value', name: yName, nameTextStyle: { fontSize: 8, color: '#929c95' }, axisLabel: { fontSize: 8, color: '#929c95', hideOverlap: true }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
+      series: [{ type: 'scatter', symbolSize: 9, itemStyle: { color: Theme.scatterGreen, opacity: .78 }, data: points.map((point) => [point.x, point.y, point.name]) }],
     }, true);
   }
 
@@ -144,9 +153,9 @@
       ...baseChart,
       grid: { left: 118, right: 24, top: 12, bottom: 18 },
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: (params) => `${escapeHtml(labels[params[0].dataIndex])}<br>${escapeHtml(metricLabel)}：${Number(params[0].value).toLocaleString('zh-CN')}` },
-      xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: '#f0f2f0' } } },
+      xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#929c95' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } },
       yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 8, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } },
-      series: [{ type: 'bar', data: values.map((row) => Number(row[key])), barMaxWidth: 22, itemStyle: { color: '#4a9b75', borderRadius: [0, 4, 4, 0] } }],
+      series: [{ type: 'bar', data: values.map((row) => Number(row[key])), barMaxWidth: 22, itemStyle: { color: Theme.seriesGreen, borderRadius: [0, 4, 4, 0] } }],
     }, true);
   }
 
@@ -156,7 +165,7 @@
     const indicators = complete.map((axis) => ({ name: axis.label, max: 100 }));
     charts[chartId]?.setOption({
       ...baseChart,
-      color: ['#438f6c', '#d19a64', '#7596bd', '#c8796d'],
+      color: Theme.chartColors.slice(0, 4),
       legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } },
       tooltip: { trigger: 'item', formatter: (params) => {
         const row = rows.find((item) => item[labelKey] === params.name);
@@ -207,31 +216,46 @@
   function renderAnalytics(data) {
     lastAnalyticsData = data;
     const chartsData = data.charts || {};
-    $('#analysisScope').textContent = data.scope || '基于已保存的创作者快照';
-    $('#analysisCount').textContent = `${data.counts?.creators || 0} 位创作者 · ${data.counts?.notes || 0} 条笔记`;
-    $('#followerDistStatus').textContent = `精确粉丝值 n=${chartsData.follower_sample_count || 0}`;
+    const library = data.library_summary || null;
+    $('#analysisScope').textContent = library
+      ? `全量达人库（主库 + 课堂库 + 历史资料，共 ${library.total_count} 条展示记录）`
+      : (data.scope || '基于已保存的创作者快照');
+    $('#analysisCount').textContent = `${library ? library.total_count : (data.counts?.creators || 0)} 位创作者 · ${data.counts?.notes || 0} 条笔记（笔记指标仅当前批次）`;
+
+    const followerItems = library?.follower_distribution?.length ? library.follower_distribution : (chartsData.follower_distribution || []);
+    $('#followerDistStatus').textContent = library
+      ? `全量库粉丝有效 n=${library.followers_valid}`
+      : `精确粉丝值 n=${chartsData.follower_sample_count || 0}`;
     $('#quoteDistStatus').textContent = `全部报价精确值 n=${chartsData.quote_sample_count || 0}；起价与区间不进入数值区间`;
-    $('#quoteTypeStatus').textContent = data.availability?.quote_types || '报价状态未计算';
-    setBarChart('followerDistChart', chartsData.follower_distribution);
+    $('#quoteTypeStatus').textContent = `${data.availability?.quote_types || '报价状态未计算'}；报价口径仅主库快照样本`;
+    setBarChart('followerDistChart', followerItems);
     setBarChart('quoteDistChart', chartsData.quote_distribution, true);
     setBarChart('quoteTypeChart', chartsData.quote_status_distribution, true);
     setScatterChart('followerPriceChart', chartsData.follower_price_scatter, '粉丝数', '报价（元）');
-    setScatterChart('readingEngagementChart', chartsData.reading_engagement_scatter, '阅读中位数', '互动中位数');
-    $('#followerPriceStatus').textContent = `共同有效样本 n=${chartsData.follower_price_sample_count || 0}；仅使用精确全部报价`;
-    $('#readingStatus').textContent = `共同有效样本 n=${chartsData.reading_engagement_sample_count || 0}`;
-    const locations = chartsData.location_distribution || [];
+
+    const readPoints = library?.reading_interaction_scatter?.length ? library.reading_interaction_scatter : (chartsData.reading_engagement_scatter || []);
+    setScatterChart('readingEngagementChart', readPoints, '阅读中位数', '互动中位数');
+    $('#followerPriceStatus').textContent = `共同有效样本 n=${chartsData.follower_price_sample_count || 0}；报价口径仅主库快照`;
+    $('#readingStatus').textContent = library
+      ? `全量库阅读/互动共同有效 n=${library.reading_interaction_valid}`
+      : `共同有效样本 n=${chartsData.reading_engagement_sample_count || 0}`;
+
+    const locations = library?.location_distribution?.length ? library.location_distribution : (chartsData.location_distribution || []);
     $('#locationStatus').textContent = `有效地域 ${locations.reduce((sum, item) => sum + item.value, 0)} 位创作者`;
     setBarChart('locationChart', locations, true);
     setBarChart('fanAggregateChart', (chartsData.fan_analysis || []).map((item) => ({ name: `${item.name} (${item.count})`, value: item.value })), true, '%');
     renderAudienceProfiles(chartsData.audience_groups || []);
-    const categories = chartsData.category_distribution || [];
+
+    const rawCategories = library?.category_distribution?.length ? library.category_distribution : (chartsData.category_distribution || []);
+    const categories = rawCategories.map((item) => ({ name: item.name, value: item.value ?? item.count ?? 0 }));
     if (categories.length) {
-      charts.categoryChart?.setOption({ ...baseChart, color: ['#438f6c', '#78ad86', '#aec9aa', '#e8c58f', '#b6c6d9'], tooltip: { trigger: 'item', formatter: '{b}<br>{c} 位博主 ({d}%)' }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '48%'], label: { fontSize: 8, color: '#77847b' }, labelLine: { length: 7, length2: 5 }, data: categories }] }, true);
+      charts.categoryChart?.setOption({ ...baseChart, color: Theme.chartColors, tooltip: { trigger: 'item', formatter: '{b}<br>{c} 位博主 ({d}%)' }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '48%'], label: { fontSize: 8, color: '#77847b' }, labelLine: { length: 7, length2: 5 }, data: categories }] }, true);
     } else setEmptyChart(charts.categoryChart, '当前样本没有内容领域');
     const words = chartsData.word_frequency || [];
     if (words.length) {
       $('#wordStatus').textContent = data.availability?.word_frequency || '已有分词';
-      charts.wordChart?.setOption({ ...baseChart, grid: { left: 50, right: 15, top: 10, bottom: 24 }, xAxis: { type: 'category', data: words.map((item) => item.word), axisLabel: { interval: 0, rotate: 25, fontSize: 8, color: '#88938c' }, axisLine: { lineStyle: { color: '#e8ece8' } }, axisTick: { show: false } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { fontSize: 8, color: '#a0a9a2' } }, series: [{ type: 'bar', data: words.map((item) => item.count), barWidth: 13, itemStyle: { color: '#bf9465', borderRadius: [3, 3, 0, 0] } }] }, true);
+      const topWords = words.slice(0, 8);
+      charts.wordChart?.setOption({ ...baseChart, grid: { left: 44, right: 15, top: 10, bottom: 30 }, xAxis: { type: 'category', data: topWords.map((item) => item.word), axisLabel: { interval: 0, rotate: 30, fontSize: 8, color: '#88938c' }, axisLine: { lineStyle: { color: Theme.axisLineColor } }, axisTick: { show: false } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { fontSize: 8, color: '#a0a9a2' } }, series: [{ type: 'bar', data: topWords.map((item) => item.count), barWidth: 15, itemStyle: { color: Theme.seriesAmber, borderRadius: [3, 3, 0, 0] } }] }, true);
       const cloud = $('#wordCloudImage');
       cloud.hidden = false;
       const cloudParams = getNoteFilterParams();
@@ -264,7 +288,7 @@
       };
     });
     if (noteMetricSeries.length) {
-      charts.noteMetricsChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 14, top: 10, bottom: 48 }, xAxis: { type: 'category', data: metricKeys, axisLabel: { fontSize: 7, rotate: 22 } }, yAxis: { type: 'value', minInterval: 1 }, series: noteMetricSeries }, true);
+      charts.noteMetricsChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, grid: { left: 45, right: 14, top: 18, bottom: 48 }, xAxis: { type: 'category', data: metricKeys, axisLabel: { fontSize: 8, rotate: 22 } }, yAxis: { type: 'value', minInterval: 1 }, series: noteMetricSeries }, true);
     } else setEmptyChart(charts.noteMetricsChart, '当前筛选没有笔记指标');
   }
 
@@ -365,14 +389,14 @@
     $('#sourceShareScope').textContent = data.source_scope || '按采集来源统计';
     const sources = (data.sources || []).filter((item) => item.total_count > 0);
     if (!sources.length) return setEmptyChart(charts.sourceShareChart, '暂无来源记录');
-    charts.sourceShareChart?.setOption({ ...baseChart, color: ['#438f6c', '#78ad86', '#aec9aa', '#e8c58f', '#b6c6d9', '#d48d7f'], tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.name)}<br>${item.value.toLocaleString()} 行 (${item.percent}%)` }, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '44%'], label: { formatter: '{b} {d}%', fontSize: 8 }, data: sources.map((item) => ({ name: item.source, value: item.total_count })) }] }, true);
+    charts.sourceShareChart?.setOption({ ...baseChart, color: Theme.chartColors, tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.name)}<br>${item.value.toLocaleString()} 行 (${item.percent}%)` }, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, series: [{ type: 'pie', radius: ['38%', '66%'], center: ['50%', '44%'], label: { formatter: '{b} {d}%', fontSize: 8 }, data: sources.map((item) => ({ name: item.source, value: item.total_count })) }] }, true);
   }
 
-  function renderGroupedRanking(chartId, groups, statusId = null) {
+  function renderGroupedRanking(chartId, groups, statusId = null, emptyMessage = '当前筛选没有可用指标') {
     const validGroups = (groups || []).filter((group) => group.items?.length);
-    if (!validGroups.length) return setEmptyChart(charts[chartId], '当前筛选没有可用指标');
+    if (!validGroups.length) return setEmptyChart(charts[chartId], emptyMessage);
     const labels = [...new Set(validGroups.flatMap((group) => group.items.slice(0, 7).map((item) => item.label)))];
-    charts[chartId]?.setOption({ ...baseChart, color: ['#438f6c', '#d19a64', '#7596bd', '#c8796d', '#8a78aa'], legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 118, right: 18, top: 12, bottom: 35 }, tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } }, xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } }, series: validGroups.map((group) => { const values = new Map(group.items.slice(0, 7).map((item) => [item.label, item.value])); return { name: group.source, type: 'bar', barMaxWidth: 12, data: labels.map((label) => values.get(label) ?? null) }; }) }, true);
+    charts[chartId]?.setOption({ ...baseChart, color: Theme.chartColors, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, grid: { left: 118, right: 18, top: 20, bottom: 40 }, tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } }, xAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 8, color: '#89948d', width: 108, overflow: 'truncate' }, axisTick: { show: false }, axisLine: { show: false } }, series: validGroups.map((group) => { const values = new Map(group.items.slice(0, 7).map((item) => [item.label, item.value])); return { name: group.source, type: 'bar', barMaxWidth: 12, data: labels.map((label) => values.get(label) ?? null) }; }) }, true);
     if (statusId) $(`#${statusId}`).textContent = validGroups.length > 1 ? `按来源分别排名（${validGroups.length} 组）` : `来源：${validGroups[0].source}`;
   }
 
@@ -386,11 +410,11 @@
     $('#metricDistributionStatus').textContent = groups.map((group) => `${group.source} n=${group.sample_count}`).join(' · ');
     charts.metricDistributionChart?.setOption({
       ...baseChart,
-      color: ['#438f6c', '#d19a64', '#7596bd', '#c8796d', '#8a78aa'],
-      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } },
-      grid: { left: 44, right: 14, top: 12, bottom: 46 },
+      color: Theme.chartColors,
+      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } },
+      grid: { left: 44, right: 14, top: 20, bottom: 48 },
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-      xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } },
+      xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 8, rotate: 20, color: '#89948d' } },
       yAxis: { type: 'value', minInterval: 1, name: '样本数' },
       series: groups.map((group) => {
         const counts = new Map(group.bins.map((item) => [item.label, item.count]));
@@ -408,15 +432,15 @@
     $('#interactionBoxStatus').textContent = `有效互动指标 n=${items.reduce((sum, item) => sum + item.sample_count, 0)}；每箱按来源和指标分组`;
     charts.interactionBoxChart?.setOption({
       ...baseChart,
-      grid: { left: 48, right: 18, top: 12, bottom: 76 },
+      grid: { left: 48, right: 18, top: 20, bottom: 76 },
       tooltip: { trigger: 'item', formatter: (params) => `${escapeHtml(labels[params.dataIndex] || '')}<br>最小 ${params.data[0]} · Q1 ${params.data[1]} · 中位数 ${params.data[2]} · Q3 ${params.data[3]} · 最大 ${params.data[4]}` },
-      xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 7, rotate: 25, width: 100, overflow: 'truncate' } },
+      xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 8, rotate: 25, width: 100, overflow: 'truncate' } },
       yAxis: { type: 'value', min: 0, name: '互动数' },
-      series: [{ type: 'boxplot', data: items.map((item) => item.values), itemStyle: { color: '#dcebe0', borderColor: '#438f6c' } }],
+      series: [{ type: 'boxplot', data: items.map((item) => item.values), itemStyle: { color: '#dcebe0', borderColor: Theme.scatterGreen } }],
     }, true);
   }
 
-  function renderGroupedScatter(chartId, points, xName, yName, statusId) {
+  function renderGroupedScatter(chartId, points, xName, yName, statusId, emptyMessage = '没有具备共同精确字段的笔记') {
     const groups = new Map();
     points.forEach((point) => {
       const group = groups.get(point.source) || [];
@@ -424,16 +448,17 @@
       groups.set(point.source, group);
     });
     $(`#${statusId}`).textContent = `有效共同样本 n=${points.length}；${groups.size} 个来源组`;
-    if (!points.length) return setEmptyChart(charts[chartId], '没有具备共同精确字段的笔记');
+    if (!points.length) return setEmptyChart(charts[chartId], emptyMessage);
+    const shortName = (source) => (source.length > 16 ? `${source.slice(0, 16)}…` : source);
     charts[chartId]?.setOption({
       ...baseChart,
-      color: ['#438f6c', '#d19a64', '#7596bd', '#c8796d', '#8a78aa'],
-      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } },
-      grid: { left: 58, right: 18, top: 12, bottom: 40 },
+      color: Theme.chartColors,
+      legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 }, formatter: (name) => shortName(name) },
+      grid: { left: 58, right: 18, top: 20, bottom: 52 },
       tooltip: { trigger: 'item', formatter: (params) => `${escapeHtml(params.value[2])}<br>${xName}：${params.value[0]}<br>${yName}：${params.value[1]}` },
-      xAxis: { type: 'value', name: xName },
-      yAxis: { type: 'value', name: yName },
-      series: [...groups.entries()].map(([source, data]) => ({ name: source, type: 'scatter', symbolSize: 9, data })),
+      xAxis: { type: 'value', name: xName, axisLabel: { hideOverlap: true } },
+      yAxis: { type: 'value', name: yName, axisLabel: { hideOverlap: true } },
+      series: [...groups.entries()].map(([source, data]) => ({ name: shortName(source), type: 'scatter', symbolSize: 9, data })),
     }, true);
   }
 
@@ -478,20 +503,27 @@
     const params = getNoteFilterParams();
     $('#exportNotes').href = `/api/notes/export.csv?${params.toString()}`;
     const chartsData = data.charts || {};
-    renderGroupedRanking('noteReadRankChart', chartsData.top_read, 'noteReadStatus');
+    renderGroupedRanking('noteReadRankChart', chartsData.top_read, 'noteReadStatus', '公开笔记页不展示阅读量；阅读排行需蒲公英详情快照');
     renderGroupedRanking('noteInteractionRankChart', chartsData.top_interactions);
     renderNoteMetricDistribution(chartsData, $('#noteMetricSelect').value);
     renderInteractionBoxplot(chartsData.interaction_boxplot || []);
-    renderGroupedScatter('exposureReadChart', chartsData.exposure_read_scatter || [], '曝光量', '阅读量', 'exposureReadStatus');
-    renderGroupedScatter('readingInteractionChart', chartsData.reading_interaction_scatter || [], '阅读量', '互动量', 'readingInteractionStatus');
+    renderGroupedScatter('exposureReadChart', chartsData.exposure_read_scatter || [], '曝光量', '阅读量', 'exposureReadStatus', '公开笔记页不展示阅读量/曝光量；散点需蒲公英详情快照');
+    renderGroupedScatter('readingInteractionChart', chartsData.reading_interaction_scatter || [], '阅读量', '互动量', 'readingInteractionStatus', '公开笔记页不展示阅读量；阅读×互动散点需蒲公英详情快照');
     const publish = chartsData.publish_distribution || [];
-    if (publish.length) charts.notePublishChart?.setOption({ ...baseChart, grid: { left: 38, right: 12, top: 12, bottom: 30 }, xAxis: { type: 'category', data: publish.map((item) => item.month), axisLabel: { fontSize: 8, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, series: [{ type: 'bar', data: publish.map((item) => item.count), barMaxWidth: 24, itemStyle: { color: '#7596bd', borderRadius: [4, 4, 0, 0] } }] }, true);
+    if (publish.length) charts.notePublishChart?.setOption({ ...baseChart, grid: { left: 38, right: 12, top: 20, bottom: 34 }, xAxis: { type: 'category', data: publish.map((item) => item.month), axisLabel: { fontSize: 8, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, series: [{ type: 'bar', data: publish.map((item) => item.count), barMaxWidth: 24, itemStyle: { color: Theme.seriesBlue, borderRadius: [4, 4, 0, 0] } }] }, true);
     else setEmptyChart(charts.notePublishChart, '没有可解析的发布时间');
+    const topicFreq = (data.text_analysis?.topics?.frequencies || []).map((item) => ({ name: item.word, value: item.count }));
+    const historyTexts = data.history_texts || {};
+    $('#noteTopicStatus').textContent = historyTexts.topics_count
+      ? `含历史资料话题候选 ${formatMetric(historyTexts.topics_count || 0)} 篇；话题不代表互动表现`
+      : '话题来自当前批次笔记；不代表互动表现';
+    if (topicFreq.length) setBarChart('noteTopicChart', topicFreq.slice(0, 15), true);
+    else setEmptyChart(charts.noteTopicChart, '当前筛选没有可用话题');
     const trends = chartsData.metric_trends || [];
     $('#noteTrendStatus').textContent = data.availability?.metric_trends || '等待重复快照';
     if (trends.length) {
       const times = [...new Set(trends.flatMap((series) => series.points.map((point) => point.captured_at)))].sort();
-      charts.noteTrendChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 7 } }, grid: { left: 45, right: 15, top: 12, bottom: 48 }, xAxis: { type: 'category', data: times, axisLabel: { fontSize: 7, rotate: 20, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: '#f0f2f0' } } }, series: trends.map((group) => { const byTime = new Map(group.points.map((point) => [point.captured_at, point.value])); return { name: group.label, type: 'line', symbolSize: 5, connectNulls: false, data: times.map((time) => byTime.get(time) ?? null) }; }) }, true);
+      charts.noteTrendChart?.setOption({ ...baseChart, legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 8 } }, grid: { left: 45, right: 15, top: 12, bottom: 48 }, xAxis: { type: 'category', data: times, axisLabel: { fontSize: 8, rotate: 20, color: '#89948d' } }, yAxis: { type: 'value', axisLabel: { fontSize: 8, color: '#89948d' }, splitLine: { lineStyle: { color: Theme.splitLineColor } } }, series: trends.map((group) => { const byTime = new Map(group.points.map((point) => [point.captured_at, point.value])); return { name: group.label, type: 'line', symbolSize: 5, connectNulls: false, data: times.map((time) => byTime.get(time) ?? null) }; }) }, true);
     } else setEmptyChart(charts.noteTrendChart, '缺少同笔记、来源、指标和统计周期的重复快照');
     const rows = data.notes || [];
     $('#noteRows').innerHTML = rows.length ? rows.map((row) => `<tr><td>${escapeHtml(row.creator_name)}</td><td>${escapeHtml(row.title)}</td><td>${escapeHtml(row.published_at || '—')}</td><td>${escapeHtml(row.note_type || '—')}</td><td>${escapeHtml((row.topics || []).join('、') || '—')}</td><td>${escapeHtml(row.source)}<br><small>${escapeHtml(row.batch_id || '—')}</small></td><td>${formatMetric(row.read_count)}</td><td>${formatMetric(row.like_count)}</td><td>${formatMetric(row.favorite_count)}</td><td>${formatMetric(row.interaction_comment_count)}</td><td>${formatMetric(row.share_count)}</td><td>${row.comment_count}</td></tr>`).join('') : '<tr><td colspan="12" class="empty-cell">当前筛选下没有笔记</td></tr>';
@@ -686,6 +718,8 @@
       offset: String(unifiedCreatorOffset),
       limit: String(UNIFIED_CREATOR_PAGE_SIZE),
     });
+    if (elements.batchSelect.value && elements.batchSelect.value !== '__all__') params.set('batch_id', elements.batchSelect.value);
+    if (elements.sourceSelect.value) params.set('source', elements.sourceSelect.value);
     const data = await requestJson(`/api/unified-creators?${params.toString()}`);
     const categorySelect = $('#categoryFilter');
     const locationSelect = $('#locationFilter');
@@ -697,13 +731,23 @@
     if ((data.ip_locations || []).includes(previousLocation)) locationSelect.value = previousLocation;
     const groups = data.groups || [];
     const summary = data.filtered_summary || {};
+    const medians = summary.medians || {};
     $('#libraryMatched').textContent = formatMetric(data.total_count || 0);
     $('#libraryFollowersValid').textContent = formatMetric(summary.followers_valid || 0);
     $('#libraryPerformanceValid').textContent = formatMetric(summary.reading_interaction_valid || 0);
     $('#libraryCategoryValid').textContent = formatMetric(summary.category_valid || 0);
+    $('#libraryFollowersMedian').textContent = formatMetric(medians.followers, ' 人');
+    $('#libraryReadMedian').textContent = formatMetric(medians.daily_read_median, ' 次');
+    $('#libraryInteractionMedian').textContent = formatMetric(medians.daily_interaction_median, ' 次');
     $('#libraryFollowerStatus').textContent = `粉丝数有效 ${formatMetric(summary.followers_valid || 0)} 条；来源记录可能重复`;
-    if (summary.followers_valid) setBarChart('libraryFollowersChart', (summary.follower_distribution || []).map((item) => ({ name: item.label, value: item.count })));
+    const toBuckets = (items) => (items || []).map((item) => ({ name: item.label, value: item.count }));
+    const toTerms = (items) => (items || []).map((item) => ({ name: item.name, value: item.count }));
+    if (summary.followers_valid) setBarChart('libraryFollowersChart', toBuckets(summary.follower_distribution));
     else setEmptyChart(charts.libraryFollowersChart, '当前筛选没有粉丝数');
+    setBarChart('libraryReadChart', toBuckets(summary.read_distribution));
+    setBarChart('libraryInteractionChart', toBuckets(summary.interaction_distribution));
+    setBarChart('libraryCategoryChart', toTerms(summary.category_distribution), true);
+    setBarChart('libraryLocationChart', toTerms(summary.location_distribution), true);
     $('#creatorCount').textContent = `${formatMetric(data.total_count || 0)} 条匹配记录`;
     $('#unifiedCreatorCount').textContent = formatMetric(data.total_count || 0);
     $('#unifiedCreatorGroups').textContent = groups.map((item) => `${item.label} ${formatMetric(item.count || 0)}`).join(' · ');
@@ -804,8 +848,8 @@
         grid: { left: 48, right: 16, top: 12, bottom: 38 },
         tooltip: { trigger: 'axis', formatter: (items) => `${escapeHtml(items[0]?.name || '')}<br>${formatMetric(items[0]?.value || 0)} 个字段` },
         xAxis: { type: 'category', data: coverageDistribution.map((item) => item.label), axisTick: { show: false }, axisLabel: { color: '#929c95', fontSize: 8, interval: 0 } },
-        yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
-        series: [{ type: 'bar', data: coverageDistribution.map((item) => item.count), barMaxWidth: 38, itemStyle: { color: '#638d75', borderRadius: [4, 4, 0, 0] } }],
+        yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        series: [{ type: 'bar', data: coverageDistribution.map((item) => item.count), barMaxWidth: 38, itemStyle: { color: Theme.seriesGreen, borderRadius: [4, 4, 0, 0] } }],
       }, true);
     } else setEmptyChart(charts.historyCoverageChart, '暂无字段记录');
     $('#historyCoverageBody').innerHTML = coverageFields.map((item) => {
@@ -822,8 +866,8 @@
         grid: { left: 48, right: 16, top: 12, bottom: 32 },
         tooltip: { trigger: 'axis', formatter: (items) => `${escapeHtml(items[0]?.name || '')}<br>${formatMetric(items[0]?.value || 0)} 条样本` },
         xAxis: { type: 'category', data: bucketRows.map((item) => item.label), axisTick: { show: false }, axisLabel: { color: '#929c95', fontSize: 8, interval: 0, rotate: 16 } },
-        yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
-        series: [{ type: 'bar', data: bucketRows.map((item) => item.count), barMaxWidth: 32, itemStyle: { color: '#4a9b75', borderRadius: [4, 4, 0, 0] } }],
+        yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        series: [{ type: 'bar', data: bucketRows.map((item) => item.count), barMaxWidth: 32, itemStyle: { color: Theme.seriesGreen, borderRadius: [4, 4, 0, 0] } }],
       }, true);
     } else setEmptyChart(charts.historyFollowersChart, '暂无可用粉丝数');
 
@@ -833,9 +877,9 @@
         ...baseChart,
         grid: { left: 48, right: 14, top: 12, bottom: 37 },
         tooltip: { trigger: 'item', formatter: (item) => `${escapeHtml(item.data.name)}<br>日常阅读：${formatMetric(item.value[0])} 次<br>日常互动：${formatMetric(item.value[1])} 次` },
-        xAxis: { type: 'value', name: '日常阅读中位数', nameTextStyle: { fontSize: 8 }, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
-        yAxis: { type: 'value', name: '日常互动中位数', nameTextStyle: { fontSize: 8 }, splitLine: { lineStyle: { color: '#f0f2f0' } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
-        series: [{ type: 'scatter', symbolSize: 8, itemStyle: { color: '#4a9b75', opacity: 0.7 }, data: pairs.map((item) => ({ name: item.sample, value: [item.reading, item.interaction] })) }],
+        xAxis: { type: 'value', name: '日常阅读中位数', nameTextStyle: { fontSize: 8 }, splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        yAxis: { type: 'value', name: '日常互动中位数', nameTextStyle: { fontSize: 8 }, splitLine: { lineStyle: { color: Theme.splitLineColor } }, axisLabel: { color: '#a0a9a2', fontSize: 8 } },
+        series: [{ type: 'scatter', symbolSize: 8, itemStyle: { color: Theme.seriesGreen, opacity: 0.7 }, data: pairs.map((item) => ({ name: item.sample, value: [item.reading, item.interaction] })) }],
       }, true);
     } else setEmptyChart(charts.historyPerformanceChart, '暂无共同有效样本');
 
@@ -997,7 +1041,7 @@
 
   function syncPrimaryNavigation() {
     const hash = window.location.hash;
-    const activeSection = hash === '#creators' ? 'creators' : hash === '#collection' ? 'smart' : 'analytics';
+    const activeSection = hash === '#creators' ? 'creators' : (hash === '#collection' || hash === '#records') ? 'collection' : 'analytics';
     document.querySelectorAll('[data-primary-section]').forEach((link) => {
       link.classList.toggle('active', link.dataset.primarySection === activeSection);
     });
@@ -1084,10 +1128,12 @@
       }
     });
     elements.batchSelect.addEventListener('change', () => {
-      Promise.all([refreshDashboard(), refreshAnalytics(), refreshNotes()]).catch((error) => toast(error.message, true));
+      unifiedCreatorOffset = 0;
+      Promise.all([refreshDashboard(), refreshAnalytics(), refreshNotes(), refreshCreatorLibrary()]).catch((error) => toast(error.message, true));
     });
     elements.sourceSelect.addEventListener('change', () => {
-      Promise.all([refreshDashboard(), refreshAnalytics(), refreshNotes()]).catch((error) => toast(error.message, true));
+      unifiedCreatorOffset = 0;
+      Promise.all([refreshDashboard(), refreshAnalytics(), refreshNotes(), refreshCreatorLibrary()]).catch((error) => toast(error.message, true));
     });
     elements.typeSelect.addEventListener('change', refreshDashboard);
     $('#filterCreators').addEventListener('click', () => { unifiedCreatorOffset = 0; refreshCreatorLibrary().catch((error) => toast(error.message, true)); });

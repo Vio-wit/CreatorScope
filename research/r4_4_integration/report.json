@@ -1,0 +1,343 @@
+{
+  "batches_created_or_reused": 7,
+  "comment_link_rate": 1.0,
+  "comment_rows_linked": 49,
+  "comment_rows_seen": 49,
+  "creator_profile_rows_seen": 5,
+  "creator_profile_rows_with_platform_id": 5,
+  "database_label": "creatorscope_unified.sqlite3",
+  "db_delta": {
+    "comment_snapshots": 0,
+    "creators": 0,
+    "metric_values": 0,
+    "notes": 0,
+    "records": 0
+  },
+  "duplicate_comments_skipped": 4,
+  "duplicate_records_skipped": 81,
+  "exact_note_id_rows": 9,
+  "generated_at": "2026-11-21T01:54:13+08:00",
+  "historical_totals": {
+    "comment_snapshots": 4,
+    "metric_values": 402,
+    "metric_values_with_period": 262,
+    "records": 81
+  },
+  "inserted_comment_snapshots": 0,
+  "inserted_records": 0,
+  "integrity": {
+    "duplicate_platform_note_hash_groups": 0,
+    "foreign_key_errors": 0,
+    "integrity": "ok"
+  },
+  "inventory": {
+    "all_files": 277,
+    "csv_files": 25,
+    "files_by_suffix": {
+      ".csv": 25,
+      ".json": 35,
+      ".jsonl": 16,
+      ".md": 17,
+      ".png": 111,
+      ".py": 14,
+      ".pyc": 11,
+      ".sqlite3": 2,
+      ".sqlite3-shm": 1,
+      ".sqlite3-wal": 1,
+      ".txt": 44
+    },
+    "jsonl_files": 16,
+    "sqlite_main_files": 2
+  },
+  "isolated_notes": 8,
+  "linked_notes": 9,
+  "malformed_rows": 0,
+  "metric_periods_backfilled": 0,
+  "metric_values_inserted": 0,
+  "note_creator_link_rate": 0.5294117647058824,
+  "note_rows_seen": 17,
+  "note_rows_with_platform_creator_id": 9,
+  "parsed_source_rows": 68,
+  "r42": {
+    "already_integrated": 29,
+    "malformed_rows": 0,
+    "source_rows": 29,
+    "status": "not_reimported_from_r42"
+  },
+  "random_audit": [
+    {
+      "creator_link": "linked",
+      "has_text": true,
+      "metrics": 1,
+      "note_link": "source_note_key",
+      "outcome": "present_and_verified",
+      "record_type": "comment_excerpt_sample",
+      "source_file": "research/continuous_collection_validation/raw_comments.jsonl",
+      "source_row": 43,
+      "token": "791860581ec7a57e"
+    },
+    {
+      "creator_link": "linked",
+      "has_text": true,
+      "metrics": 7,
+      "note_link": "source_row",
+      "outcome": "present_and_verified",
+      "record_type": "note_detail",
+      "source_file": "research/continuous_collection_validation/raw_notes_pgy.jsonl",
+      "source_row": 8,
+      "token": "dec6c7854c0a8156"
+    },
+    {
+      "creator_link": "linked",
+      "has_text": true,
+      "metrics": 1,
+      "note_link": "source_note_key",
+      "outcome": "present_and_verified",
+      "record_type": "comment_excerpt_sample",
+      "source_file": "research/continuous_collection_validation/raw_comments.jsonl",
+      "source_row": 11,
+      "token": "4e4e8dfe933ec431"
+    },
+    {
+      "creator_link": "linked",
+      "has_text": true,
+      "metrics": 1,
+      "note_link": "source_note_key",
+      "outcome": "present_and_verified",
+      "record_type": "comment_excerpt_sample",
+      "source_file": "research/continuous_collection_validation/raw_comments.jsonl",
+      "source_row": 20,
+      "token": "eb63fd8e29b655ad"
+    },
+    {
+      "creator_link": "unknown",
+      "has_text": true,
+      "metrics": 0,
+      "note_link": "exact_platform_id",
+      "outcome": "present_and_verified",
+      "record_type": "comment_snapshot",
+      "source_file": "research/xhs_public_access_probe/raw_comments_xhs.jsonl",
+      "source_row": 1,
+      "token": "ea87da103c190411"
+    },
+    {
+      "creator_link": "linked",
+      "has_text": false,
+      "metrics": 3,
+      "note_link": "none",
+      "outcome": "present_and_verified",
+      "record_type": "creator_content_performance",
+      "source_file": "research/continuous_collection_validation/raw_creators.jsonl",
+      "source_row": 4,
+      "token": "8cf22aeda9141bb7"
+    },
+    {
+      "creator_link": "linked",
+      "has_text": true,
+      "metrics": 1,
+      "note_link": "source_note_key",
+      "outcome": "present_and_verified",
+      "record_type": "comment_excerpt_sample",
+      "source_file": "research/continuous_collection_validation/raw_comments.jsonl",
+      "source_row": 19,
+      "token": "3c6628b8774b49d7"
+    },
+    {
+      "creator_link": "linked",
+      "has_text": false,
+      "metrics": 24,
+      "note_link": "none",
+      "outcome": "present_and_verified",
+      "record_type": "creator_profile_sample",
+      "source_file": "research/continuous_collection_validation/raw_creators.jsonl",
+      "source_row": 4,
+      "token": "17fc19368fb1911b"
+    },
+    {
+      "creator_link": "linked",
+      "has_text": false,
+      "metrics": 24,
+      "note_link": "none",
+      "outcome": "present_and_verified",
+      "record_type": "creator_profile_sample",
+      "source_file": "research/continuous_collection_validation/raw_creators.jsonl",
+      "source_row": 1,
+      "token": "73d8888324b42a13"
+    },
+    {
+      "creator_link": "linked",
+      "has_text": true,
+      "metrics": 7,
+      "note_link": "source_row",
+      "outcome": "present_and_verified",
+      "record_type": "note_detail",
+      "source_file": "research/continuous_collection_validation/raw_notes_pgy.jsonl",
+      "source_row": 9,
+      "token": "def075e00671fd82"
+    }
+  ],
+  "sources": [
+    {
+      "duplicate_rows": 0,
+      "field_coverage": {
+        "captured_on": "5/5",
+        "category_tags": "5/5",
+        "city_raw": "5/5",
+        "creator_id": "5/5",
+        "creator_name": "5/5",
+        "data_updated_at_raw": "5/5",
+        "evidence_file": "5/5",
+        "fan_snapshot": "5/5",
+        "followers_count": "5/5",
+        "followers_raw": "5/5",
+        "image_quote_cny": "4/5",
+        "image_quote_raw": "5/5",
+        "likes_and_favorites_count": "5/5",
+        "likes_and_favorites_raw": "5/5",
+        "performance_medians": "5/5",
+        "profile_url": "0/5",
+        "profile_url_status": "5/5",
+        "source": "5/5",
+        "video_quote_cny": "5/5",
+        "video_quote_raw": "5/5"
+      },
+      "file": "research/continuous_collection_validation/raw_creators.jsonl",
+      "malformed_rows": 0,
+      "parsed_rows": 5
+    },
+    {
+      "duplicate_rows": 0,
+      "field_coverage": {
+        "captured_on": "9/9",
+        "content_text_raw": "9/9",
+        "creator_id": "9/9",
+        "evidence_file": "9/9",
+        "hashtags": "9/9",
+        "metrics": "9/9",
+        "note_id": "1/9",
+        "note_key": "9/9",
+        "note_type": "9/9",
+        "note_type_basis": "9/9",
+        "note_url": "1/9",
+        "period": "9/9",
+        "published_at": "8/9",
+        "published_raw": "9/9",
+        "source": "9/9",
+        "title": "9/9",
+        "video_duration_raw": "9/9"
+      },
+      "file": "research/continuous_collection_validation/raw_notes_pgy.jsonl",
+      "malformed_rows": 0,
+      "parsed_rows": 9
+    },
+    {
+      "duplicate_rows": 0,
+      "field_coverage": {
+        "author_name": "1/1",
+        "capture_status": "1/1",
+        "captured_on": "1/1",
+        "comments_raw": "1/1",
+        "evidence_file": "1/1",
+        "evidence_level": "1/1",
+        "favorites_raw": "1/1",
+        "likes_raw": "1/1",
+        "normalized_values": "1/1",
+        "note_id": "1/1",
+        "note_key": "1/1",
+        "note_url": "1/1",
+        "shares_raw": "0/1",
+        "source": "1/1",
+        "title": "1/1"
+      },
+      "file": "research/continuous_collection_validation/raw_notes_xhs.jsonl",
+      "malformed_rows": 0,
+      "parsed_rows": 1
+    },
+    {
+      "duplicate_rows": 0,
+      "field_coverage": {
+        "comment_text_excerpt": "45/45",
+        "display_time_raw": "45/45",
+        "evidence_file": "45/45",
+        "identity_fields_omitted": "45/45",
+        "likes_count": "45/45",
+        "likes_raw": "45/45",
+        "note_key": "45/45",
+        "source": "45/45"
+      },
+      "file": "research/continuous_collection_validation/raw_comments.jsonl",
+      "malformed_rows": 0,
+      "parsed_rows": 45
+    },
+    {
+      "duplicate_rows": 0,
+      "field_coverage": {
+        "body_text": "3/6",
+        "capture_scope": "1/6",
+        "captures": "6/6",
+        "comment_area_total_raw": "6/6",
+        "comment_samples_saved": "6/6",
+        "creator_name": "6/6",
+        "hashtags": "6/6",
+        "media_load_status": "6/6",
+        "metrics": "6/6",
+        "note_id": "6/6",
+        "note_type": "5/6",
+        "note_type_evidence": "6/6",
+        "page_title": "6/6",
+        "pgy_reference": "6/6",
+        "publish_time_display_raw": "6/6",
+        "query_values_retained": "6/6",
+        "share_url_base": "6/6",
+        "source_link_obtained_by": "6/6",
+        "source_link_query_keys": "6/6",
+        "source_link_query_present": "6/6",
+        "title": "6/6"
+      },
+      "file": "research/xhs_public_access_probe/raw_notes_xhs.jsonl",
+      "malformed_rows": 0,
+      "parsed_rows": 6
+    },
+    {
+      "duplicate_rows": 0,
+      "field_coverage": {
+        "capture_method": "1/1",
+        "captured_at": "1/1",
+        "comment_section_label": "1/1",
+        "comment_text": "1/1",
+        "commenter_account_id_saved": "1/1",
+        "commenter_name_saved": "1/1",
+        "commenter_profile_saved": "1/1",
+        "creator_name": "1/1",
+        "displayed_region_raw": "1/1",
+        "displayed_time_raw": "1/1",
+        "is_pinned": "1/1",
+        "likes_normalized": "0/1",
+        "likes_raw": "1/1",
+        "note_id": "1/1",
+        "replies_normalized": "0/1",
+        "replies_raw": "1/1"
+      },
+      "file": "research/xhs_public_access_probe/raw_comments_xhs.jsonl",
+      "malformed_rows": 0,
+      "parsed_rows": 1
+    },
+    {
+      "duplicate_rows": 0,
+      "field_coverage": {
+        "captured_on": "1/1",
+        "creator": "1/1",
+        "creator_performance": "1/1",
+        "fan_analysis": "1/1",
+        "limitations": "1/1",
+        "notes": "1/1",
+        "retention_basis": "1/1",
+        "schema_version": "1/1",
+        "sources": "1/1"
+      },
+      "file": "research/pgy_note_detail_investigation_20261120/actual_samples.json",
+      "malformed_rows": 0,
+      "parsed_rows": 1
+    }
+  ]
+}

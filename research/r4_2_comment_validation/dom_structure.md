@@ -1,0 +1,2072 @@
+# R4.2 Live Comment DOM Structure
+
+## Note `6afc317600000000180288af`
+
+- path: `/explore/6afc317600000000180288af`
+- title: 谁说北京过冬只能穿黑羽绒服，厉娜 - 小红书
+
+### Comment-related DOM classes
+
+- `div.comments-el` × 1
+- `div.comments-container` × 1
+- `div.parent-comment` × 10
+- `div.comment-item` × 10
+- `div.comment-inner-container` × 14
+- `div.comment-menu` × 10
+- `div.delete-dropdown.comment-delete-dropdown` × 14
+- `div.reply.icon-container` × 14
+- `div.reply-container` × 4
+- `div.comment-item.comment-item-sub` × 4
+- `div.comment-menu.comment-menu-sub` × 4
+- `div.comment-picture` × 2
+- `div.comments-login` × 1
+- `p.comments-login-text` × 1
+
+### Scrollable elements
+
+- `div.side-bar` at (16,72) 235×704; 0/347
+- `ul.channel-list` at (16,88) 235×552; 0/356
+- `div.information-container` at (16,660) 235×116; 0/347
+- `div.note-scroller` at (816,121) 439×550; 0/2077
+
+### Safe UI headings
+
+- `更多`: `div.information-wrapper` y=660
+- `回复`: `div.reply icon-container` y=719
+- `回复`: `span.count` y=719
+- `回复`: `div.reply icon-container` y=991
+- `回复`: `span.count` y=991
+- `回复`: `div.reply icon-container` y=1315
+- `回复`: `span.count` y=1315
+- `回复`: `div.reply icon-container` y=1439
+- `回复`: `span.count` y=1439
+- `回复`: `div.reply icon-container` y=1563
+- `回复`: `span.count` y=1563
+- `回复`: `div.reply icon-container` y=1795
+- `回复`: `span.count` y=1795
+- `回复`: `div.reply icon-container` y=1919
+- `回复`: `span.count` y=1919
+- `回复`: `div.reply icon-container` y=2150
+- `回复`: `span.count` y=2150
+- `回复`: `div.reply icon-container` y=2274
+- `回复`: `span.count` y=2274
+- `回复`: `div.reply icon-container` y=2566
+- `回复`: `span.count` y=2566
+
+### Text-node shape inside candidate comment rows
+
+- Root `div.parent-comment` rect={'x': 832, 'y': 495, 'w': 407, 'h': 248}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 17; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span.top > div.labels > div.right > div.comment-inner-container > div.comment-item`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 495, 'w': 407, 'h': 140}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 17; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span.top > div.labels > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 635, 'w': 355, 'h': 108}
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 759, 'w': 407, 'h': 288}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 26; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 23; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 759, 'w': 407, 'h': 129}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 26; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 888, 'w': 355, 'h': 127}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 23; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1063, 'w': 407, 'h': 276}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 24; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1063, 'w': 407, 'h': 276}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 24; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1355, 'w': 407, 'h': 108}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1355, 'w': 407, 'h': 108}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1479, 'w': 407, 'h': 108}
+  - text length 9; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 10; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1479, 'w': 407, 'h': 108}
+  - text length 9; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 10; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+
+## Note `6afc317600000000180288af`
+
+- path: `/explore/6afc317600000000180288af`
+- title: 谁说北京过冬只能穿黑羽绒服，厉娜 - 小红书
+
+### Comment-related DOM classes
+
+- `div.comments-el` × 1
+- `div.comments-container` × 1
+- `div.parent-comment` × 10
+- `div.comment-item` × 10
+- `div.comment-inner-container` × 14
+- `div.comment-menu` × 10
+- `div.delete-dropdown.comment-delete-dropdown` × 14
+- `div.reply.icon-container` × 14
+- `div.reply-container` × 4
+- `div.comment-item.comment-item-sub` × 4
+- `div.comment-menu.comment-menu-sub` × 4
+- `div.comment-picture` × 2
+- `div.comments-login` × 1
+- `p.comments-login-text` × 1
+
+### Scrollable elements
+
+- `div.side-bar` at (16,72) 235×704; 0/347
+- `ul.channel-list` at (16,88) 235×552; 0/356
+- `div.information-container` at (16,660) 235×116; 0/347
+- `div.note-scroller` at (816,121) 439×550; 600/2077
+
+### Safe UI headings
+
+- `更多`: `div.information-wrapper` y=660
+- `回复`: `div.reply icon-container` y=119
+- `回复`: `span.count` y=119
+- `回复`: `div.reply icon-container` y=391
+- `回复`: `span.count` y=391
+- `回复`: `div.reply icon-container` y=715
+- `回复`: `span.count` y=715
+- `回复`: `div.reply icon-container` y=839
+- `回复`: `span.count` y=839
+- `回复`: `div.reply icon-container` y=963
+- `回复`: `span.count` y=963
+- `回复`: `div.reply icon-container` y=1195
+- `回复`: `span.count` y=1195
+- `回复`: `div.reply icon-container` y=1319
+- `回复`: `span.count` y=1319
+- `回复`: `div.reply icon-container` y=1550
+- `回复`: `span.count` y=1550
+- `回复`: `div.reply icon-container` y=1674
+- `回复`: `span.count` y=1674
+- `回复`: `div.reply icon-container` y=1966
+- `回复`: `span.count` y=1966
+
+### Text-node shape inside candidate comment rows
+
+- Root `div.parent-comment` rect={'x': 832, 'y': -105, 'w': 407, 'h': 248}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 17; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span.top > div.labels > div.right > div.comment-inner-container > div.comment-item`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': -105, 'w': 407, 'h': 140}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 17; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span.top > div.labels > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 35, 'w': 355, 'h': 108}
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 159, 'w': 407, 'h': 288}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 26; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 23; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 159, 'w': 407, 'h': 129}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 26; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 288, 'w': 355, 'h': 127}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 23; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 463, 'w': 407, 'h': 276}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 24; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 463, 'w': 407, 'h': 276}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 24; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 755, 'w': 407, 'h': 108}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 755, 'w': 407, 'h': 108}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 879, 'w': 407, 'h': 108}
+  - text length 9; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 10; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 879, 'w': 407, 'h': 108}
+  - text length 9; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 10; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+
+## Note `6afc317600000000180288af`
+
+- path: `/explore/6afc317600000000180288af`
+- title: 谁说北京过冬只能穿黑羽绒服，厉娜 - 小红书
+
+### Comment-related DOM classes
+
+- `div.comments-el` × 1
+- `div.comments-container` × 1
+- `div.parent-comment` × 10
+- `div.comment-item` × 10
+- `div.comment-inner-container` × 16
+- `div.comment-menu` × 10
+- `div.delete-dropdown.comment-delete-dropdown` × 16
+- `div.reply.icon-container` × 16
+- `div.reply-container` × 6
+- `div.comment-item.comment-item-sub` × 6
+- `div.comment-menu.comment-menu-sub` × 6
+- `div.comment-picture` × 1
+- `div.comments-login` × 1
+- `p.comments-login-text` × 1
+
+### Scrollable elements
+
+- `div.side-bar` at (16,72) 235×704; 0/347
+- `ul.channel-list` at (16,88) 235×552; 0/356
+- `div.information-container` at (16,660) 235×116; 0/347
+- `div.note-scroller` at (816,121) 439×550; 0/2236
+
+### Safe UI headings
+
+- `更多`: `div.information-wrapper` y=660
+- `回复`: `div.reply icon-container` y=719
+- `回复`: `span.count` y=719
+- `回复`: `div.reply icon-container` y=991
+- `回复`: `span.count` y=991
+- `回复`: `div.reply icon-container` y=1314
+- `回复`: `span.count` y=1314
+- `回复`: `div.reply icon-container` y=1545
+- `回复`: `span.count` y=1545
+- `回复`: `div.reply icon-container` y=1809
+- `回复`: `span.count` y=1809
+- `回复`: `div.reply icon-container` y=2061
+- `回复`: `span.count` y=2061
+- `回复`: `div.reply icon-container` y=2185
+- `回复`: `span.count` y=2185
+- `回复`: `div.reply icon-container` y=2477
+- `回复`: `span.count` y=2477
+- `回复`: `div.reply icon-container` y=2601
+- `回复`: `span.count` y=2601
+- `回复`: `div.reply icon-container` y=2725
+- `回复`: `span.count` y=2725
+
+### Text-node shape inside candidate comment rows
+
+- Root `div.parent-comment` rect={'x': 832, 'y': 495, 'w': 407, 'h': 248}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 17; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span.top > div.labels > div.right > div.comment-inner-container > div.comment-item`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 495, 'w': 407, 'h': 140}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 17; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span.top > div.labels > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 635, 'w': 355, 'h': 108}
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 759, 'w': 407, 'h': 288}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 26; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 23; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 759, 'w': 407, 'h': 129}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 26; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 888, 'w': 355, 'h': 127}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 23; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1063, 'w': 407, 'h': 275}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 75; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1063, 'w': 407, 'h': 166}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 75; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1229, 'w': 355, 'h': 108}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1354, 'w': 407, 'h': 247}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 9; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 1354, 'w': 407, 'h': 108}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 9; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1461, 'w': 355, 'h': 108}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+
+## Note `6afc317600000000180288af`
+
+- path: `/explore/6afc317600000000180288af`
+- title: 谁说北京过冬只能穿黑羽绒服，厉娜 - 小红书
+
+### Comment-related DOM classes
+
+- `div.comments-el` × 1
+- `div.comments-container` × 1
+- `div.parent-comment` × 10
+- `div.comment-item` × 10
+- `div.comment-inner-container` × 16
+- `div.comment-menu` × 10
+- `div.delete-dropdown.comment-delete-dropdown` × 16
+- `div.reply.icon-container` × 16
+- `div.reply-container` × 6
+- `div.comment-item.comment-item-sub` × 6
+- `div.comment-menu.comment-menu-sub` × 6
+- `div.comment-picture` × 1
+- `div.comments-login` × 1
+- `p.comments-login-text` × 1
+
+### Scrollable elements
+
+- `div.side-bar` at (16,72) 235×704; 0/347
+- `ul.channel-list` at (16,88) 235×552; 0/356
+- `div.information-container` at (16,660) 235×116; 0/347
+- `div.note-scroller` at (816,121) 439×550; 0/2236
+
+### Safe UI headings
+
+- `更多`: `div.information-wrapper` y=660
+- `回复`: `div.reply icon-container` y=719
+- `回复`: `span.count` y=719
+- `回复`: `div.reply icon-container` y=991
+- `回复`: `span.count` y=991
+- `回复`: `div.reply icon-container` y=1314
+- `回复`: `span.count` y=1314
+- `回复`: `div.reply icon-container` y=1545
+- `回复`: `span.count` y=1545
+- `回复`: `div.reply icon-container` y=1809
+- `回复`: `span.count` y=1809
+- `回复`: `div.reply icon-container` y=2061
+- `回复`: `span.count` y=2061
+- `回复`: `div.reply icon-container` y=2185
+- `回复`: `span.count` y=2185
+- `回复`: `div.reply icon-container` y=2477
+- `回复`: `span.count` y=2477
+- `回复`: `div.reply icon-container` y=2601
+- `回复`: `span.count` y=2601
+- `回复`: `div.reply icon-container` y=2725
+- `回复`: `span.count` y=2725
+
+### Text-node shape inside candidate comment rows
+
+- Root `div.parent-comment` rect={'x': 832, 'y': 495, 'w': 407, 'h': 248}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 17; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span.top > div.labels > div.right > div.comment-inner-container > div.comment-item`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 495, 'w': 407, 'h': 140}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 17; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span.top > div.labels > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 635, 'w': 355, 'h': 108}
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 759, 'w': 407, 'h': 288}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 26; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 23; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 759, 'w': 407, 'h': 129}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 26; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 888, 'w': 355, 'h': 127}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 23; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1063, 'w': 407, 'h': 275}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 75; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1063, 'w': 407, 'h': 166}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 75; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1229, 'w': 355, 'h': 108}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1354, 'w': 407, 'h': 247}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 9; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 1354, 'w': 407, 'h': 108}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 9; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1461, 'w': 355, 'h': 108}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+
+## Note `6af2dd5f000000001802d246`
+
+- path: `/explore/6af2dd5f000000001802d246`
+- title: 超爽开箱： 购物欲像鬼一样缠着我 - 小红书
+
+### Comment-related DOM classes
+
+- `div.comments-el` × 1
+- `div.comments-container` × 1
+- `div.parent-comment` × 10
+- `div.comment-item` × 10
+- `div.comment-inner-container` × 20
+- `div.comment-menu` × 10
+- `div.delete-dropdown.comment-delete-dropdown` × 20
+- `div.reply.icon-container` × 20
+- `div.reply-container` × 10
+- `div.comment-item.comment-item-sub` × 10
+- `div.comment-menu.comment-menu-sub` × 10
+- `div.comment-picture` × 2
+- `div.comments-login` × 1
+- `p.comments-login-text` × 1
+
+### Scrollable elements
+
+- `div.side-bar` at (16,72) 235×704; 0/347
+- `ul.channel-list` at (16,88) 235×552; 0/356
+- `div.information-container` at (16,660) 235×116; 0/347
+- `div.note-scroller` at (816,121) 439×550; 0/2818
+
+### Safe UI headings
+
+- `更多`: `div.information-wrapper` y=660
+- `回复`: `div.reply icon-container` y=559
+- `回复`: `span.count` y=559
+- `回复`: `div.reply icon-container` y=990
+- `回复`: `span.count` y=990
+- `回复`: `div.reply icon-container` y=1255
+- `回复`: `span.count` y=1255
+- `回复`: `div.reply icon-container` y=1518
+- `回复`: `span.count` y=1518
+- `回复`: `div.reply icon-container` y=1918
+- `回复`: `span.count` y=1918
+- `回复`: `div.reply icon-container` y=2221
+- `回复`: `span.count` y=2221
+- `回复`: `div.reply icon-container` y=2485
+- `回复`: `span.count` y=2485
+- `回复`: `div.reply icon-container` y=2749
+- `回复`: `span.count` y=2749
+- `回复`: `div.reply icon-container` y=3043
+- `回复`: `span.count` y=3043
+- `回复`: `div.reply icon-container` y=3307
+- `回复`: `span.count` y=3307
+
+### Text-node shape inside candidate comment rows
+
+- Root `div.parent-comment` rect={'x': 832, 'y': 327, 'w': 407, 'h': 288}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 28; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 30; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 327, 'w': 407, 'h': 128}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 28; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 455, 'w': 355, 'h': 128}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 30; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 631, 'w': 407, 'h': 415}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 9; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 631, 'w': 407, 'h': 276}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 907, 'w': 355, 'h': 108}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 9; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1062, 'w': 407, 'h': 249}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 16; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 6; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 1062, 'w': 407, 'h': 108}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 16; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 6; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1171, 'w': 355, 'h': 108}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1327, 'w': 407, 'h': 215}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1327, 'w': 407, 'h': 108}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1435, 'w': 355, 'h': 108}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+
+## Note `6afc317600000000180288af`
+
+- path: `/explore/6afc317600000000180288af`
+- title: 谁说北京过冬只能穿黑羽绒服，厉娜 - 小红书
+
+### Comment-related DOM classes
+
+- `div.comments-el` × 1
+- `div.comments-container` × 1
+- `div.parent-comment` × 10
+- `div.comment-item` × 10
+- `div.comment-inner-container` × 15
+- `div.comment-menu` × 10
+- `div.delete-dropdown.comment-delete-dropdown` × 15
+- `div.reply.icon-container` × 15
+- `div.reply-container` × 5
+- `div.comment-item.comment-item-sub` × 5
+- `div.comment-menu.comment-menu-sub` × 5
+- `div.comment-picture` × 1
+- `div.comments-login` × 1
+- `p.comments-login-text` × 1
+
+### Scrollable elements
+
+- `div.side-bar` at (16,72) 235×704; 0/347
+- `ul.channel-list` at (16,88) 235×552; 0/356
+- `div.information-container` at (16,660) 235×116; 0/347
+- `div.note-scroller` at (816,121) 439×550; 0/2167
+
+### Safe UI headings
+
+- `更多`: `div.information-wrapper` y=660
+- `回复`: `div.reply icon-container` y=719
+- `回复`: `span.count` y=719
+- `回复`: `div.reply icon-container` y=991
+- `回复`: `span.count` y=991
+- `回复`: `div.reply icon-container` y=1275
+- `回复`: `span.count` y=1275
+- `回复`: `div.reply icon-container` y=1565
+- `回复`: `span.count` y=1565
+- `回复`: `div.reply icon-container` y=1689
+- `回复`: `span.count` y=1689
+- `回复`: `div.reply icon-container` y=1852
+- `回复`: `span.count` y=1852
+- `回复`: `div.reply icon-container` y=1975
+- `回复`: `span.count` y=1975
+- `回复`: `div.reply icon-container` y=2207
+- `回复`: `span.count` y=2207
+- `回复`: `div.reply icon-container` y=2363
+- `回复`: `span.count` y=2363
+- `回复`: `div.reply icon-container` y=2655
+- `回复`: `span.count` y=2655
+
+### Text-node shape inside candidate comment rows
+
+- Root `div.parent-comment` rect={'x': 832, 'y': 495, 'w': 407, 'h': 248}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 17; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span.top > div.labels > div.right > div.comment-inner-container > div.comment-item`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 495, 'w': 407, 'h': 140}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 17; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span.top > div.labels > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 635, 'w': 355, 'h': 108}
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 759, 'w': 407, 'h': 288}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 26; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 23; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 759, 'w': 407, 'h': 129}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 26; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 888, 'w': 355, 'h': 127}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 23; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1063, 'w': 407, 'h': 236}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 44; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1063, 'w': 407, 'h': 127}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 44; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1190, 'w': 355, 'h': 108}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1315, 'w': 407, 'h': 275}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 75; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1315, 'w': 407, 'h': 166}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 75; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1481, 'w': 355, 'h': 108}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+
+## Note `6af2dd5f000000001802d246`
+
+- path: `/explore/6af2dd5f000000001802d246`
+- title: 超爽开箱： 购物欲像鬼一样缠着我 - 小红书
+
+### Comment-related DOM classes
+
+- `div.comments-el` × 1
+- `div.comments-container` × 1
+- `div.parent-comment` × 10
+- `div.comment-item` × 10
+- `div.comment-inner-container` × 20
+- `div.comment-menu` × 10
+- `div.delete-dropdown.comment-delete-dropdown` × 20
+- `div.reply.icon-container` × 20
+- `div.reply-container` × 10
+- `div.comment-item.comment-item-sub` × 10
+- `div.comment-menu.comment-menu-sub` × 10
+- `div.comment-picture` × 2
+- `div.comments-login` × 1
+- `p.comments-login-text` × 1
+
+### Scrollable elements
+
+- `div.side-bar` at (16,72) 235×704; 0/347
+- `ul.channel-list` at (16,88) 235×552; 0/356
+- `div.information-container` at (16,660) 235×116; 0/347
+- `div.note-scroller` at (816,121) 439×550; 0/2818
+
+### Safe UI headings
+
+- `更多`: `div.information-wrapper` y=660
+- `回复`: `div.reply icon-container` y=559
+- `回复`: `span.count` y=559
+- `回复`: `div.reply icon-container` y=990
+- `回复`: `span.count` y=990
+- `回复`: `div.reply icon-container` y=1255
+- `回复`: `span.count` y=1255
+- `回复`: `div.reply icon-container` y=1518
+- `回复`: `span.count` y=1518
+- `回复`: `div.reply icon-container` y=1918
+- `回复`: `span.count` y=1918
+- `回复`: `div.reply icon-container` y=2221
+- `回复`: `span.count` y=2221
+- `回复`: `div.reply icon-container` y=2485
+- `回复`: `span.count` y=2485
+- `回复`: `div.reply icon-container` y=2749
+- `回复`: `span.count` y=2749
+- `回复`: `div.reply icon-container` y=3043
+- `回复`: `span.count` y=3043
+- `回复`: `div.reply icon-container` y=3307
+- `回复`: `span.count` y=3307
+
+### Text-node shape inside candidate comment rows
+
+- Root `div.parent-comment` rect={'x': 832, 'y': 327, 'w': 407, 'h': 288}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 28; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 30; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 327, 'w': 407, 'h': 128}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 28; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 455, 'w': 355, 'h': 128}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 30; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 631, 'w': 407, 'h': 415}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 9; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 631, 'w': 407, 'h': 276}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 907, 'w': 355, 'h': 108}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 9; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1062, 'w': 407, 'h': 249}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 16; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 6; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 1062, 'w': 407, 'h': 108}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 16; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 6; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1171, 'w': 355, 'h': 108}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1327, 'w': 407, 'h': 215}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1327, 'w': 407, 'h': 108}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1435, 'w': 355, 'h': 108}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+
+## Note `6af9bf01000000002a02adec`
+
+- path: `/explore/6af9bf01000000002a02adec`
+- title: 分币不花的预算，没想到花得分币不剩 - 小红书
+
+### Comment-related DOM classes
+
+- `div.comments-el` × 1
+- `div.comments-container` × 1
+- `div.parent-comment` × 10
+- `div.comment-item` × 10
+- `div.comment-inner-container` × 19
+- `div.comment-menu` × 10
+- `div.delete-dropdown.comment-delete-dropdown` × 19
+- `div.comment-picture` × 5
+- `div.reply.icon-container` × 19
+- `div.reply-container` × 9
+- `div.comment-item.comment-item-sub` × 9
+- `div.comment-menu.comment-menu-sub` × 9
+- `div.ai-comment-text-wrapper` × 2
+- `div.comment-image-gallery.comment-image-gallery--no-scroll` × 1
+- `div.comment-image-gallery__track` × 1
+- `div.img-box.comment-image-gallery__item` × 2
+- `div.comments-login` × 1
+- `p.comments-login-text` × 1
+
+### Scrollable elements
+
+- `div.side-bar` at (16,72) 235×704; 0/347
+- `ul.channel-list` at (16,88) 235×552; 0/356
+- `div.information-container` at (16,660) 235×116; 0/347
+- `div.note-scroller` at (816,121) 439×550; 0/3007
+
+### Safe UI headings
+
+- `更多`: `div.information-wrapper` y=660
+- `回复`: `div.reply icon-container` y=758
+- `回复`: `span.count` y=758
+- `回复`: `div.reply icon-container` y=1009
+- `回复`: `span.count` y=1009
+- `回复`: `div.reply icon-container` y=1273
+- `回复`: `span.count` y=1273
+- `回复`: `div.reply icon-container` y=1397
+- `回复`: `span.count` y=1397
+- `回复`: `div.reply icon-container` y=1797
+- `回复`: `span.count` y=1797
+- `回复`: `div.reply icon-container` y=2197
+- `回复`: `span.count` y=2197
+- `回复`: `div.reply icon-container` y=2447
+- `回复`: `span.count` y=2447
+- `回复`: `div.reply icon-container` y=2949
+- `回复`: `span.count` y=2949
+- `回复`: `div.reply icon-container` y=3231
+- `回复`: `span.count` y=3231
+- `回复`: `div.reply icon-container` y=3463
+- `回复`: `span.count` y=3463
+
+### Text-node shape inside candidate comment rows
+
+- Root `div.parent-comment` rect={'x': 832, 'y': 399, 'w': 407, 'h': 383}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 6; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 15; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 399, 'w': 407, 'h': 276}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 6; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 675, 'w': 355, 'h': 108}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 15; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 798, 'w': 407, 'h': 267}
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 22; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 798, 'w': 407, 'h': 108}
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 906, 'w': 355, 'h': 127}
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 22; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1081, 'w': 407, 'h': 216}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1081, 'w': 407, 'h': 108}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1189, 'w': 355, 'h': 108}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1313, 'w': 407, 'h': 108}
+  - text length 3; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1313, 'w': 407, 'h': 108}
+  - text length 3; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1437, 'w': 407, 'h': 384}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 10; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+
+## Note `6af2dd5f000000001802d246`
+
+- path: `/explore/6af2dd5f000000001802d246`
+- title: 超爽开箱： 购物欲像鬼一样缠着我 - 小红书
+
+### Comment-related DOM classes
+
+- `div.comments-el` × 1
+- `div.comments-container` × 1
+- `div.parent-comment` × 10
+- `div.comment-item` × 10
+- `div.comment-inner-container` × 20
+- `div.comment-menu` × 10
+- `div.delete-dropdown.comment-delete-dropdown` × 20
+- `div.reply.icon-container` × 20
+- `div.reply-container` × 10
+- `div.comment-item.comment-item-sub` × 10
+- `div.comment-menu.comment-menu-sub` × 10
+- `div.comment-picture` × 2
+- `div.comments-login` × 1
+- `p.comments-login-text` × 1
+
+### Scrollable elements
+
+- `div.side-bar` at (16,72) 235×704; 0/347
+- `ul.channel-list` at (16,88) 235×552; 0/356
+- `div.information-container` at (16,660) 235×116; 0/347
+- `div.note-scroller` at (816,121) 439×550; 0/2818
+
+### Safe UI headings
+
+- `更多`: `div.information-wrapper` y=660
+- `回复`: `div.reply icon-container` y=559
+- `回复`: `span.count` y=559
+- `回复`: `div.reply icon-container` y=990
+- `回复`: `span.count` y=990
+- `回复`: `div.reply icon-container` y=1255
+- `回复`: `span.count` y=1255
+- `回复`: `div.reply icon-container` y=1518
+- `回复`: `span.count` y=1518
+- `回复`: `div.reply icon-container` y=1918
+- `回复`: `span.count` y=1918
+- `回复`: `div.reply icon-container` y=2221
+- `回复`: `span.count` y=2221
+- `回复`: `div.reply icon-container` y=2485
+- `回复`: `span.count` y=2485
+- `回复`: `div.reply icon-container` y=2749
+- `回复`: `span.count` y=2749
+- `回复`: `div.reply icon-container` y=3043
+- `回复`: `span.count` y=3043
+- `回复`: `div.reply icon-container` y=3307
+- `回复`: `span.count` y=3307
+
+### Text-node shape inside candidate comment rows
+
+- Root `div.parent-comment` rect={'x': 832, 'y': 327, 'w': 407, 'h': 288}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 28; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 30; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 327, 'w': 407, 'h': 128}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 28; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 455, 'w': 355, 'h': 128}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 30; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 631, 'w': 407, 'h': 415}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 9; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 631, 'w': 407, 'h': 276}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 907, 'w': 355, 'h': 108}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 9; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1062, 'w': 407, 'h': 249}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 16; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 6; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 1062, 'w': 407, 'h': 108}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 16; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 6; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1171, 'w': 355, 'h': 108}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1327, 'w': 407, 'h': 215}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1327, 'w': 407, 'h': 108}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1435, 'w': 355, 'h': 108}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+
+## Note `6af9bf01000000002a02adec`
+
+- path: `/explore/6af9bf01000000002a02adec`
+- title: 分币不花的预算，没想到花得分币不剩 - 小红书
+
+### Comment-related DOM classes
+
+- `div.comments-el` × 1
+- `div.comments-container` × 1
+- `div.parent-comment` × 10
+- `div.comment-item` × 10
+- `div.comment-inner-container` × 19
+- `div.comment-menu` × 10
+- `div.delete-dropdown.comment-delete-dropdown` × 19
+- `div.comment-picture` × 5
+- `div.reply.icon-container` × 19
+- `div.reply-container` × 9
+- `div.comment-item.comment-item-sub` × 9
+- `div.comment-menu.comment-menu-sub` × 9
+- `div.ai-comment-text-wrapper` × 2
+- `div.comment-image-gallery.comment-image-gallery--no-scroll` × 1
+- `div.comment-image-gallery__track` × 1
+- `div.img-box.comment-image-gallery__item` × 2
+- `div.comments-login` × 1
+- `p.comments-login-text` × 1
+
+### Scrollable elements
+
+- `div.side-bar` at (16,72) 235×704; 0/347
+- `ul.channel-list` at (16,88) 235×552; 0/356
+- `div.information-container` at (16,660) 235×116; 0/347
+- `div.note-scroller` at (816,121) 439×550; 0/3007
+
+### Safe UI headings
+
+- `更多`: `div.information-wrapper` y=660
+- `回复`: `div.reply icon-container` y=758
+- `回复`: `span.count` y=758
+- `回复`: `div.reply icon-container` y=1009
+- `回复`: `span.count` y=1009
+- `回复`: `div.reply icon-container` y=1273
+- `回复`: `span.count` y=1273
+- `回复`: `div.reply icon-container` y=1397
+- `回复`: `span.count` y=1397
+- `回复`: `div.reply icon-container` y=1797
+- `回复`: `span.count` y=1797
+- `回复`: `div.reply icon-container` y=2197
+- `回复`: `span.count` y=2197
+- `回复`: `div.reply icon-container` y=2447
+- `回复`: `span.count` y=2447
+- `回复`: `div.reply icon-container` y=2949
+- `回复`: `span.count` y=2949
+- `回复`: `div.reply icon-container` y=3231
+- `回复`: `span.count` y=3231
+- `回复`: `div.reply icon-container` y=3463
+- `回复`: `span.count` y=3463
+
+### Text-node shape inside candidate comment rows
+
+- Root `div.parent-comment` rect={'x': 832, 'y': 399, 'w': 407, 'h': 383}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 6; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 15; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 399, 'w': 407, 'h': 276}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 6; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 675, 'w': 355, 'h': 108}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 15; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 798, 'w': 407, 'h': 267}
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 22; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 798, 'w': 407, 'h': 108}
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 906, 'w': 355, 'h': 127}
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 22; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1081, 'w': 407, 'h': 216}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1081, 'w': 407, 'h': 108}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1189, 'w': 355, 'h': 108}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1313, 'w': 407, 'h': 108}
+  - text length 3; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1313, 'w': 407, 'h': 108}
+  - text length 3; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1437, 'w': 407, 'h': 384}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 10; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+
+## Note `6afc317600000000180288af`
+
+- path: `/explore/6afc317600000000180288af`
+- title: 谁说北京过冬只能穿黑羽绒服，厉娜 - 小红书
+
+### Comment-related DOM classes
+
+- `div.comments-el` × 1
+- `div.comments-container` × 1
+- `div.parent-comment` × 10
+- `div.comment-item` × 10
+- `div.comment-inner-container` × 15
+- `div.comment-menu` × 10
+- `div.delete-dropdown.comment-delete-dropdown` × 15
+- `div.reply.icon-container` × 15
+- `div.reply-container` × 5
+- `div.comment-item.comment-item-sub` × 5
+- `div.comment-menu.comment-menu-sub` × 5
+- `div.comment-picture` × 1
+- `div.comments-login` × 1
+- `p.comments-login-text` × 1
+
+### Scrollable elements
+
+- `div.side-bar` at (16,72) 235×704; 0/347
+- `ul.channel-list` at (16,88) 235×552; 0/356
+- `div.information-container` at (16,660) 235×116; 0/347
+- `div.note-scroller` at (816,121) 439×550; 0/2167
+
+### Safe UI headings
+
+- `更多`: `div.information-wrapper` y=660
+- `回复`: `div.reply icon-container` y=719
+- `回复`: `span.count` y=719
+- `回复`: `div.reply icon-container` y=991
+- `回复`: `span.count` y=991
+- `回复`: `div.reply icon-container` y=1275
+- `回复`: `span.count` y=1275
+- `回复`: `div.reply icon-container` y=1565
+- `回复`: `span.count` y=1565
+- `回复`: `div.reply icon-container` y=1689
+- `回复`: `span.count` y=1689
+- `回复`: `div.reply icon-container` y=1852
+- `回复`: `span.count` y=1852
+- `回复`: `div.reply icon-container` y=1975
+- `回复`: `span.count` y=1975
+- `回复`: `div.reply icon-container` y=2207
+- `回复`: `span.count` y=2207
+- `回复`: `div.reply icon-container` y=2363
+- `回复`: `span.count` y=2363
+- `回复`: `div.reply icon-container` y=2655
+- `回复`: `span.count` y=2655
+
+### Text-node shape inside candidate comment rows
+
+- Root `div.parent-comment` rect={'x': 832, 'y': 495, 'w': 407, 'h': 248}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 17; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span.top > div.labels > div.right > div.comment-inner-container > div.comment-item`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 495, 'w': 407, 'h': 140}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 17; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 4; `span.top > div.labels > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 3; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 635, 'w': 355, 'h': 108}
+  - text length 2; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 759, 'w': 407, 'h': 288}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 26; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 23; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 759, 'w': 407, 'h': 129}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 13; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 26; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 888, 'w': 355, 'h': 127}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 23; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 3; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1063, 'w': 407, 'h': 236}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 44; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1063, 'w': 407, 'h': 127}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 44; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1190, 'w': 355, 'h': 108}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1315, 'w': 407, 'h': 275}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 75; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1315, 'w': 407, 'h': 166}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 75; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1481, 'w': 355, 'h': 108}
+  - text length 17; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+
+## Note `6af2dd5f000000001802d246`
+
+- path: `/explore/6af2dd5f000000001802d246`
+- title: 超爽开箱： 购物欲像鬼一样缠着我 - 小红书
+
+### Comment-related DOM classes
+
+- `div.comments-el` × 1
+- `div.comments-container` × 1
+- `div.parent-comment` × 10
+- `div.comment-item` × 10
+- `div.comment-inner-container` × 20
+- `div.comment-menu` × 10
+- `div.delete-dropdown.comment-delete-dropdown` × 20
+- `div.reply.icon-container` × 20
+- `div.reply-container` × 10
+- `div.comment-item.comment-item-sub` × 10
+- `div.comment-menu.comment-menu-sub` × 10
+- `div.comment-picture` × 2
+- `div.comments-login` × 1
+- `p.comments-login-text` × 1
+
+### Scrollable elements
+
+- `div.side-bar` at (16,72) 235×704; 0/347
+- `ul.channel-list` at (16,88) 235×552; 0/356
+- `div.information-container` at (16,660) 235×116; 0/347
+- `div.note-scroller` at (816,121) 439×550; 0/2818
+
+### Safe UI headings
+
+- `更多`: `div.information-wrapper` y=660
+- `回复`: `div.reply icon-container` y=559
+- `回复`: `span.count` y=559
+- `回复`: `div.reply icon-container` y=990
+- `回复`: `span.count` y=990
+- `回复`: `div.reply icon-container` y=1255
+- `回复`: `span.count` y=1255
+- `回复`: `div.reply icon-container` y=1518
+- `回复`: `span.count` y=1518
+- `回复`: `div.reply icon-container` y=1918
+- `回复`: `span.count` y=1918
+- `回复`: `div.reply icon-container` y=2221
+- `回复`: `span.count` y=2221
+- `回复`: `div.reply icon-container` y=2485
+- `回复`: `span.count` y=2485
+- `回复`: `div.reply icon-container` y=2749
+- `回复`: `span.count` y=2749
+- `回复`: `div.reply icon-container` y=3043
+- `回复`: `span.count` y=3043
+- `回复`: `div.reply icon-container` y=3307
+- `回复`: `span.count` y=3307
+
+### Text-node shape inside candidate comment rows
+
+- Root `div.parent-comment` rect={'x': 832, 'y': 327, 'w': 407, 'h': 288}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 28; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 30; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 327, 'w': 407, 'h': 128}
+  - text length 6; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 3; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 28; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 455, 'w': 355, 'h': 128}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 30; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 8; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 631, 'w': 407, 'h': 415}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 9; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 631, 'w': 407, 'h': 276}
+  - text length 4; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 907, 'w': 355, 'h': 108}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 9; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1062, 'w': 407, 'h': 249}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 16; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 6; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `div.show-more > div.reply-container`
+- Root `div.comment-item` rect={'x': 832, 'y': 1062, 'w': 407, 'h': 108}
+  - text length 5; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 16; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 6; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1171, 'w': 355, 'h': 108}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 4; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 5; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.parent-comment` rect={'x': 832, 'y': 1327, 'w': 407, 'h': 215}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item` rect={'x': 832, 'y': 1327, 'w': 407, 'h': 108}
+  - text length 7; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 12; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 1; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+- Root `div.comment-item comment-item-sub` rect={'x': 884, 'y': 1435, 'w': 355, 'h': 108}
+  - text length 8; `a.name > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 2; `span.tag xhs-tag-author > div.author > div.author-wrapper > div.right > div.comment-inner-container`
+  - text length 1; `span. > span.note-text > div.content > div.right > div.comment-inner-container`
+  - text length 3; `span. > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 2; `span.location > div.date > div.info > div.right > div.comment-inner-container`
+  - text length 1; `span.count > span.like-wrapper like-active > div.like > div.interactions > div.info`
+  - text length 2; `span.count > div.reply icon-container > div.interactions > div.info > div.right`
+

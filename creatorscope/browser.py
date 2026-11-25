@@ -840,19 +840,44 @@ class PgyVisibleBrowser:
                 return
             page.wait_for_timeout(500)
 
+    _MODAL_SELECTOR = (
+        "[role='dialog']:visible, [aria-modal='true']:visible, "
+        "[class*='modal']:visible, [class*='overlay']:visible, [class*='mask']:visible"
+    )
+
+    @classmethod
+    def _login_modal_container(cls, page):
+        """返回可见的模态/遮罩容器 locator；关闭按钮在其后代元素中查找。"""
+        return page.locator(cls._MODAL_SELECTOR)
+
+    @staticmethod
+    def _login_modal_visible(page) -> bool:
+        """判断是否存在居中的模态登录弹窗。
+
+        左侧导航常驻的“登录”按钮不是弹窗；不能用页面里是否存在“登录”文本判断，
+        否则会把常驻入口误当成未关闭的弹窗，一直阻塞续采。
+        """
+        modal = PgyVisibleBrowser._login_modal_container(page)
+        try:
+            for index in range(min(modal.count(), 30)):
+                box = modal.nth(index)
+                try:
+                    if not box.is_visible():
+                        continue
+                    text = box.inner_text(timeout=1500) or ""
+                except Exception:
+                    continue
+                if re.search(r"手机号登录|扫码登录|验证码|密码登录", text):
+                    return True
+        except Exception:
+            return False
+        return False
+
     @staticmethod
     def _manual_dismissal_is_visible(requirement: ManualDismissRequired) -> bool:
         page = requirement.page
         if requirement.kind == "phone_login":
-            selectors = (requirement.prompt_text or "手机号登录",)
-            try:
-                for label in selectors:
-                    locator = page.get_by_text(label, exact=True)
-                    if locator.count() and locator.first.is_visible():
-                        return True
-                return False
-            except Exception:
-                return True
+            return PgyVisibleBrowser._login_modal_visible(page)
         if requirement.kind == "note_panel":
             try:
                 locator = page.get_by_text("复制小红书笔记链接", exact=True)
@@ -1302,7 +1327,7 @@ class PgyVisibleBrowser:
         for target, target_kind in candidates:
             try:
                 target.scroll_into_view_if_needed(timeout=5000)
-                page.wait_for_timeout(300)
+                page.wait_for_timeout(150)
                 verify_row()
             except CaptureError:
                 raise
@@ -1413,7 +1438,7 @@ class PgyVisibleBrowser:
         if overview_tab.count() == 1 and overview_tab.first.is_visible():
             try:
                 overview_tab.first.click(timeout=5000)
-                page.wait_for_timeout(350)
+                page.wait_for_timeout(150)
             except Exception:
                 pass
         lines = capture_visible()
@@ -1451,7 +1476,7 @@ class PgyVisibleBrowser:
         if fans_tab.count() == 1 and fans_tab.first.is_visible():
             try:
                 fans_tab.first.click(timeout=8000)
-                page.wait_for_timeout(450)
+                page.wait_for_timeout(150)
                 fan_lines = capture_visible()
                 fan_deadline = time.monotonic() + 3
                 while time.monotonic() < fan_deadline and not self._fans_record(fan_lines):
@@ -1469,7 +1494,6 @@ class PgyVisibleBrowser:
         tabs = page.get_by_text("笔记数据", exact=True)
         if tabs.count() == 1 and tabs.first.is_visible():
             tabs.first.click(timeout=8000)
-            page.wait_for_timeout(500)
         cards = page.locator(".note-card-wrapper:visible")
         if cards.count() == 0:
             try:
@@ -1490,6 +1514,8 @@ class PgyVisibleBrowser:
         )
         for value in text.splitlines():
             line = re.sub(r"\s+", " ", value).strip(" ·|\t")
+            line = re.sub(r"#\S+", "", line).strip(" ·|\t")
+            line = re.sub(r"(?:…|\.{2,})\s*$", "", line).strip()
             if len(line) < 4 or len(line) > 240 or excluded.search(line):
                 continue
             if re.fullmatch(r"[\d.,+%¥￥元万wW:：—–-]+", line):
@@ -1499,7 +1525,9 @@ class PgyVisibleBrowser:
 
     @staticmethod
     def _titles_match(expected: str | None, actual: str | None) -> bool:
-        normalize = lambda value: re.sub(r"[^\w\u3400-\u9fff]+", "", str(value or "").casefold())
+        normalize = lambda value: re.sub(
+            r"[^\w\u3400-\u9fff]+", "", str(value or "").casefold()
+        ).rstrip("…")
         left, right = normalize(expected), normalize(actual)
         if not left or not right:
             return False
@@ -1523,8 +1551,11 @@ class PgyVisibleBrowser:
         if mask.count() != 1:
             raise CaptureError("笔记卡片可见点击区域不唯一；已跳过该笔记")
         mask.click(timeout=12000)
-        page.wait_for_timeout(700)
         copy_control = page.get_by_text("复制小红书笔记链接", exact=True)
+        try:
+            copy_control.first.wait_for(state="visible", timeout=3000)
+        except Exception:
+            pass
         if copy_control.count() != 1 or not copy_control.first.is_visible():
             raise CaptureError("笔记详情面板没有唯一的可见复制链接按钮")
         try:
@@ -1612,7 +1643,7 @@ class PgyVisibleBrowser:
             tab.goto(copied_url, wait_until="domcontentloaded", timeout=45000)
         except Exception:
             pass
-        tab.wait_for_timeout(900)
+        tab.wait_for_timeout(500)
         self._check_page_blocker(tab, pgy=False)
         self._close_phone_login_prompt(tab)
         return tab
@@ -1627,7 +1658,8 @@ class PgyVisibleBrowser:
     ) -> dict[str, Any] | None:
         title = self._visible_first_text(
             page,
-            (".note-content .title", ".note-detail-mask .title", "h1"),
+            (".note-content .title", ".note-detail-mask .title", "#detail-title",
+             ".note-title", ".title-text", "h1"),
         )
         body = self._visible_first_text(
             page,
@@ -1749,16 +1781,31 @@ class PgyVisibleBrowser:
                   const visible = (el) => { const r=el.getBoundingClientRect(), s=getComputedStyle(el);
                     return r.width>0 && r.height>0 && s.display!=='none' && s.visibility!=='hidden'; };
                   const value = (root, selector) => { const el=root.querySelector(selector);
-                    if(!el || !visible(el)) return null; const v=(el.innerText||el.textContent||''); return v.length?v:null; };
+                    if(!el || !visible(el)) return null; const v=(el.innerText||el.textContent||'').trim(); return v.length?v:null; };
+                  const LIKE_SELS = ['.interactions .like .count', '.interactions .like-wrapper .count',
+                    '.interactions .like .num', '.interactions [class*="like"] [class*="count"]',
+                    '.interactions [class*="like"] [class*="num"]'];
+                  const REPLY_SELS = ['.interactions .reply .count', '.interactions .reply-wrapper .count',
+                    '.interactions .reply .num', '.interactions [class*="reply"] [class*="count"]',
+                    '.interactions [class*="comment"] [class*="count"]'];
+                  const pickCount = (root, sels) => {
+                    for (const sel of sels) { const el=root.querySelector(sel);
+                      if(el){ const v=(el.innerText||el.textContent||'').trim(); if(/\\d/.test(v)) return v; } }
+                    const box=root.querySelector('.interactions');
+                    if(box){ for(const el of box.querySelectorAll('[class*="count"],[class*="num"],span,em,i')){
+                      const v=(el.innerText||el.textContent||'').trim();
+                      if(/^\\d+(?:\\.\\d+)?(?:万|w|千|\\+)?$/.test(v)) return v; } }
+                    return null;
+                  };
                   const rows=[];
                   for (const el of document.querySelectorAll(rootsSelector)) if(visible(el)) rows.push({
                     text:value(el,'.content .note-text'), time:value(el,'.date > span:not(.location)'),
-                    likes:value(el,'.interactions .like .count'), replies:value(el,'.interactions .reply .count'),
+                    likes:pickCount(el,LIKE_SELS), replies:pickCount(el,REPLY_SELS),
                     pinned:!!el.querySelector('.labels .top'), level:1, parent_text:null, parent_time:null});
                   for (const el of document.querySelectorAll(repliesSelector)) if(visible(el)) {
                     const parent=el.closest('.parent-comment')?.querySelector(':scope > .comment-item:not(.comment-item-sub)');
                     rows.push({text:value(el,'.content .note-text'), time:value(el,'.date > span:not(.location)'),
-                      likes:value(el,'.interactions .like .count'), replies:value(el,'.interactions .reply .count'),
+                      likes:pickCount(el,LIKE_SELS), replies:pickCount(el,REPLY_SELS),
                       pinned:null, level:2, parent_text:parent?value(parent,'.content .note-text'):null,
                       parent_time:parent?value(parent,'.date > span:not(.location)'):null});
                   }
@@ -1835,7 +1882,7 @@ class PgyVisibleBrowser:
                 comments_container.evaluate("el => { el.scrollTop = Math.min(el.scrollTop + Math.max(250, el.clientHeight * .8), el.scrollHeight); }")
             else:
                 break
-            page.wait_for_timeout(550)
+            page.wait_for_timeout(350)
             harvest()
             after_count = dom_row_count()
             delta = max(0, after_count - prior_count)
@@ -1926,45 +1973,75 @@ class PgyVisibleBrowser:
                     continue
         return values
 
-    def _close_phone_login_prompt(self, page) -> None:
-        self._check_page_blocker(page, pgy=False)
-        prompt = page.get_by_text("手机号登录", exact=True)
-        prompt_text = "手机号登录"
-        visible_prompt = False
+    @staticmethod
+    def _collect_login_close_candidates(page):
+        """在登录弹窗容器内收集关闭钮，返回 (strong, weak) 两组 element handle。
+
+        strong: 类名/aria/title 明确含 close/cross/clear/关闭；
+        weak:   纯叉号文本（×/✕/✖/x）。
+        限定在模态/遮罩容器内查找，避免把左侧常驻“登录”入口误当成关闭钮。
+        """
+        containers = PgyVisibleBrowser._login_modal_container(page)
+        scopes = []
         try:
-            visible_prompt = prompt.count() > 0 and prompt.first.is_visible()
-            if not visible_prompt:
-                prompt_text = "登录"
-                login_label = page.get_by_text("登录", exact=True)
-                visible_prompt = login_label.count() > 0 and login_label.first.is_visible()
+            for index in range(min(containers.count(), 30)):
+                box = containers.nth(index)
+                if box.is_visible():
+                    scopes.append(box)
         except Exception:
-            visible_prompt = False
-        if not visible_prompt:
-            return
+            scopes = []
+        if not scopes:
+            scopes = [page]
+
         selectors = (
-            "button[aria-label*='关闭']:visible",
-            "[role='button'][aria-label*='关闭']:visible",
-            "button[title*='关闭']:visible",
-            ".icon-btn-wrapper.close-button:visible",
             "button:visible",
             "[role='button']:visible",
+            "a:visible",
+            "div[class*='close']:visible",
+            "span[class*='close']:visible",
+            "i[class*='close']:visible",
+            "svg:visible",
+            "div[class*='cross']:visible",
+            "div[class*='clear']:visible",
         )
-        candidates = []
-        for selector in selectors:
-            locator = page.locator(selector)
-            for index in range(min(locator.count(), 80)):
-                item = locator.nth(index)
-                try:
-                    label = item.evaluate(
-                        "el => [el.getAttribute('aria-label')||'',el.getAttribute('title')||'',(el.innerText||'').trim()].join(' ')"
-                    )
-                    if re.search(r"关闭|close|^[×xX]$", label, re.I):
-                        handle = item.element_handle()
-                        if handle and all(handle != prior for prior in candidates):
-                            candidates.append(handle)
-                except Exception:
-                    continue
-        if len(candidates) != 1:
+        strong: list[Any] = []
+        weak: list[Any] = []
+        seen: list[Any] = []
+        for scope in scopes:
+            for selector in selectors:
+                locator = scope.locator(selector)
+                for index in range(min(locator.count(), 40)):
+                    item = locator.nth(index)
+                    try:
+                        label = item.evaluate(
+                            "el => [el.getAttribute('aria-label')||'', el.getAttribute('title')||'', "
+                            "el.getAttribute('class')||'', (el.innerText||'').trim()].join(' ')"
+                        )
+                    except Exception:
+                        continue
+                    handle = item.element_handle()
+                    if not handle or any(handle == prior for prior in seen):
+                        continue
+                    seen.append(handle)
+                    if re.search(r"关闭|close|cross|clear", label, re.I):
+                        strong.append(handle)
+                    elif re.search(r"^[×✕✖xX]$", label.strip(), re.I):
+                        weak.append(handle)
+        return strong, weak
+
+    def _close_phone_login_prompt(self, page) -> None:
+        self._check_page_blocker(page, pgy=False)
+        prompt_text = "手机号登录"
+        if not self._login_modal_visible(page):
+            return
+        strong, weak = self._collect_login_close_candidates(page)
+        if len(strong) == 1:
+            target = strong[0]
+        elif not strong and len(weak) == 1:
+            target = weak[0]
+        else:
+            target = None
+        if target is None:
             raise ManualDismissRequired(
                 "小红书显示手机号登录提示，请在可见浏览器中手动关闭；关闭后将自动继续采集",
                 page,
@@ -1972,7 +2049,7 @@ class PgyVisibleBrowser:
                 pgy=False,
                 prompt_text=prompt_text,
             )
-        candidates[0].click(timeout=5000)
+        target.click(timeout=5000)
         page.wait_for_timeout(300)
         self._check_page_blocker(page, pgy=False)
 

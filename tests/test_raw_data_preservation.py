@@ -12,7 +12,7 @@ from flask import Flask
 
 from creatorscope.browser import PgyVisibleBrowser
 from creatorscope.db import connection, ensure_creator_ref, initialize_database
-from creatorscope.ingest import ingest_comment_snapshots, ingest_payload, normalize_value
+from creatorscope.ingest import ingest_comment_snapshots, ingest_payload, normalize_value, _clean_interaction_raw
 from research.r4_3_comment_analysis.comment_analysis import fetch_comments
 from research.r4_3_comment_analysis.comments_web import comment_analysis_bp
 
@@ -466,6 +466,45 @@ class RawDataPreservationTests(unittest.TestCase):
         csv_source_row = next(row for row in csv_rows if row["comment_id"] == "visible-comment-id-77")
         self.assertEqual(csv_source_row["comment_text"], comments[0]["comment_text"])
         self.assertEqual(json.loads(csv_source_row["raw_payload"])["commenter_name"], "评论用户甲")
+
+    def test_interaction_action_words_are_not_stored_as_counts(self) -> None:
+        # 纯动作文案（无数字）应被清洗为 None，而不是落进点赞/回复数字字段。
+        self.assertIsNone(_clean_interaction_raw("赞"))
+        self.assertIsNone(_clean_interaction_raw("回复"))
+        self.assertIsNone(_clean_interaction_raw("收藏"))
+        self.assertIsNone(_clean_interaction_raw(None))
+        self.assertIsNone(_clean_interaction_raw(""))
+        self.assertEqual(_clean_interaction_raw("3"), "3")
+        self.assertEqual(_clean_interaction_raw("3+"), "3+")
+        self.assertEqual(_clean_interaction_raw("1.2万"), "1.2万")
+
+        ingest_comment_snapshots(
+            self.db_path,
+            task_id="task-raw",
+            batch_id="batch-raw",
+            creator_ref="pgy-visible-creator-ref",
+            note_ref="https://www.xiaohongshu.com/explore/public-note-id",
+            comments=[{
+                "local_comment_key": "gen-key-action-words",
+                "local_comment_key_origin": "generated_fingerprint",
+                "comment_text": "占位文案评论",
+                "like_count_raw": "赞",
+                "reply_count_raw": "回复",
+                "comment_level": 1,
+            }],
+            captured_at="2026-11-21T10:05:00",
+        )
+        conn = sqlite3.connect(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT like_count_raw, like_count, reply_count_raw FROM comment_snapshots WHERE comment_text=?",
+                ("占位文案评论",),
+            ).fetchone()
+            self.assertIsNone(row[0])
+            self.assertIsNone(row[1])
+            self.assertIsNone(row[2])
+        finally:
+            conn.close()
 
 
 if __name__ == "__main__":
